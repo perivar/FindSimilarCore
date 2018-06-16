@@ -5,13 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": "FindSimilar (scandirectory)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
-            "args": [],
+            "args": [
+                "-s",
+                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR"
+            ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "console": "internalConsole",
@@ -19,22 +22,21 @@
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
-            "name": ".NET Core Attach (local)",
+            "name": "FindSimilar (match)",
             "type": "coreclr",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
-        },
-        {
-            "name": ".NET Core Attach (remote)",
-            "type": "coreclr",
-            "request": "attach",
-            "processId": "${command:pickRemoteProcess}",
-            "pipeTransport": {
-                "pipeCwd": "${workspaceRoot}",
-                "pipeProgram": "enter the fully qualified path for the pipe program name, for example '/usr/bin/ssh'",
-                "pipeArgs": [],
-                "debuggerPath": "enter the path for the debugger on the target machine, for example ~/vsdbg/vsdbg"
-            }
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "args": [
+                "-m",
+                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav"
+            ],
+            "cwd": "${workspaceFolder}/FindSimilar",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
