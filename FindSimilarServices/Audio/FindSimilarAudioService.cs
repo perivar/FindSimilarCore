@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using CommonUtils.Audio;
 using SoundFingerprinting.Audio;
+using SoundFingerprinting.SoundTools.DrawningTool;
+using SoundFingerprinting.Wavelets;
 
 namespace FindSimilarServices.Audio
 {
@@ -151,6 +155,14 @@ namespace FindSimilarServices.Audio
 
             float[] downsampled = ToTargetSampleRate(monoSamples, riff.SampleRate, sampleRate);
             audioSamplesNormalizer.NormalizeInPlace(downsampled);
+
+            // https://github.com/AddictedCS/soundfingerprinting.soundtools/blob/master/src/SoundFingerprinting.SoundTools/DrawningTool/WinDrawningTool.cs
+            ImageService imageService = new ImageService(new StandardHaarWaveletDecomposition());
+            using (Image image = imageService.GetSignalImage(downsampled, 2000, 500))
+            {
+                image.Save(pathToSourceFile + ".png", ImageFormat.Jpeg);
+            }
+
             return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
         }
 
