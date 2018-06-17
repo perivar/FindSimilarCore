@@ -129,9 +129,6 @@ namespace FindSimilarServices
         {
             if (track == null) return false;
 
-            // store track metadata in the datasource
-            var trackReference = modelService.InsertTrack(track);
-
             this.fingerprintConfig = new ShortSamplesFingerprintConfiguration();
 
             // create hashed fingerprints
@@ -143,9 +140,19 @@ namespace FindSimilarServices
                                         .Hash()
                                         .Result;
 
-            // store hashes in the database for later retrieval
-            modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
-            return true;
+            if (hashedFingerprints.Count > 0)
+            {
+                // store track metadata in the datasource
+                var trackReference = modelService.InsertTrack(track);
+
+                // store hashes in the database for later retrieval
+                modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public TrackData GetBestMatchForSong(string queryAudioFile)

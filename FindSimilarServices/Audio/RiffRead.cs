@@ -11,7 +11,6 @@ namespace CommonUtils.Audio
 
     public class RiffRead
     {
-
         const int WAVE_FORMAT_UNKNOWN = 0x0000; // Microsoft Corporation
         const int WAVE_FORMAT_PCM = 0x0001; // Microsoft Corporation
         const int WAVE_FORMAT_ADPCM = 0x0002; // Microsoft Corporation
@@ -100,7 +99,6 @@ namespace CommonUtils.Audio
 
         public bool Process()
         {
-
             int bytespersec = 0;
             int byteread = 0;
             bool isPCM = false;
@@ -120,11 +118,8 @@ namespace CommonUtils.Audio
                 int chunkSize = 0, infochunksize = 0, bytecount = 0, listbytecount = 0;
                 string sfield = "", infofield = "", infodescription = "", infodata = "";
 
-                /*  --------  Get RIFF chunk header --------- */
+                // Get RIFF chunk header 
                 sfield = bf.ReadString(4);
-#if DEBUG
-                Console.WriteLine("RIFF Header: {0}", sfield);
-#endif
                 if (sfield != "RIFF")
                 {
                     Console.WriteLine(" ****  Not a valid RIFF file  ****");
@@ -133,15 +128,9 @@ namespace CommonUtils.Audio
 
                 // read RIFF data size
                 chunkSize = bf.ReadInt32();
-#if DEBUG
-                Console.WriteLine("RIFF data size: {0}", chunkSize);
-#endif
 
                 // read form-type (WAVE etc)
                 sfield = bf.ReadString(4);
-#if DEBUG
-                Console.WriteLine("Form-type: {0}", sfield);
-#endif
 
                 riffDataSize = chunkSize;
 
@@ -151,7 +140,8 @@ namespace CommonUtils.Audio
                     sfield = "";
                     int firstbyte = bf.ReadByte();
                     if (firstbyte == 0)
-                    {  // if previous data had odd bytecount, was padded by null so skip
+                    {
+                        // if previous data had odd bytecount, was padded by null so skip
                         bytecount++;
                         continue;
                     }
@@ -165,9 +155,6 @@ namespace CommonUtils.Audio
                     chunkSize = 0;
                     chunkSize = bf.ReadInt32();
                     bytecount += (8 + chunkSize);
-#if DEBUG
-                    Console.WriteLine("{0} ----- data size: {1} bytes", sfield, chunkSize);
-#endif
 
                     if (sfield == "data")
                     {
@@ -178,18 +165,18 @@ namespace CommonUtils.Audio
                     if (sfield == "fmt ")
                     {
                         /*
-					Offset   Size  Description                  Value
-					0x00     4     Chunk ID                     "fmt " (0x666D7420)
-					0x04     4     Chunk Data Size              16 + extra format bytes
-					0x08     2     Compression code             1 - 65,535
-					0x0a     2     Number of channels           1 - 65,535
-					0x0c     4     Sample rate                  1 - 0xFFFFFFFF
-					0x10     4     Average bytes per second     1 - 0xFFFFFFFF
-					0x14     2     Block align                  1 - 65,535
-					0x16     2     Significant bits per sample  2 - 65,535
-					0x18     2     Extra format bytes           0 - 65,535
-					0x1a
-					Extra format bytes *
+                        Offset   Size  Description                  Value
+                        0x00     4     Chunk ID                     "fmt " (0x666D7420)
+                        0x04     4     Chunk Data Size              16 + extra format bytes
+                        0x08     2     Compression code             1 - 65,535
+                        0x0a     2     Number of channels           1 - 65,535
+                        0x0c     4     Sample rate                  1 - 0xFFFFFFFF
+                        0x10     4     Average bytes per second     1 - 0xFFFFFFFF
+                        0x14     2     Block align                  1 - 65,535
+                        0x16     2     Significant bits per sample  2 - 65,535
+                        0x18     2     Extra format bytes           0 - 65,535
+                        0x1a
+                        Extra format bytes *
 						 */
 
                         // extract info from "format" chunk.
@@ -209,57 +196,24 @@ namespace CommonUtils.Audio
                                 isPCM = true;
                                 break;
                         }
-                        switch (wFormatTag)
-                        {
-                            case WAVE_FORMAT_PCM:
-                                Console.WriteLine("\twFormatTag:  WAVE_FORMAT_PCM");
-                                break;
-                            case WAVE_FORMAT_EXTENSIBLE:
-                                Console.WriteLine("\twFormatTag:  WAVE_FORMAT_EXTENSIBLE");
-                                break;
-                            case WAVE_FORMAT_IEEE_FLOAT:
-                                Console.WriteLine("\twFormatTag:  WAVE_FORMAT_IEEE_FLOAT");
-                                break;
-                            case WAVE_FORMAT_MPEGLAYER3:
-                                Console.WriteLine("\twFormatTag:  WAVE_FORMAT_MPEGLAYER3");
-                                break;
-                            default:
-                                Console.WriteLine("\twFormatTag:  non-PCM format {0}", wFormatTag);
-                                break;
-                        }
-
                         // Read number of channels, 2 bytes
                         nChannels = bf.ReadInt16();
-#if DEBUG
-                        Console.WriteLine("\tnChannels: {0}", nChannels);
-#endif
 
                         // Read sample rate, 4 bytes
                         nSamplesPerSec = bf.ReadInt32();
-#if DEBUG
-                        Console.WriteLine("\tnSamplesPerSec: {0}", nSamplesPerSec);
-#endif
 
                         // Read average bytes per second, 4 bytes
                         nAvgBytesPerSec = bf.ReadInt32();
                         bytespersec = nAvgBytesPerSec;
-#if DEBUG
-                        Console.WriteLine("\tnAvgBytesPerSec: {0}", nAvgBytesPerSec);
-#endif
 
                         // Read block align, 2 bytes
                         nBlockAlign = bf.ReadInt16();
-#if DEBUG
-                        Console.WriteLine("\tnBlockAlign: {0}", nBlockAlign);
-#endif
 
                         // Read significant bits per sample, 2 bytes
                         if (isPCM)
-                        {     // if PCM or EXTENSIBLE format
+                        {
+                            // if PCM or EXTENSIBLE format
                             wBitsPerSample = bf.ReadInt16();
-#if DEBUG
-                            Console.WriteLine("\twBitsPerSample: {0}", wBitsPerSample);
-#endif
                         }
                         else
                         {
@@ -285,9 +239,7 @@ namespace CommonUtils.Audio
                         try
                         {
                             listbytecount = 4;
-#if DEBUG
-                            Console.WriteLine("------- INFO chunks: {0} bytes -------", chunkSize);
-#endif
+
                             // iterate over all entries in LIST chunk
                             while (listbytecount < chunkSize)
                             {
@@ -313,14 +265,14 @@ namespace CommonUtils.Audio
                                 // if we have a new chunk
                                 infofield += (char)firstbyte;
                                 for (int i = 1; i <= 3; i++)
-                                { //get the remaining part of info chunk name ID
+                                {
+                                    // get the remaining part of info chunk name ID
                                     infofield += (char)bf.ReadByte();
                                 }
 
                                 // get the info chunk data byte size
                                 infochunksize = bf.ReadInt32();
                                 listbytecount += (8 + infochunksize);
-                                //Console.WriteLine("infofield: {0}, listbytecount: {1}, infochunksize: {2}", infofield, listbytecount, infochunksize);
 
                                 if (listbytecount > chunkSize)
                                 {
@@ -333,7 +285,8 @@ namespace CommonUtils.Audio
                                 {
                                     byteread = bf.ReadByte();
                                     if (byteread == 0)
-                                    { // if null byte in string, ignore it
+                                    {
+                                        // if null byte in string, ignore it
                                         continue;
                                     }
                                     infodata += (char)byteread;
@@ -345,35 +298,23 @@ namespace CommonUtils.Audio
                                     infodescription = (string)listinfo[infofield];
                                 }
                                 catch (KeyNotFoundException) { }
+
                                 if (infodescription != null)
                                 {
-#if DEBUG
-                                    Console.WriteLine("{0} ({1}) = {2}", infofield, infodescription, infodata);
-#endif
                                     InfoChunks.Add(infodescription, infodata);
                                 }
                                 else
                                 {
-#if DEBUG
-                                    Console.WriteLine("unknown: {0} = {1}", infofield, infodata);
-#endif
                                     InfoChunks.Add(String.Format("unknown{0}", unknownCount), infodata);
                                     unknownCount++;
                                 }
-                            } //------- end iteration over LIST chunk ------------
-
+                            } // end iteration over LIST chunk
                         }
                         catch (Exception)
                         {
-                            ;
+
                             // don't care about these?
-                            //Console.WriteLine("Error: {0}", e.ToString());
                         }
-
-#if DEBUG
-                        Console.WriteLine("------- end INFO chunks -------");
-#endif
-
                     }
                     else
                     {
@@ -416,125 +357,96 @@ namespace CommonUtils.Audio
                     }
                 }  // end while.
 
-                //-----------  End of chunk iteration -------------
+                // End of chunk iteration
                 if (isPCM && dataSize > 0)
                 {   // compute duration of PCM wave file
-                    lengthInSeconds =  ((float)dataSize / (float)bytespersec);
+                    lengthInSeconds = ((float)dataSize / (float)bytespersec);
                     long waveduration = 1000L * dataSize / bytespersec; // in msec units
                     long mins = waveduration / 60000;    // integer minutes
                     double secs = 0.001 * (waveduration % 60000);    // double secs.
-#if DEBUG
-                    Console.WriteLine("Duration: {0} mins {1} sec. Duration in secs {2}", mins, secs, lengthInSeconds);
-#endif
                 }
 
-#if DEBUG
-                Console.WriteLine("Final RIFF data bytecount: {0}", bytecount);
-#endif
                 if ((8 + bytecount) != (int)fileLength)
                 {
-                    Console.WriteLine("!!!!!!! Problem with file structure  !!!!!!!!!");
-                    return false;
-                }
-                else
-                {
-#if DEBUG
-                    Console.WriteLine("File chunk structure consistent with valid RIFF");
-#endif
+                    throw new FormatException("Problem with file structure!");
                 }
 
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine("Error: {0}", e.ToString());
-                return false;
+                // ignore
+                // throw new FormatException(e.Message);
             }
             finally
             {
                 // close all streams.
                 bf.Close();
             }
+            return true;
         }
 
-        public static void Read8Bit(BinaryFile wavfile, float[][] sound, int samplecount, int channels)
+        public static void Read8Bit(BinaryFile wavefile, float[][] sound, int samplecount, int channels)
         {
             var i = new int();
             var ic = new int();
-            byte @byte = new byte();
-
-#if DEBUG
-            Console.Write("Read8Bit...\n");
-#endif
+            byte b = new byte();
 
             for (i = 0; i < samplecount; i++)
             {
                 for (ic = 0; ic < channels; ic++)
                 {
-                    @byte = wavfile.ReadByte();
-                    sound[ic][i] = (float)@byte / 128.0f - 1.0f;
+                    b = wavefile.ReadByte();
+                    sound[ic][i] = (float)b / 128.0f - 1.0f;
                 }
             }
         }
 
-        public static void Read16Bit(BinaryFile wavfile, float[][] sound, int samplecount, int channels)
+        public static void Read16Bit(BinaryFile waveFile, float[][] sound, int samplecount, int channels)
         {
             var i = new int();
             var ic = new int();
-
-#if DEBUG
-            Console.Write("Read16Bit...\n");
-#endif
 
             for (i = 0; i < samplecount; i++)
             {
                 for (ic = 0; ic < channels; ic++)
                 {
-                    float f = (float)wavfile.ReadInt16();
+                    float f = (float)waveFile.ReadInt16();
                     f = f / 32768.0f;
                     sound[ic][i] = f;
                 }
             }
         }
 
-        public static void Read32Bit(BinaryFile wavfile, float[][] sound, int samplecount, int channels)
+        public static void Read32Bit(BinaryFile waveFile, float[][] sound, int samplecount, int channels)
         {
             var i = new int();
             var ic = new int();
-
-#if DEBUG
-            Console.Write("Read32Bit...\n");
-#endif
 
             for (i = 0; i < samplecount; i++)
             {
                 for (ic = 0; ic < channels; ic++)
                 {
-                    float f = (float)wavfile.ReadInt32();
+                    float f = (float)waveFile.ReadInt32();
                     f = f / 2147483648.0f;
                     sound[ic][i] = f;
                 }
             }
         }
 
-        public static void Read32BitFloat(BinaryFile wavfile, float[][] sound, int samplecount, int channels)
+        public static void Read32BitFloat(BinaryFile waveFile, float[][] sound, int samplecount, int channels)
         {
             var i = new int();
             var ic = new int();
-
-#if DEBUG
-            Console.Write("Read32BitFloat...\n");
-#endif
 
             for (i = 0; i < samplecount; i++)
             {
                 for (ic = 0; ic < channels; ic++)
                 {
-                    float f = (float)wavfile.ReadSingle();
+                    float f = (float)waveFile.ReadSingle();
                     sound[ic][i] = f;
                 }
             }
         }
-
     }
 }

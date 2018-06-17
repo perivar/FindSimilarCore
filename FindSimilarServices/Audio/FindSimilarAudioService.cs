@@ -18,11 +18,8 @@ namespace FindSimilarServices.Audio
             Right
         }
 
-        private static readonly HashSet<int> AcceptedSampleRates = new HashSet<int> { 5512, 11025, 22050, 44100, 48000 };
-        private static readonly HashSet<int> AcceptedBitsPerSample = new HashSet<int> { 8, 16, 24, 32 };
-        private static readonly HashSet<int> AcceptedChannels = new HashSet<int> { 1, 2 };
-
         private readonly IAudioSamplesNormalizer audioSamplesNormalizer;
+        private readonly WdlResampler resampler;
 
         private RiffRead preLoadedRiffData = null;
 
@@ -37,6 +34,47 @@ namespace FindSimilarServices.Audio
         public FindSimilarAudioService()
         {
             audioSamplesNormalizer = new AudioSamplesNormalizer();
+
+            // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
+            resampler = new WdlResampler();
+            resampler.SetMode(true, 2, false);
+            resampler.SetFilterParms();
+            resampler.SetFeedMode(true); // input driven
+        }
+
+        private float[] ToTargetSampleRate(float[] monoSamples, int sourceSampleRate, int newSampleRate)
+        {
+            return Resample(monoSamples, 1, 1, sourceSampleRate, newSampleRate);
+        }
+
+        private float[] Resample(float[] audioSamples, int readerChannels, int writerChannels, int sourceSampleRate, int newSampleRate)
+        {
+            // Use WDL Resampler
+            // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
+            resampler.SetRates(sourceSampleRate, newSampleRate);
+
+            float[] buffer = audioSamples;
+            int read = audioSamples.Length;
+
+            // resample
+            int framesAvailable = read / readerChannels;
+            float[] inBuffer;
+            int inBufferOffset;
+            int inNeeded = resampler.ResamplePrepare(framesAvailable, writerChannels, out inBuffer, out inBufferOffset);
+
+            // prepare input buffer
+            Array.Copy(buffer, 0, inBuffer, inBufferOffset, inNeeded * readerChannels);
+
+            int inAvailable = inNeeded;
+            float[] outBuffer = new float[inAvailable * writerChannels]; // originally 2000 plenty big enough
+            int framesRequested = outBuffer.Length / writerChannels;
+            int outAvailable = resampler.ResampleOut(outBuffer, 0, inAvailable, framesRequested, writerChannels);
+
+            // copy to output buffer
+            float[] resampledBuffer = new float[outAvailable * writerChannels];
+            Array.Copy(outBuffer, 0, resampledBuffer, 0, outAvailable * writerChannels);
+
+            return resampledBuffer;
         }
 
         public override float GetLengthInSeconds(string pathToSourceFile)
@@ -116,18 +154,13 @@ namespace FindSimilarServices.Audio
             return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
         }
 
-        private float[] ToTargetSampleRate(float[] monoSamples, int sourceSampleRate, int sampleRate)
-        {
-            return monoSamples;
-        }
-
         /// <summary>
         ///   Read mono from file
         /// </summary>
-        /// <param name = "filename">Name of the file</param>
-        /// <param name = "samplerate">Sample rate</param>
-        /// <param name = "milliseconds">milliseconds to read</param>
-        /// <param name = "startmillisecond">Start millisecond</param>
+        /// <param name="filename">Name of the file</param>
+        /// <param name="samplerate">Sample rate</param>
+        /// <param name="milliseconds">milliseconds to read</param>
+        /// <param name="startmillisecond">Start millisecond</param>
         /// <returns>Array of samples</returns>
         public static float[] ReadMonoFromFile(string filename, int samplerate, int milliseconds, int startmillisecond)
         {
