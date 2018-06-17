@@ -16,6 +16,7 @@ using SoundFingerprinting.Query;
 using CommonUtils;
 using CommonUtils.Audio;
 using SoundFingerprinting.Strides;
+using FindSimilarServices.Audio;
 
 namespace FindSimilarServices
 {
@@ -44,14 +45,12 @@ namespace FindSimilarServices
                 this.modelService = new InMemoryModelService();
             }
 
-            this.audioService = new SoundFingerprintingAudioService(); // default audio library
-            this.fingerprintConfig = new LowLatencyFingerprintConfiguration();
-            //fingerprintConfig.Stride = new IncrementalStaticStride(1536);
-            //fingerprintConfig.FrequencyRange = new FrequencyRange(40, 16000);
-            
+            this.audioService = new FindSimilarAudioService();
+
             this.queryConfig = new LowLatencyQueryConfiguration();
             //queryConfig.Stride = new IncrementalRandomStride(1, 4096);
             //queryConfig.FrequencyRange = new FrequencyRange(40, 16000);
+
         }
 
         public void Snapshot(string saveToPath)
@@ -83,7 +82,7 @@ namespace FindSimilarServices
             var options = new ParallelOptions();
 #if DEBUG
             // Trick for debugging parallel code as single threaded
-            //options.MaxDegreeOfParallelism = 1;
+            options.MaxDegreeOfParallelism = 1;
             Console.Out.WriteLine("Running in single-threaded mode!");
 #endif
             Parallel.ForEach(filesRemaining, options, file =>
@@ -133,6 +132,8 @@ namespace FindSimilarServices
             // store track metadata in the datasource
             var trackReference = modelService.InsertTrack(track);
 
+            this.fingerprintConfig = new ShortSamplesFingerprintConfiguration();
+
             // create hashed fingerprints
             var hashedFingerprints = FingerprintCommandBuilder.Instance
                                         .BuildFingerprintCommand()
@@ -164,21 +165,9 @@ namespace FindSimilarServices
 
         public void GetBestMatchesForSong(string queryAudioFile)
         {
-            int secondsToAnalyze = 1; // number of seconds to analyze from query file
-            int startAtSecond = 0; // start at the begining
-
-            /*
-            var riff = new RiffRead(queryAudioFile);
-            riff.Process();
-            var soundInts = new int[riff.SampleCount];
-            SampleConverter.Convert(riff.SoundData[0], soundInts);
-            */
-
-            var samples = audioService.ReadMonoSamplesFromFile(queryAudioFile, 5512);
-
             // query the underlying database for similar audio sub-fingerprints
             var queryResult = QueryCommandBuilder.Instance.BuildQueryCommand()
-                                                 .From(samples)
+                                                 .From(queryAudioFile)
                                                  .WithQueryConfig(queryConfig)
                                                  .UsingServices(modelService, audioService)
                                                  .Query()

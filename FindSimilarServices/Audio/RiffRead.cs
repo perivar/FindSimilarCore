@@ -74,7 +74,7 @@ namespace CommonUtils.Audio
         private int sampleCount;
         private int wFormatTag;
         private float[][] soundData;
-
+        private float lengthInSeconds = 0;
         private Dictionary<string, string> infoChunks = new Dictionary<string, string>();
 
         public string SelectedFile { get { return selectedFile; } set { selectedFile = value; } }
@@ -89,6 +89,8 @@ namespace CommonUtils.Audio
         public int SampleCount { get { return sampleCount; } set { sampleCount = value; } }
         public int Format { get { return wFormatTag; } set { wFormatTag = value; } }
         public float[][] SoundData { get { return soundData; } set { soundData = value; } }
+
+        public float LengthInSeconds { get { return lengthInSeconds; } set { lengthInSeconds = value; } }
         public Dictionary<string, string> InfoChunks { get { return infoChunks; } set { infoChunks = value; } }
 
         public RiffRead(string value)
@@ -169,7 +171,7 @@ namespace CommonUtils.Audio
 
                     if (sfield == "data")
                     {
-                        //get data size to compute duration later.
+                        // get data size to compute duration later.
                         dataSize = chunkSize;
                     }
 
@@ -265,7 +267,7 @@ namespace CommonUtils.Audio
                             wBitsPerSample = 0;
                         }
 
-                        //skip over any extra bytes in format specific field.
+                        // skip over any extra bytes in format specific field.
                         bf.ReadBytes(chunkSize - 16);
 
                     }
@@ -385,7 +387,7 @@ namespace CommonUtils.Audio
                                 soundData[ic] = new float[sampleCount];
                             }
 
-                            //********Data loading********
+                            // Data loading
                             if (BitsPerSample == 8)
                             {
                                 Read8Bit(bf, soundData, sampleCount, nChannels);
@@ -417,11 +419,12 @@ namespace CommonUtils.Audio
                 //-----------  End of chunk iteration -------------
                 if (isPCM && dataSize > 0)
                 {   // compute duration of PCM wave file
+                    lengthInSeconds =  ((float)dataSize / (float)bytespersec);
                     long waveduration = 1000L * dataSize / bytespersec; // in msec units
                     long mins = waveduration / 60000;    // integer minutes
-                    double secs = 0.001 * (waveduration % 60000);    //double secs.
+                    double secs = 0.001 * (waveduration % 60000);    // double secs.
 #if DEBUG
-                    Console.WriteLine("wav duration:  {0} mins  {1} sec", mins, secs);
+                    Console.WriteLine("Duration: {0} mins {1} sec. Duration in secs {2}", mins, secs, lengthInSeconds);
 #endif
                 }
 
