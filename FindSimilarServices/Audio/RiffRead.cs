@@ -11,56 +11,6 @@ namespace CommonUtils.Audio
 
     public class RiffRead
     {
-        const int WAVE_FORMAT_UNKNOWN = 0x0000; // Microsoft Corporation
-        const int WAVE_FORMAT_PCM = 0x0001; // Microsoft Corporation
-        const int WAVE_FORMAT_ADPCM = 0x0002; // Microsoft Corporation
-        const int WAVE_FORMAT_IEEE_FLOAT = 0x0003; // Microsoft Corporation
-        const int WAVE_FORMAT_ALAW = 0x0006; // Microsoft Corporation
-        const int WAVE_FORMAT_MULAW = 0x0007; // Microsoft Corporation
-        const int WAVE_FORMAT_DTS_MS = 0x0008; // Microsoft Corporation
-        const int WAVE_FORMAT_WMAS = 0x000a; // WMA 9 Speech
-        const int WAVE_FORMAT_IMA_ADPCM = 0x0011; // Intel Corporation
-        const int WAVE_FORMAT_TRUESPEECH = 0x0022; // TrueSpeech
-        const int WAVE_FORMAT_GSM610 = 0x0031; // Microsoft Corporation
-        const int WAVE_FORMAT_MSNAUDIO = 0x0032; // Microsoft Corporation
-        const int WAVE_FORMAT_G726 = 0x0045; // ITU-T standard
-        const int WAVE_FORMAT_MPEG = 0x0050; // Microsoft Corporation
-        const int WAVE_FORMAT_MPEGLAYER3 = 0x0055; // ISO/MPEG Layer3 Format Tag
-        const int WAVE_FORMAT_DOLBY_AC3_SPDIF = 0x0092; // Sonic Foundry
-        const int WAVE_FORMAT_A52 = 0x2000;
-        const int WAVE_FORMAT_DTS = 0x2001;
-        const int WAVE_FORMAT_WMA1 = 0x0160; // WMA version 1
-        const int WAVE_FORMAT_WMA2 = 0x0161; // WMA (v2) 7, 8, 9 Series
-        const int WAVE_FORMAT_WMAP = 0x0162; // WMA 9 Professional
-        const int WAVE_FORMAT_WMAL = 0x0163; // WMA 9 Lossless
-        const int WAVE_FORMAT_DIVIO_AAC = 0x4143;
-        const int WAVE_FORMAT_AAC = 0x00FF;
-        const int WAVE_FORMAT_FFMPEG_AAC = 0x706D;
-
-        const int WAVE_FORMAT_DK3 = 0x0061;
-        const int WAVE_FORMAT_DK4 = 0x0062;
-        const int WAVE_FORMAT_VORBIS = 0x566f;
-        const int WAVE_FORMAT_VORB_1 = 0x674f;
-        const int WAVE_FORMAT_VORB_2 = 0x6750;
-        const int WAVE_FORMAT_VORB_3 = 0x6751;
-        const int WAVE_FORMAT_VORB_1PLUS = 0x676f;
-        const int WAVE_FORMAT_VORB_2PLUS = 0x6770;
-        const int WAVE_FORMAT_VORB_3PLUS = 0x6771;
-        const int WAVE_FORMAT_SPEEX = 0xa109; // Speex audio
-        const int WAVE_FORMAT_EXTENSIBLE = 0xFFFE; // Microsoft
-
-        static string[] infotype = { "IARL", "IART", "ICMS", "ICMT", "ICOP",
-            "ICRD", "ICRP", "IDIM", "IDPI", "IENG", "IGNR", "IKEY",
-            "ILGT", "IMED", "INAM", "IPLT", "IPRD", "ISBJ",
-            "ISFT", "ISHP", "ISRC", "ISRF", "ITCH",
-            "ISMP", "IDIT", "VXNG", "TURL" };
-
-        static string[] infodesc = { "Archival location", "Artist", "Commissioned", "Comments", "Copyright",
-            "Creation date", "Cropped", "Dimensions", "Dots per inch", "Engineer", "Genre", "Keywords",
-            "Lightness settings", "Medium", "Name of subject", "Palette settings", "Product", "Description",
-            "Software package", "Sharpness", "Source", "Source form", "Digitizing technician",
-            "SMPTE time code", "Digitization time", "VXNG", "Url" };
-
         private string selectedFile;
         private long fileLength;
         private int nChannels;
@@ -104,9 +54,9 @@ namespace CommonUtils.Audio
             bool isPCM = false;
 
             var listinfo = new Dictionary<string, string>();
-            for (int i = 0; i < infotype.Length; i++)
+            for (int i = 0; i < SoundIO.INFO_TYPE.Length; i++)
             {
-                listinfo.Add(infotype[i], infodesc[i]);
+                listinfo.Add(SoundIO.INFO_TYPE[i], SoundIO.INFO_DESC[i]);
             }
 
             var bf = new BinaryFile(selectedFile);
@@ -116,11 +66,11 @@ namespace CommonUtils.Audio
                 fileLength = fileInfo.Length;
 
                 int chunkSize = 0, infochunksize = 0, bytecount = 0, listbytecount = 0;
-                string sfield = "", infofield = "", infodescription = "", infodata = "";
+                string sField = "", infofield = "", infodescription = "", infodata = "";
 
                 // Get RIFF chunk header 
-                sfield = bf.ReadString(4);
-                if (sfield != "RIFF")
+                sField = bf.ReadString(4);
+                if (sField != "RIFF")
                 {
                     Console.WriteLine(" ****  Not a valid RIFF file  ****");
                     return false;
@@ -130,14 +80,14 @@ namespace CommonUtils.Audio
                 chunkSize = bf.ReadInt32();
 
                 // read form-type (WAVE etc)
-                sfield = bf.ReadString(4);
+                sField = bf.ReadString(4);
 
                 riffDataSize = chunkSize;
 
                 bytecount = 4;  // initialize bytecount to include RIFF form-type bytes.
                 while (bytecount < riffDataSize)
                 {    // check for chunks inside RIFF data area.
-                    sfield = "";
+                    sField = "";
                     int firstbyte = bf.ReadByte();
                     if (firstbyte == 0)
                     {
@@ -146,23 +96,23 @@ namespace CommonUtils.Audio
                         continue;
                     }
 
-                    sfield += (char)firstbyte;  // if we have a new chunk
+                    sField += (char)firstbyte;  // if we have a new chunk
                     for (int i = 1; i <= 3; i++)
                     {
-                        sfield += (char)bf.ReadByte();
+                        sField += (char)bf.ReadByte();
                     }
 
                     chunkSize = 0;
                     chunkSize = bf.ReadInt32();
                     bytecount += (8 + chunkSize);
 
-                    if (sfield == "data")
+                    if (sField == "data")
                     {
                         // get data size to compute duration later.
                         dataSize = chunkSize;
                     }
 
-                    if (sfield == "fmt ")
+                    if (sField == "fmt ")
                     {
                         /*
                         Offset   Size  Description                  Value
@@ -190,9 +140,9 @@ namespace CommonUtils.Audio
                         wFormatTag = bf.ReadInt16();
                         switch (wFormatTag)
                         {
-                            case WAVE_FORMAT_PCM:
-                            case WAVE_FORMAT_EXTENSIBLE:
-                            case WAVE_FORMAT_IEEE_FLOAT:
+                            case SoundIO.WAVE_FORMAT_PCM:
+                            case SoundIO.WAVE_FORMAT_EXTENSIBLE:
+                            case SoundIO.WAVE_FORMAT_IEEE_FLOAT:
                                 isPCM = true;
                                 break;
                         }
@@ -225,7 +175,7 @@ namespace CommonUtils.Audio
                         bf.ReadBytes(chunkSize - 16);
 
                     }
-                    else if (sfield == "LIST")
+                    else if (sField == "LIST")
                     {
                         String listtype = bf.ReadString(4);
 
@@ -318,7 +268,7 @@ namespace CommonUtils.Audio
                     }
                     else
                     {
-                        if (sfield.Equals("data"))
+                        if (sField.Equals("data"))
                         {
                             sampleCount = (int)dataSize / (wBitsPerSample / 8) / nChannels;
 
@@ -331,21 +281,21 @@ namespace CommonUtils.Audio
                             // Data loading
                             if (BitsPerSample == 8)
                             {
-                                Read8Bit(bf, soundData, sampleCount, nChannels);
+                                SoundIO.Read8Bit(bf, soundData, sampleCount, nChannels);
                             }
                             if (BitsPerSample == 16)
                             {
-                                Read16Bit(bf, soundData, sampleCount, nChannels);
+                                SoundIO.Read16Bit(bf, soundData, sampleCount, nChannels);
                             }
                             if (BitsPerSample == 32)
                             {
-                                if (wFormatTag == WAVE_FORMAT_PCM)
+                                if (wFormatTag == SoundIO.WAVE_FORMAT_PCM)
                                 {
-                                    Read32Bit(bf, soundData, sampleCount, nChannels);
+                                    SoundIO.Read32Bit(bf, soundData, sampleCount, nChannels);
                                 }
-                                else if (wFormatTag == WAVE_FORMAT_IEEE_FLOAT)
+                                else if (wFormatTag == SoundIO.WAVE_FORMAT_IEEE_FLOAT)
                                 {
-                                    Read32BitFloat(bf, soundData, sampleCount, nChannels);
+                                    SoundIO.Read32BitFloat(bf, soundData, sampleCount, nChannels);
                                 }
                             }
                         }
@@ -384,69 +334,6 @@ namespace CommonUtils.Audio
                 bf.Close();
             }
             return true;
-        }
-
-        public static void Read8Bit(BinaryFile wavefile, float[][] sound, int samplecount, int channels)
-        {
-            var i = new int();
-            var ic = new int();
-            byte b = new byte();
-
-            for (i = 0; i < samplecount; i++)
-            {
-                for (ic = 0; ic < channels; ic++)
-                {
-                    b = wavefile.ReadByte();
-                    sound[ic][i] = (float)b / 128.0f - 1.0f;
-                }
-            }
-        }
-
-        public static void Read16Bit(BinaryFile waveFile, float[][] sound, int samplecount, int channels)
-        {
-            var i = new int();
-            var ic = new int();
-
-            for (i = 0; i < samplecount; i++)
-            {
-                for (ic = 0; ic < channels; ic++)
-                {
-                    float f = (float)waveFile.ReadInt16();
-                    f = f / 32768.0f;
-                    sound[ic][i] = f;
-                }
-            }
-        }
-
-        public static void Read32Bit(BinaryFile waveFile, float[][] sound, int samplecount, int channels)
-        {
-            var i = new int();
-            var ic = new int();
-
-            for (i = 0; i < samplecount; i++)
-            {
-                for (ic = 0; ic < channels; ic++)
-                {
-                    float f = (float)waveFile.ReadInt32();
-                    f = f / 2147483648.0f;
-                    sound[ic][i] = f;
-                }
-            }
-        }
-
-        public static void Read32BitFloat(BinaryFile waveFile, float[][] sound, int samplecount, int channels)
-        {
-            var i = new int();
-            var ic = new int();
-
-            for (i = 0; i < samplecount; i++)
-            {
-                for (ic = 0; ic < channels; ic++)
-                {
-                    float f = (float)waveFile.ReadSingle();
-                    sound[ic][i] = f;
-                }
-            }
         }
     }
 }

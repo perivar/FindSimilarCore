@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using CommonUtils;
 using CommonUtils.Audio;
 using SoundFingerprinting.Audio;
 using SoundFingerprinting.SoundTools.DrawningTool;
@@ -158,10 +159,16 @@ namespace FindSimilarServices.Audio
 
             // https://github.com/AddictedCS/soundfingerprinting.soundtools/blob/master/src/SoundFingerprinting.SoundTools/DrawningTool/WinDrawningTool.cs
             ImageService imageService = new ImageService(new StandardHaarWaveletDecomposition());
-            using (Image image = imageService.GetSignalImage(downsampled, 2000, 500))
+            using (Image image = imageService.GetSignalImage(monoSamples, 2000, 500))
             {
                 image.Save(pathToSourceFile + ".png", ImageFormat.Jpeg);
             }
+            using (Image image = imageService.GetSignalImage(downsampled, 2000, 500))
+            {
+                image.Save(pathToSourceFile + "_downsampled.png", ImageFormat.Jpeg);
+            }
+
+            SoundIO.WriteWaveFile(pathToSourceFile + "_new.wav", downsampled, sampleRate);
 
             return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
         }
