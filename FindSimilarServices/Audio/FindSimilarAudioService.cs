@@ -172,6 +172,11 @@ namespace FindSimilarServices.Audio
                 downsampled = temp;
             }
 
+#if DEBUG
+            Console.WriteLine("Processing: {0}", pathToSourceFile);
+            //SoundIO.WriteWaveFile(pathToSourceFile + "_resampled.wav", downsampled, sampleRate);
+#endif
+
             return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
         }
     }

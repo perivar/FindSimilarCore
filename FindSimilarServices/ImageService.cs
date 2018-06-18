@@ -279,6 +279,10 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
 
         private Color ValueToBlackWhiteColor(double value)
         {
+            if (double.IsNaN(value) || double.IsInfinity(value)) {
+                value = 0.0;
+            }
+
             double abs = System.Math.Abs(value); // after wavelet transformation this value will be [-1, 1]
             int color = System.Math.Min((int)(abs * 255), 255);
             return Color.FromArgb(color, color, color);

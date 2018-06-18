@@ -82,12 +82,21 @@
             uint sequenceNumber = 0;
             while (index + fingerprintImageLength <= width)
             {
-                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins]; 
-                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage,  0, fullLength * sizeof(float));
+                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
+                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage, 0, fullLength * sizeof(float));
                 float startsAt = index * ((float)overlap / sampleRate);
                 spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, startsAt, sequenceNumber));
                 index += fingerprintImageLength + GetFrequencyIndexLocationOfAudioSamples(strideBetweenConsecutiveImages.NextStride, overlap);
                 sequenceNumber++;
+            }
+
+			// ADDED BY PER IVAR NERSETH, 2018
+            // Make sure at least the input spectrum is a part of the output list
+            if (spectralImages.Count == 0)
+            {
+                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
+                Buffer.BlockCopy(logarithmizedSpectrum, 0, spectralImage, 0, logarithmizedSpectrum.Length);
+                spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, 0, 0));
             }
 
             return spectralImages;
