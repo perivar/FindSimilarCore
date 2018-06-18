@@ -92,8 +92,6 @@ namespace FindSimilarServices.Audio
 
         public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
         {
-            var monoType = MonoSummingType.Mix;
-
             RiffRead riff = null;
             if (preLoadedRiffData != null)
             {
@@ -105,6 +103,8 @@ namespace FindSimilarServices.Audio
                 riff.Process();
             }
 
+            // convert to mono
+            var monoType = MonoSummingType.Mix;
             int samplesPerChannel = riff.SampleCount;
             int channels = riff.Channels;
 
@@ -144,7 +144,6 @@ namespace FindSimilarServices.Audio
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
-
                     monoSamples[i] = sampleValueMono;
                 }
             }
