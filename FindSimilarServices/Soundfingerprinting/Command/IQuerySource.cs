@@ -25,6 +25,6 @@
         /// </summary>
         /// <param name="audioSamples">Audio samples to build the fingerprints from</param>
         /// <returns>Configuration selector</returns>
-        IWithQueryConfiguration From(AudioSamples audioSamples);
+        IWithQueryConfiguration From(string pathToAudioFile, AudioSamples audioSamples);
     }
 }

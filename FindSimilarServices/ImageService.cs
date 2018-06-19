@@ -181,7 +181,7 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
 
 			return img;
 		}
-
+        
         public Image GetSpectrogramImageOriginal(float[][] spectrum, int width, int height)
         {
             Bitmap image = new Bitmap(width, height);

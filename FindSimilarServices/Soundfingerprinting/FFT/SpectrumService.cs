@@ -23,7 +23,7 @@
             this.logUtility = logUtility;
         }
 
-        public List<SpectralImage> CreateLogSpectrogram(AudioSamples audioSamples, SpectrogramConfig configuration)
+        public List<SpectralImage> CreateLogSpectrogram(string pathToAudioFile, AudioSamples audioSamples, SpectrogramConfig configuration)
         {
             int wdftSize = configuration.WdftSize;
             int width = (audioSamples.Samples.Length - wdftSize) / configuration.Overlap;
@@ -49,13 +49,11 @@
             }
 
             // PER IVAR
-#if DEBUG
             var imageService = new ImageService();
             using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
             {
-                image.Save(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Clean Bandit - Rather Be Programming\spectrogram.png", ImageFormat.Png);
+                image.Save(pathToAudioFile + "_spectrogram.png", ImageFormat.Png);
             }
-#endif                    
 
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
             ScaleFullSpectrum(images, configuration);

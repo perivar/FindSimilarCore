@@ -45,7 +45,7 @@ namespace SoundFingerprinting
             this.fingerprintDescriptor = fingerprintDescriptor;
         }
 
-        public List<HashedFingerprint> CreateFingerprints(AudioSamples samples, FingerprintConfiguration configuration)
+        public List<HashedFingerprint> CreateFingerprints(string pathToSourceFile, AudioSamples samples, FingerprintConfiguration configuration)
         {
             // Explode samples to the range of 16 bit shorts (–32,768 to 32,767)
             // Matlab multiplies with 2^15 (32768)
@@ -63,24 +63,24 @@ namespace SoundFingerprinting
                 int lenNew = configuration.SpectrogramConfig.WdftSize + configuration.SpectrogramConfig.Overlap;
                 Array.Resize<float>(ref audiodata, lenNew);
             }
-            samples.Samples = audiodata;            
+            samples.Samples = audiodata;
 
             // create log spectrogram
-            var spectrum = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
-#if DEBUG
+            var spectrum = spectrumService.CreateLogSpectrogram(pathToSourceFile, samples, configuration.SpectrogramConfig);
+
             var imageService = new ImageService();
             using (Image image = imageService.GetLogSpectralImages(spectrum, 5))
             {
-                image.Save(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Clean Bandit - Rather Be Programming\spectrums.png", ImageFormat.Png);
+                image.Save(pathToSourceFile + "_spectrums.png", ImageFormat.Png);
             }
-#endif            
+
             var fingerprints = CreateFingerprintsFromLogSpectrum(spectrum, configuration);
-#if DEBUG
+
             using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, 5))
             {
-                image.Save(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Clean Bandit - Rather Be Programming\fingerprints.png", ImageFormat.Png);
+                image.Save(pathToSourceFile + "_fingerprints.png", ImageFormat.Png);
             }
-#endif            
+
             return HashFingerprints(fingerprints, configuration);
         }
 

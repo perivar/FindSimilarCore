@@ -19,7 +19,7 @@ namespace SoundFingerprinting.Command
         /// </summary>
         /// <param name="audioSamples">Audio samples to build the fingerprints from</param>
         /// <returns>Configuration selector object</returns>
-        IWithFingerprintConfiguration From(AudioSamples audioSamples);
+        IWithFingerprintConfiguration From(string pathToAudioFile, AudioSamples audioSamples);
 
         /// <summary>
         ///   Build fingerprints from an audio file

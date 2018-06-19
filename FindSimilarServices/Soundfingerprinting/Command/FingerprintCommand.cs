@@ -34,15 +34,15 @@ namespace SoundFingerprinting.Command
             createFingerprintsMethod = () =>
                 {
                     AudioSamples audioSamples = audioService.ReadMonoSamplesFromFile(pathToAudioFile, fingerprintConfiguration.SampleRate);
-                    return fingerprintService.CreateFingerprints(audioSamples, fingerprintConfiguration);
+                    return fingerprintService.CreateFingerprints(pathToAudioFile, audioSamples, fingerprintConfiguration);
                 };
 
             return this;
         }
 
-        public IWithFingerprintConfiguration From(AudioSamples audioSamples)
+        public IWithFingerprintConfiguration From(string pathToAudioFile, AudioSamples audioSamples)
         {
-            createFingerprintsMethod = () => fingerprintService.CreateFingerprints(audioSamples, fingerprintConfiguration);
+            createFingerprintsMethod = () => fingerprintService.CreateFingerprints(pathToAudioFile, audioSamples, fingerprintConfiguration);
             return this;
         }
 
@@ -51,7 +51,7 @@ namespace SoundFingerprinting.Command
             createFingerprintsMethod = () =>
                 {
                     AudioSamples audioSamples = audioService.ReadMonoSamplesFromFile(pathToAudioFile, fingerprintConfiguration.SampleRate, secondsToProcess, startAtSecond);
-                    return fingerprintService.CreateFingerprints(audioSamples, fingerprintConfiguration);
+                    return fingerprintService.CreateFingerprints(pathToAudioFile, audioSamples, fingerprintConfiguration);
                 };
 
             return this;
