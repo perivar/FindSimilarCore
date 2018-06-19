@@ -100,6 +100,20 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
             return image;
         }
 
+		public Image GetSpectrogramImage(float[] spectrum, int width, int logBins, int drawWidth=2000, int drawHeight=400)
+		{
+            float[][] frames = new float[width][];
+            for (int i = 0; i < width; i++) {
+                float[] band = new float[logBins];
+                for (int j = 0; j < logBins; j++) {
+                    band[j] = spectrum[logBins * i + j];
+                }
+                frames[i] = band; 
+            }
+
+            return  GetSpectrogramImage(frames, drawWidth, drawHeight);
+        }
+
 		public Image GetSpectrogramImage(float[][] spectrum, int width, int height)
 		{
 			// set some default values
