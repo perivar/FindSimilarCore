@@ -44,7 +44,11 @@ namespace FindSimilarServices.Audio
             resampler = new WdlResampler();
             resampler.SetMode(true, 2, false);
             resampler.SetFilterParms();
-            resampler.SetFeedMode(true); // input driven
+
+            // feed mode
+            // if true, that means the first parameter to ResamplePrepare 
+            // will specify however much input you have, not how much you want
+            resampler.SetFeedMode(true); // input driven            
         }
 
         private float[] ToTargetSampleRate(float[] monoSamples, int sourceSampleRate, int newSampleRate)
@@ -171,11 +175,6 @@ namespace FindSimilarServices.Audio
                 Array.Copy(downsampled, start, temp, 0, end - start);
                 downsampled = temp;
             }
-
-#if DEBUG
-            Console.WriteLine("Processing: {0}", pathToSourceFile);
-            //SoundIO.WriteWaveFile(pathToSourceFile + "_resampled.wav", downsampled, sampleRate);
-#endif
 
             return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
         }

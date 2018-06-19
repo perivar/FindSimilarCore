@@ -49,12 +49,12 @@
             }
 
             // PER IVAR
-            var imageService = new ImageService();
+/*             var imageService = new ImageService();
             using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
             {
                 image.Save(pathToAudioFile + "_spectrogram.png", ImageFormat.Png);
             }
-
+ */
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
             ScaleFullSpectrum(images, configuration);
             return images;

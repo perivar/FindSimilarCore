@@ -68,19 +68,19 @@ namespace SoundFingerprinting
             // create log spectrogram
             var spectrum = spectrumService.CreateLogSpectrogram(pathToSourceFile, samples, configuration.SpectrogramConfig);
 
-            var imageService = new ImageService();
+/*             var imageService = new ImageService();
             using (Image image = imageService.GetLogSpectralImages(spectrum, 5))
             {
                 image.Save(pathToSourceFile + "_spectrums.png", ImageFormat.Png);
             }
-
+ */
             var fingerprints = CreateFingerprintsFromLogSpectrum(spectrum, configuration);
 
-            using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, 5))
+/*             using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, 5))
             {
                 image.Save(pathToSourceFile + "_fingerprints.png", ImageFormat.Png);
             }
-
+ */
             return HashFingerprints(fingerprints, configuration);
         }
 
