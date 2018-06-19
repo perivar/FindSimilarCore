@@ -8,9 +8,6 @@ namespace SoundFingerprinting.Configuration
     {
         public ShortSamplesFingerprintConfiguration()
         {
-            //FrequencyRange = new FrequencyRange(40, 16000); // Original FrequencyRange(318, 2000);
-            //Stride = new IncrementalStaticStride(29695, 0, samplesPerFingerprint); // Original IncrementalStaticStride(512);
-
             SpectrogramConfig = new ShortSamplesSpectrogramConfig();
             HashingConfig = new DefaultHashingConfig();
             TopWavelets = 200;
