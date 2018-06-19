@@ -28,8 +28,6 @@ namespace FindSimilarServices
 
         private IModelService modelService;
         private IAudioService audioService;
-        private FingerprintConfiguration fingerprintConfig;
-        private QueryConfiguration queryConfig;
 
         public SoundFingerprinter() : this(null)
         {
@@ -46,11 +44,6 @@ namespace FindSimilarServices
             }
 
             this.audioService = new FindSimilarAudioService();
-
-            this.queryConfig = new LowLatencyQueryConfiguration();
-            //queryConfig.Stride = new IncrementalRandomStride(1, 4096);
-            //queryConfig.FrequencyRange = new FrequencyRange(40, 16000);
-
         }
 
         public void Snapshot(string saveToPath)
@@ -129,7 +122,7 @@ namespace FindSimilarServices
         {
             if (track == null) return false;
 
-            this.fingerprintConfig = new ShortSamplesFingerprintConfiguration();
+            var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
 
             // create hashed fingerprints
             var hashedFingerprints = FingerprintCommandBuilder.Instance
@@ -155,23 +148,10 @@ namespace FindSimilarServices
             }
         }
 
-        public TrackData GetBestMatchForSong(string queryAudioFile)
-        {
-            int secondsToAnalyze = 10; // number of seconds to analyze from query file
-            int startAtSecond = 0; // start at the begining
-
-            // query the underlying database for similar audio sub-fingerprints
-            var queryResult = QueryCommandBuilder.Instance.BuildQueryCommand()
-                                                 .From(queryAudioFile, secondsToAnalyze, startAtSecond)
-                                                 .UsingServices(modelService, audioService)
-                                                 .Query()
-                                                 .Result;
-
-            return queryResult.BestMatch.Track; // successful match has been found
-        }
-
         public void GetBestMatchesForSong(string queryAudioFile)
         {
+            var queryConfig = new ShortSamplesQueryConfiguration();
+
             // query the underlying database for similar audio sub-fingerprints
             var queryResult = QueryCommandBuilder.Instance.BuildQueryCommand()
                                                  .From(queryAudioFile)
@@ -180,9 +160,10 @@ namespace FindSimilarServices
                                                  .Query()
                                                  .Result;
 
+            //return queryResult.BestMatch.Track; // successful match has been found
             foreach (var result in queryResult.ResultEntries)
             {
-                Console.WriteLine("{0} {1} {2} {3}", result.Track.ISRC, result.Confidence, result.Coverage, result.EstimatedCoverage);
+                Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", result.Track.ISRC, result.Confidence, result.Coverage, result.EstimatedCoverage);
             }
         }
 
