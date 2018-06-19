@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
-
+using CommonUtils;
 using SoundFingerprinting.Data;
 using SoundFingerprinting.Wavelets;
 
@@ -100,7 +100,75 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
             return image;
         }
 
-        public Image GetSpectrogramImage(float[][] spectrum, int width, int height)
+		public Image GetSpectrogramImage(float[][] spectrum, int width, int height)
+		{
+			// set some default values
+			bool usePowerSpectrum = false;
+			bool colorize = true;
+			bool flipYscale = true;
+			int forceWidth = width;
+			int forceHeight = height;
+			
+			// amplitude (or magnitude) is the square root of the power spectrum
+			// the magnitude spectrum is abs(fft), i.e. Math.Sqrt(re*re + img*img)
+			// use 20*log10(Y) to get dB from amplitude
+			// the power spectrum is the magnitude spectrum squared
+			// use 10*log10(Y) to get dB from power spectrum
+			double maxValue = spectrum.Max((b) => b.Max((v) => System.Math.Abs(v)));
+			if (usePowerSpectrum) {
+				maxValue = 10 * System.Math.Log10(maxValue);
+			} else {
+				maxValue = 20 * System.Math.Log10(maxValue);
+			}
+			
+			if (maxValue == 0.0f)
+				return null;
+
+			int blockSizeX = 1;
+			int blockSizeY = 1;
+			
+			int rowCount = spectrum[0].Length;
+			int columnCount = spectrum.Length;
+			
+			Bitmap img = new Bitmap(columnCount*blockSizeX, rowCount*blockSizeY);
+			Graphics graphics = Graphics.FromImage(img);
+			
+			for(int column = 0; column < columnCount; column++)
+			{
+				for(int row = 0; row < rowCount; row++)
+				{
+					double val = spectrum[column][row];
+					if (usePowerSpectrum) {
+						val = 10 * System.Math.Log10(val);
+					} else {
+						val = 20 * System.Math.Log10(val);
+					}
+					
+					Color color = ColorUtils.ValueToBlackWhiteColor(val, maxValue);
+					Brush brush = new SolidBrush(color);
+					
+					if (flipYscale) {
+						// draw a small square
+						graphics.FillRectangle(brush, column*blockSizeX, (rowCount-row-1)*blockSizeY, blockSizeX, blockSizeY);
+					} else {
+						// draw a small square
+						graphics.FillRectangle(brush, column*blockSizeX, row*blockSizeY, blockSizeX, blockSizeY);
+					}
+				}
+			}
+			
+			// Should we resize?
+			if (forceHeight > 0 && forceWidth > 0) {
+				img = (Bitmap) ImageUtils.Resize(img, forceWidth, forceHeight, false);
+			}
+			
+			// Should we colorize?
+			if (colorize) img = ColorUtils.Colorize(img, 255, ColorUtils.ColorPaletteType.MATLAB);
+
+			return img;
+		}
+
+        public Image GetSpectrogramImageOriginal(float[][] spectrum, int width, int height)
         {
             Bitmap image = new Bitmap(width, height);
             Graphics graphics = Graphics.FromImage(image);
@@ -194,17 +262,17 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
             return transformed;
         }
 
-        public Image GetWaveletsImages(List<SpectralImage> spetralImages, int imagesPerRow, double haarWaveletNorm)
+        public Image GetWaveletsImages(List<SpectralImage> spectralImages, int imagesPerRow, double haarWaveletNorm)
         {
 
-            foreach (var spetralImage in spetralImages)
+            foreach (var spectralImage in spectralImages)
             {
-                waveletDecomposition.DecomposeImageInPlace(spetralImage.Image, spetralImage.Rows, spetralImage.Cols, haarWaveletNorm);
+                waveletDecomposition.DecomposeImageInPlace(spectralImage.Image, spectralImage.Rows, spectralImage.Cols, haarWaveletNorm);
             }
 
-            int width = spetralImages[0].Rows;
-            int height = spetralImages[0].Cols;
-            int fingersCount = spetralImages.Count;
+            int width = spectralImages[0].Rows;
+            int height = spectralImages[0].Cols;
+            int fingersCount = spectralImages.Count;
             int rowCount = (int)System.Math.Ceiling((float)fingersCount / imagesPerRow);
             int imageWidth = (imagesPerRow * (width + PixelsBetweenImages)) + PixelsBetweenImages;
             int imageHeight = (rowCount * (height + PixelsBetweenImages)) + PixelsBetweenImages;
@@ -215,7 +283,7 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
             int verticalOffset = PixelsBetweenImages;
             int horizontalOffset = PixelsBetweenImages;
             int count = 0;
-            foreach (float[][] spectralImage in spetralImages.Select(Transform2D))
+            foreach (float[][] spectralImage in spectralImages.Select(Transform2D))
             {
                 for (int i = 0; i < width /*128*/; i++)
                 {

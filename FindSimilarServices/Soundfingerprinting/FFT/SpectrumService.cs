@@ -2,12 +2,15 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Drawing;
+    using System.Drawing.Imaging;
     using System.Linq;
     using System.Threading.Tasks;
 
     using SoundFingerprinting.Audio;
     using SoundFingerprinting.Configuration;
     using SoundFingerprinting.Data;
+    using SoundFingerprinting.SoundTools.DrawningTool;
 
     internal class SpectrumService : ISpectrumService
     {
@@ -45,6 +48,15 @@
                 });
             }
 
+            // PER IVAR
+#if DEBUG
+            var imageService = new ImageService();
+            using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
+            {
+                image.Save(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Clean Bandit - Rather Be Programming\spectrogram.png", ImageFormat.Png);
+            }
+#endif                    
+
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
             ScaleFullSpectrum(images, configuration);
             return images;
@@ -58,13 +70,13 @@
             });
         }
 
-        private void ScaleSpectrum(SpectralImage spetralImage, Func<float, float, float> scalingFunction)
+        private void ScaleSpectrum(SpectralImage spectralImage, Func<float, float, float> scalingFunction)
         {
-            float max = spetralImage.Image.Max(f => Math.Abs(f));
+            float max = spectralImage.Image.Max(f => Math.Abs(f));
 
-            for (int i = 0; i < spetralImage.Image.Length; ++i)
+            for (int i = 0; i < spectralImage.Image.Length; ++i)
             {
-                spetralImage.Image[i] = scalingFunction(spetralImage.Image[i], max);
+                spectralImage.Image[i] = scalingFunction(spectralImage.Image[i], max);
             }
         }
 
@@ -90,7 +102,7 @@
                 sequenceNumber++;
             }
 
-			// ADDED BY PER IVAR NERSETH, 2018
+            // ADDED BY PER IVAR NERSETH, 2018
             // Make sure at least the input spectrum is a part of the output list
             if (spectralImages.Count == 0)
             {

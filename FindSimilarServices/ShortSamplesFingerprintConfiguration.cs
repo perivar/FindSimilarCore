@@ -45,7 +45,7 @@ namespace SoundFingerprinting.Configuration
 
             FrequencyRange = new FrequencyRange(40, 16000); // Original FrequencyRange(318, 2000);
 
-            LogBase = 2;
+            LogBase = System.Math.E; // Original 2
             LogBins = 32;
             ImageLength = 128;
 
