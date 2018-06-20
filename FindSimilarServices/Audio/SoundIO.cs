@@ -194,12 +194,13 @@ namespace CommonUtils.Audio
             int sampleRate = -1;
             float lengthInSeconds = -1;
             int audioFormat = -1;
-            int bitsPerSample = 1;
-            ReadWaveFileHeader(waveFile, ref channels, ref sampleCount, ref sampleRate, ref lengthInSeconds, ref audioFormat, ref bitsPerSample);
+            int bitsPerSample = -1;
+            int bytesPerSec = -1;
+            ReadWaveFileHeader(waveFile, ref channels, ref sampleCount, ref sampleRate, ref lengthInSeconds, ref audioFormat, ref bitsPerSample, ref bytesPerSec);
             return lengthInSeconds;
         }
 
-        public static void ReadWaveFileHeader(BinaryFile waveFile, ref int channels, ref int sampleCount, ref int sampleRate, ref float lengthInSeconds, ref int audioFormat, ref int bitsPerSample)
+        public static void ReadWaveFileHeader(BinaryFile waveFile, ref int channels, ref int sampleCount, ref int sampleRate, ref float lengthInSeconds, ref int audioFormat, ref int bitsPerSample, ref int bytesPerSec)
         {
             // integers
             int RIFF = BinaryFile.StringToInt32("RIFF");    // 1179011410
@@ -221,8 +222,7 @@ namespace CommonUtils.Audio
             // tag[10]	2     Significant bits per sample  2 - 65,535 (32)
             // tag[11]	4	  IEEE = 1952670054 (0x74636166) = fact chunk
             // 				  PCM = 1635017060 (0x61746164)  (datachunk = 1635017060)
-            // tag[12] 	4	  IEEE = 4, 						
-            //                PCM = 5292000 (0x0050BFE0)
+            // tag[12] 	4	  Subchunk2Size == NumSamples * NumChannels * BitsPerSample/8
 
             // tag reading
             var tag = new int[13];
@@ -267,10 +267,16 @@ namespace CommonUtils.Audio
             }
             #endregion File format checking
 
-            int bytesPerSec = tag[8];
             channels = tag[6];
-            sampleCount = tag[12] / (bitsPerSample / 8) / channels;
             sampleRate = tag[7];
+            bytesPerSec = tag[8];
+
+            // calculate sample count
+            // Subchunk2Size == NumSamples * NumChannels * BitsPerSample/8
+            int subchunk2Size = tag[12];
+            sampleCount = subchunk2Size / (bitsPerSample / 8) / channels;
+
+            // calculate duration in seconds            
             lengthInSeconds = ((float)sampleCount / (float)bytesPerSec);
         }
 
@@ -278,7 +284,8 @@ namespace CommonUtils.Audio
         {
             int audioFormat = -1;
             int bitsPerSample = 1;
-            ReadWaveFileHeader(waveFile, ref channels, ref sampleCount, ref sampleRate, ref lengthInSeconds, ref audioFormat, ref bitsPerSample);
+            int bytesPerSec = -1;
+            ReadWaveFileHeader(waveFile, ref channels, ref sampleCount, ref sampleRate, ref lengthInSeconds, ref audioFormat, ref bitsPerSample, ref bytesPerSec);
 
             float[][] sound = new float[channels][];
 

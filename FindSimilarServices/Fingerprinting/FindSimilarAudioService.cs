@@ -92,19 +92,14 @@ namespace FindSimilarServices.Audio
 
         public override float GetLengthInSeconds(string pathToSourceFile)
         {
-            float lengthInSeconds = -1;
             try
             {
-                lengthInSeconds = SoundIO.ReadWaveDurationInSeconds(new BinaryFile(pathToSourceFile));
-
+                return SoundIO.ReadWaveDurationInSeconds(new BinaryFile(pathToSourceFile));
             }
-            catch (System.NotSupportedException nse)
+            catch (System.Exception e)
             {
-                Console.Error.WriteLine(nse.Message);
-                return 0;
+                throw new ArgumentException(e.Message);
             }
-
-            return lengthInSeconds;
         }
 
         public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
@@ -117,12 +112,10 @@ namespace FindSimilarServices.Audio
             try
             {
                 audioData = SoundIO.ReadWaveFile(new BinaryFile(pathToSourceFile), ref srcChannels, ref srcSampleCount, ref srcSampleRate, ref srcLengthInSeconds);
-
             }
-            catch (System.NotSupportedException nse)
+            catch (System.Exception e)
             {
-                Console.Error.WriteLine(nse.Message);
-                return null;
+                throw new ArgumentException(e.Message);
             }
 
             // convert to mono
@@ -163,8 +156,6 @@ namespace FindSimilarServices.Audio
                         case MonoSummingType.Right:
                             sampleValueMono = sampleValueRight;
                             break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
                     }
                     monoSamples[i] = sampleValueMono;
                 }
@@ -172,7 +163,7 @@ namespace FindSimilarServices.Audio
             else
             {
                 // we don't support more than 2 channels
-                return null;
+                throw new NotSupportedException("More than 2 channels not supported");
             }
 
             float[] downsampled = ToTargetSampleRate(monoSamples, srcSampleRate, sampleRate);
