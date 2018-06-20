@@ -10,18 +10,18 @@ using SoundFingerprinting.Wavelets;
 
 namespace SoundFingerprinting.SoundTools.DrawningTool
 {
-    internal class ImageService
+    internal class FindSimilarImageService
     {
         private const int PixelsBetweenImages = 10;
 
         private readonly IWaveletDecomposition waveletDecomposition;
 
-        public ImageService()
+        public FindSimilarImageService()
             : this(new StandardHaarWaveletDecomposition())
         {
         }
 
-        public ImageService(IWaveletDecomposition waveletDecomposition)
+        public FindSimilarImageService(IWaveletDecomposition waveletDecomposition)
         {
             this.waveletDecomposition = waveletDecomposition;
         }

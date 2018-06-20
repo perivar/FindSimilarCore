@@ -2,19 +2,22 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Drawing;
+    using System.Drawing.Imaging;
     using System.Linq;
     using System.Threading.Tasks;
 
     using SoundFingerprinting.Audio;
     using SoundFingerprinting.Configuration;
     using SoundFingerprinting.Data;
+    using SoundFingerprinting.SoundTools.DrawningTool;
 
-    internal class SpectrumService : ISpectrumService
+    internal class FindSimilarSpectrumService : ISpectrumService
     {
         private readonly IFFTServiceUnsafe fftServiceUnsafe;
         private readonly ILogUtility logUtility;
 
-        internal SpectrumService(IFFTServiceUnsafe fftServiceUnsafe, ILogUtility logUtility)
+        internal FindSimilarSpectrumService(IFFTServiceUnsafe fftServiceUnsafe, ILogUtility logUtility)
         {
             this.fftServiceUnsafe = fftServiceUnsafe;
             this.logUtility = logUtility;
@@ -45,6 +48,13 @@
                 });
             }
 
+            // PER IVAR
+            /*             var imageService = new ImageService();
+                        using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
+                        {
+                            image.Save(pathToAudioFile + "_spectrogram.png", ImageFormat.Png);
+                        }
+             */
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
             ScaleFullSpectrum(images, configuration);
             return images;
@@ -58,13 +68,13 @@
             });
         }
 
-        private void ScaleSpectrum(SpectralImage spetralImage, Func<float, float, float> scalingFunction)
+        private void ScaleSpectrum(SpectralImage spectralImage, Func<float, float, float> scalingFunction)
         {
-            float max = spetralImage.Image.Max(f => Math.Abs(f));
+            float max = spectralImage.Image.Max(f => Math.Abs(f));
 
-            for (int i = 0; i < spetralImage.Image.Length; ++i)
+            for (int i = 0; i < spectralImage.Image.Length; ++i)
             {
-                spetralImage.Image[i] = scalingFunction(spetralImage.Image[i], max);
+                spectralImage.Image[i] = scalingFunction(spectralImage.Image[i], max);
             }
         }
 
@@ -82,12 +92,21 @@
             uint sequenceNumber = 0;
             while (index + fingerprintImageLength <= width)
             {
-                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins]; 
-                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage,  0, fullLength * sizeof(float));
+                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
+                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage, 0, fullLength * sizeof(float));
                 float startsAt = index * ((float)overlap / sampleRate);
                 spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, startsAt, sequenceNumber));
                 index += fingerprintImageLength + GetFrequencyIndexLocationOfAudioSamples(strideBetweenConsecutiveImages.NextStride, overlap);
                 sequenceNumber++;
+            }
+
+            // ADDED BY PER IVAR NERSETH, 2018
+            // Make sure at least the input spectrum is a part of the output list
+            if (spectralImages.Count == 0)
+            {
+                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
+                Buffer.BlockCopy(logarithmizedSpectrum, 0, spectralImage, 0, logarithmizedSpectrum.Length);
+                spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, 0, 0));
             }
 
             return spectralImages;

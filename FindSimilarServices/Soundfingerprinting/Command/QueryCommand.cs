@@ -41,9 +41,9 @@
             return this;
         }
 
-        public IWithQueryConfiguration From(string pathToAudioFile, AudioSamples audioSamples)
+        public IWithQueryConfiguration From(AudioSamples audioSamples)
         {
-            fingerprintingMethodFromSelector = () => fingerprintCommandBuilder.BuildFingerprintCommand().From(pathToAudioFile, audioSamples);
+            fingerprintingMethodFromSelector = () => fingerprintCommandBuilder.BuildFingerprintCommand().From(audioSamples);
             return this;
         }
 

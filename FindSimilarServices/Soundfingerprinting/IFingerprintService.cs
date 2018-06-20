@@ -8,6 +8,6 @@
 
     internal interface IFingerprintService
     {
-        List<HashedFingerprint> CreateFingerprints(string pathToSourceFile, AudioSamples samples, FingerprintConfiguration configuration);
+        List<HashedFingerprint> CreateFingerprints(AudioSamples samples, FingerprintConfiguration configuration);
     }
 }

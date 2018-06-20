@@ -8,6 +8,6 @@
 
     internal interface ISpectrumService
     {
-        List<SpectralImage> CreateLogSpectrogram(string pathToAudioFile, AudioSamples audioSamples, SpectrogramConfig configuration);
+        List<SpectralImage> CreateLogSpectrogram(AudioSamples audioSamples, SpectrogramConfig configuration);
     }
 }

@@ -216,7 +216,7 @@
         /// </summary>                                                                                           
         private int B { get; set; }
 
-        #region Internals
+                #region Internals
 
         /// <summary>                                                                                            
         /// Scale data using n samples for forward and inverse transforms as needed                              
@@ -263,7 +263,7 @@
                 var istep = 2 * mmax;
                 var theta = Math.PI / mmax;
                 float wr = 1, wi = 0;
-                var wpi = (float)Math.Sin(theta);
+                var wpi = (float) Math.Sin(theta);
                 // compute in a slightly slower yet more accurate manner                                         
                 var wpr = (float)System.Math.Sin(theta / 2);
                 wpr = -2 * wpr * wpr;
@@ -349,5 +349,5 @@
                 toTransform[i] = toTransform[i] * window[i];
             }
         }
-    }
+   }                                       
 }

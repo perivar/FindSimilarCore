@@ -17,6 +17,12 @@ using CommonUtils;
 using CommonUtils.Audio;
 using SoundFingerprinting.Strides;
 using FindSimilarServices.Audio;
+using SoundFingerprinting.FFT;
+using SoundFingerprinting.LSH;
+using SoundFingerprinting.MinHash;
+using SoundFingerprinting.Wavelets;
+using SoundFingerprinting.Utils;
+using SoundFingerprinting.Math;
 
 namespace FindSimilarServices
 {
@@ -28,6 +34,12 @@ namespace FindSimilarServices
 
         private IModelService modelService;
         private IAudioService audioService;
+
+        private ISpectrumService spectrumService;
+
+        private IFingerprintService fingerprintService;
+
+        private IFingerprintCommandBuilder fingerprintCommandBuilder;
 
         public SoundFingerprinter() : this(null)
         {
@@ -44,6 +56,20 @@ namespace FindSimilarServices
             }
 
             this.audioService = new FindSimilarAudioService();
+
+            this.spectrumService = new FindSimilarSpectrumService(
+                new LomontFFT(),
+                new LogUtility()
+            );
+
+            this.fingerprintService = new FindSimilarFingerprintService(
+                spectrumService,
+                new LocalitySensitiveHashingAlgorithm(new MinHashService(new MaxEntropyPermutations()), new HashConverter()),
+                new StandardHaarWaveletDecomposition(),
+                new FastFingerprintDescriptor()
+            );
+
+            this.fingerprintCommandBuilder = new FingerprintCommandBuilder(fingerprintService);
         }
 
         public void Snapshot(string saveToPath)
@@ -125,7 +151,7 @@ namespace FindSimilarServices
             var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
 
             // create hashed fingerprints
-            var hashedFingerprints = FingerprintCommandBuilder.Instance
+            var hashedFingerprints = fingerprintCommandBuilder
                                         .BuildFingerprintCommand()
                                         .From(pathToAudioFile)
                                         .WithFingerprintConfig(fingerprintConfig)
@@ -153,7 +179,8 @@ namespace FindSimilarServices
             var queryConfig = new ShortSamplesQueryConfiguration();
 
             // query the underlying database for similar audio sub-fingerprints
-            var queryResult = QueryCommandBuilder.Instance.BuildQueryCommand()
+            var queryResult = new QueryCommandBuilder(fingerprintCommandBuilder, QueryFingerprintService.Instance)
+                                                 .BuildQueryCommand()
                                                  .From(queryAudioFile)
                                                  .WithQueryConfig(queryConfig)
                                                  .UsingServices(modelService, audioService)
