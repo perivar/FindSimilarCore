@@ -187,11 +187,20 @@ namespace CommonUtils.Audio
             }
         }
 
-        public static float[][] ReadWaveFile(BinaryFile waveFile, ref int channels, ref int sampleCount, ref int sampleRate)
+        public static float ReadWaveDurationInSeconds(BinaryFile waveFile)
         {
-            float[][] sound;
-            var tag = new int[13];
+            int channels = -1;
+            int sampleCount = -1;
+            int sampleRate = -1;
+            float lengthInSeconds = -1;
+            int audioFormat = -1;
+            int bitsPerSample = 1;
+            ReadWaveFileHeader(waveFile, ref channels, ref sampleCount, ref sampleRate, ref lengthInSeconds, ref audioFormat, ref bitsPerSample);
+            return lengthInSeconds;
+        }
 
+        public static void ReadWaveFileHeader(BinaryFile waveFile, ref int channels, ref int sampleCount, ref int sampleRate, ref float lengthInSeconds, ref int audioFormat, ref int bitsPerSample)
+        {
             // integers
             int RIFF = BinaryFile.StringToInt32("RIFF");    // 1179011410
             int WAVE = BinaryFile.StringToInt32("WAVE");    // 1163280727
@@ -212,9 +221,11 @@ namespace CommonUtils.Audio
             // tag[10]	2     Significant bits per sample  2 - 65,535 (32)
             // tag[11]	4	  IEEE = 1952670054 (0x74636166) = fact chunk
             // 				  PCM = 1635017060 (0x61746164)  (datachunk = 1635017060)
-            // tag[12] 	4	  IEEE = 4 , 						PCM = 5292000 (0x0050BFE0)
+            // tag[12] 	4	  IEEE = 4, 						
+            //                PCM = 5292000 (0x0050BFE0)
 
             // tag reading
+            var tag = new int[13];
             for (int i = 0; i < 13; i++)
             {
                 tag[i] = 0;
@@ -242,23 +253,34 @@ namespace CommonUtils.Audio
             }
 
             // bits per sample
-            if (tag[10] == 24)
+            bitsPerSample = tag[10];
+            if (bitsPerSample == 24)
             {
                 throw new NotSupportedException("24 bit PCM WAVE files are not currently supported");
             }
 
-            // wFormatTag
-            if (tag[5] != WAVE_FORMAT_PCM && tag[5] != WAVE_FORMAT_IEEE_FLOAT)
+            // audio format
+            audioFormat = tag[5];
+            if (audioFormat != WAVE_FORMAT_PCM && audioFormat != WAVE_FORMAT_IEEE_FLOAT)
             {
                 throw new NotSupportedException("Non PCM WAVE files are not currently supported");
             }
             #endregion File format checking
 
+            int bytesPerSec = tag[8];
             channels = tag[6];
-            sampleCount = tag[12] / (tag[10] / 8) / channels;
+            sampleCount = tag[12] / (bitsPerSample / 8) / channels;
             sampleRate = tag[7];
+            lengthInSeconds = ((float)sampleCount / (float)bytesPerSec);
+        }
 
-            sound = new float[channels][];
+        public static float[][] ReadWaveFile(BinaryFile waveFile, ref int channels, ref int sampleCount, ref int sampleRate, ref float lengthInSeconds)
+        {
+            int audioFormat = -1;
+            int bitsPerSample = 1;
+            ReadWaveFileHeader(waveFile, ref channels, ref sampleCount, ref sampleRate, ref lengthInSeconds, ref audioFormat, ref bitsPerSample);
+
+            float[][] sound = new float[channels][];
 
             for (int ic = 0; ic < channels; ic++)
             {
@@ -266,21 +288,21 @@ namespace CommonUtils.Audio
             }
 
             #region Data loading
-            if (tag[10] == 8)
+            if (bitsPerSample == 8)
             {
                 Read8Bit(waveFile, sound, sampleCount, channels);
             }
-            if (tag[10] == 16)
+            if (bitsPerSample == 16)
             {
                 Read16Bit(waveFile, sound, sampleCount, channels);
             }
-            if (tag[10] == 32)
+            if (bitsPerSample == 32)
             {
-                if (tag[5] == WAVE_FORMAT_PCM)
+                if (audioFormat == WAVE_FORMAT_PCM)
                 {
                     Read32Bit(waveFile, sound, sampleCount, channels);
                 }
-                else if (tag[5] == WAVE_FORMAT_IEEE_FLOAT)
+                else if (audioFormat == WAVE_FORMAT_IEEE_FLOAT)
                 {
                     Read32BitFloat(waveFile, sound, sampleCount, channels);
                 }

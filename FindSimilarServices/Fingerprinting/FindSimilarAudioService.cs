@@ -26,8 +26,6 @@ namespace FindSimilarServices.Audio
         private readonly IAudioSamplesNormalizer audioSamplesNormalizer;
         private readonly WdlResampler resampler;
 
-        private RiffRead preLoadedRiffData = null;
-
         public override IReadOnlyCollection<string> SupportedFormats
         {
             get
@@ -94,36 +92,50 @@ namespace FindSimilarServices.Audio
 
         public override float GetLengthInSeconds(string pathToSourceFile)
         {
-            var riff = new RiffRead(pathToSourceFile);
-            riff.Process();
-            preLoadedRiffData = riff;
-            return riff.LengthInSeconds;
+            float lengthInSeconds = -1;
+            try
+            {
+                lengthInSeconds = SoundIO.ReadWaveDurationInSeconds(new BinaryFile(pathToSourceFile));
+
+            }
+            catch (System.NotSupportedException nse)
+            {
+                Console.Error.WriteLine(nse.Message);
+                return 0;
+            }
+
+            return lengthInSeconds;
         }
 
         public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
         {
-            RiffRead riff = null;
-            if (preLoadedRiffData != null)
+            int srcChannels = -1;
+            int srcSampleCount = -1;
+            int srcSampleRate = -1;
+            float srcLengthInSeconds = -1;
+            float[][] audioData;
+            try
             {
-                riff = preLoadedRiffData;
+                audioData = SoundIO.ReadWaveFile(new BinaryFile(pathToSourceFile), ref srcChannels, ref srcSampleCount, ref srcSampleRate, ref srcLengthInSeconds);
+
             }
-            else
+            catch (System.NotSupportedException nse)
             {
-                riff = new RiffRead(pathToSourceFile);
-                riff.Process();
+                Console.Error.WriteLine(nse.Message);
+                return null;
             }
 
             // convert to mono
             var monoType = MonoSummingType.Mix;
-            int samplesPerChannel = riff.SampleCount;
-            int channels = riff.Channels;
+            int samplesPerChannel = srcSampleCount;
+            int channels = srcChannels;
 
             float[] monoSamples;
-            if (channels == 1)
+            if (srcChannels == 1)
             {
-                monoSamples = riff.SoundData[0];
+                monoSamples = audioData[0];
             }
-            else if (channels == 2)
+            else if (srcChannels == 2)
             {
                 // we are getting a stereo channel file back
                 float sampleValueLeft = 0;
@@ -133,8 +145,8 @@ namespace FindSimilarServices.Audio
                 monoSamples = new float[samplesPerChannel];
                 for (int i = 0; i < samplesPerChannel; i++)
                 {
-                    sampleValueLeft = riff.SoundData[0][i];
-                    sampleValueRight = riff.SoundData[1][i];
+                    sampleValueLeft = audioData[0][i];
+                    sampleValueRight = audioData[1][i];
 
                     switch (monoType)
                     {
@@ -163,26 +175,26 @@ namespace FindSimilarServices.Audio
                 return null;
             }
 
-            float[] downsampled = ToTargetSampleRate(monoSamples, riff.SampleRate, sampleRate);
+            float[] downsampled = ToTargetSampleRate(monoSamples, srcSampleRate, sampleRate);
             audioSamplesNormalizer.NormalizeInPlace(downsampled);
 
             // Select specific part of the song
-            if ((float)(downsampled.Length) / sampleRate < (seconds + startAt))
+            if ((float)(downsampled.Length) / srcSampleRate < (seconds + startAt))
             {
                 // not enough samples to return the requested data
                 return null;
             }
 
-            int start = (int)((float)startAt * sampleRate);
-            int end = (seconds <= 0) ? sampleRate : (int)((float)(startAt + seconds) * sampleRate);
-            if (start != 0 || end != sampleRate)
+            int start = (int)((float)startAt * srcSampleRate);
+            int end = (seconds <= 0) ? srcSampleRate : (int)((float)(startAt + seconds) * srcSampleRate);
+            if (start != 0 || end != srcSampleRate)
             {
                 var temp = new float[end - start];
                 Array.Copy(downsampled, start, temp, 0, end - start);
                 downsampled = temp;
             }
 
-            return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
+            return new AudioSamples(downsampled, pathToSourceFile, srcSampleRate);
         }
     }
 }
