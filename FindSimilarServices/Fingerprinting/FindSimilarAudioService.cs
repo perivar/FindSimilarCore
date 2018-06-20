@@ -58,30 +58,36 @@ namespace FindSimilarServices.Audio
 
         private float[] Resample(float[] audioSamples, int readerChannels, int writerChannels, int sourceSampleRate, int newSampleRate)
         {
-            // Use WDL Resampler
-            // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
-            resampler.SetRates(sourceSampleRate, newSampleRate);
+            // make thread safe
+            float[] resampledBuffer;
 
-            float[] buffer = audioSamples;
-            int read = audioSamples.Length;
+            lock (resampler)
+            {
+                // Use WDL Resampler
+                // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
+                resampler.SetRates(sourceSampleRate, newSampleRate);
 
-            // resample
-            int framesAvailable = read / readerChannels;
-            float[] inBuffer;
-            int inBufferOffset;
-            int inNeeded = resampler.ResamplePrepare(framesAvailable, writerChannels, out inBuffer, out inBufferOffset);
+                float[] buffer = audioSamples;
+                int read = audioSamples.Length;
 
-            // prepare input buffer
-            Array.Copy(buffer, 0, inBuffer, inBufferOffset, inNeeded * readerChannels);
+                // resample
+                int framesAvailable = read / readerChannels;
+                float[] inBuffer;
+                int inBufferOffset;
+                int inNeeded = resampler.ResamplePrepare(framesAvailable, writerChannels, out inBuffer, out inBufferOffset);
 
-            int inAvailable = inNeeded;
-            float[] outBuffer = new float[inAvailable * writerChannels]; // originally 2000 plenty big enough
-            int framesRequested = outBuffer.Length / writerChannels;
-            int outAvailable = resampler.ResampleOut(outBuffer, 0, inAvailable, framesRequested, writerChannels);
+                // prepare input buffer
+                Array.Copy(buffer, 0, inBuffer, inBufferOffset, inNeeded * readerChannels);
 
-            // copy to output buffer
-            float[] resampledBuffer = new float[outAvailable * writerChannels];
-            Array.Copy(outBuffer, 0, resampledBuffer, 0, outAvailable * writerChannels);
+                int inAvailable = inNeeded;
+                float[] outBuffer = new float[inAvailable * writerChannels]; // originally 2000 plenty big enough
+                int framesRequested = outBuffer.Length / writerChannels;
+                int outAvailable = resampler.ResampleOut(outBuffer, 0, inAvailable, framesRequested, writerChannels);
+
+                // copy to output buffer
+                resampledBuffer = new float[outAvailable * writerChannels];
+                Array.Copy(outBuffer, 0, resampledBuffer, 0, outAvailable * writerChannels);
+            }
 
             return resampledBuffer;
         }
