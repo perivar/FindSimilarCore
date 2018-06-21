@@ -92,14 +92,16 @@ namespace FindSimilarServices.Audio
 
         public override float GetLengthInSeconds(string pathToSourceFile)
         {
+            float lengthInSeconds = 0;
             try
             {
-                return SoundIO.ReadWaveDurationInSeconds(new BinaryFile(pathToSourceFile));
+                lengthInSeconds = SoundIO.ReadWaveDurationInSeconds(new BinaryFile(pathToSourceFile));
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
-                throw new ArgumentException(e.Message);
+                Console.Error.WriteLine(e.Message + ": " + pathToSourceFile);
             }
+            return lengthInSeconds;
         }
 
         public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
@@ -113,7 +115,7 @@ namespace FindSimilarServices.Audio
             {
                 audioData = SoundIO.ReadWaveFile(new BinaryFile(pathToSourceFile), ref srcChannels, ref srcSampleCount, ref srcSampleRate, ref srcLengthInSeconds);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 throw new ArgumentException(e.Message);
             }
@@ -121,7 +123,6 @@ namespace FindSimilarServices.Audio
             // convert to mono
             var monoType = MonoSummingType.Mix;
             int samplesPerChannel = srcSampleCount;
-            int channels = srcChannels;
 
             float[] monoSamples;
             if (srcChannels == 1)
@@ -173,7 +174,7 @@ namespace FindSimilarServices.Audio
             if ((float)(downsampled.Length) / srcSampleRate < (seconds + startAt))
             {
                 // not enough samples to return the requested data
-                return null;
+                throw new ArgumentOutOfRangeException("Not enough samples to return the requested part of the audio-file");
             }
 
             int start = (int)((float)startAt * srcSampleRate);

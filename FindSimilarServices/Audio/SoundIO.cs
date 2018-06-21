@@ -197,11 +197,15 @@ namespace CommonUtils.Audio
             int bitsPerSample = -1;
             int bytesPerSec = -1;
             ReadWaveFileHeader(waveFile, ref channels, ref sampleCount, ref sampleRate, ref lengthInSeconds, ref audioFormat, ref bitsPerSample, ref bytesPerSec);
+
+            waveFile.Close();
             return lengthInSeconds;
         }
 
         public static void ReadWaveFileHeader(BinaryFile waveFile, ref int channels, ref int sampleCount, ref int sampleRate, ref float lengthInSeconds, ref int audioFormat, ref int bitsPerSample, ref int bytesPerSec)
         {
+            // Read header while keepint the binary file open
+
             // integers
             int RIFF = BinaryFile.StringToInt32("RIFF");    // 1179011410
             int WAVE = BinaryFile.StringToInt32("WAVE");    // 1163280727
@@ -278,6 +282,8 @@ namespace CommonUtils.Audio
 
             // calculate duration in seconds            
             lengthInSeconds = ((float)sampleCount / (float)bytesPerSec);
+
+            // Note! Do not close file
         }
 
         public static float[][] ReadWaveFile(BinaryFile waveFile, ref int channels, ref int sampleCount, ref int sampleRate, ref float lengthInSeconds)
