@@ -58,11 +58,12 @@ namespace FindSimilar
 
         private static void ProcessDir(string directoryPath, string skipDurationAboveSecondsString)
         {
-            double skipDurationAboveSeconds = 0; 
-            if (!string.IsNullOrEmpty(skipDurationAboveSecondsString)) {
+            double skipDurationAboveSeconds = 0;
+            if (!string.IsNullOrEmpty(skipDurationAboveSecondsString))
+            {
                 skipDurationAboveSeconds = double.Parse(skipDurationAboveSecondsString);
             }
- 
+
             // https://github.com/AddictedCS/soundfingerprinting.duplicatesdetector/blob/master/src/SoundFingerprinting.DuplicatesDetector/DuplicatesDetectorService.cs
             // https://github.com/protyposis/Aurio/tree/master/Aurio/Aurio     
             var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
@@ -72,7 +73,13 @@ namespace FindSimilar
         private static void MatchFile(string filePath)
         {
             var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
-            fingerprinter.GetBestMatchesForSong(filePath);
+            var results = fingerprinter.GetBestMatchesForSong(filePath);
+
+            Console.WriteLine("Found {0} similar tracks", results.Count());
+            foreach (var result in results)
+            {
+                Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", result.Track.ISRC, result.Confidence, result.Coverage, result.EstimatedCoverage);
+            }
         }
     }
 }

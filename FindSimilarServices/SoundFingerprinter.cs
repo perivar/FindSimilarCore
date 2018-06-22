@@ -167,7 +167,7 @@ namespace FindSimilarServices
             }
         }
 
-        public void GetBestMatchesForSong(string queryAudioFile)
+        public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile)
         {
             var queryConfig = new ShortSamplesQueryConfiguration();
 
@@ -181,11 +181,7 @@ namespace FindSimilarServices
                                                  .Result;
 
             //return queryResult.BestMatch.Track; // successful match has been found
-            foreach (var result in queryResult.ResultEntries)
-            {
-                Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", result.Track.ISRC, result.Confidence, result.Coverage, result.EstimatedCoverage);
-            }
+            return queryResult.ResultEntries;
         }
-
     }
 }
