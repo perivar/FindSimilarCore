@@ -31,6 +31,7 @@ namespace FindSimilar
 
             var optionScanDir = app.Option("-s|--scandir <DIR>", "Scan directory path and create audio fingerprints (ignore existing files)", CommandOptionType.SingleValue);
             var optionMatchFile = app.Option("-m|--match <FILE>", "Path to the wave file to find matches for", CommandOptionType.SingleValue);
+            var optionMatchThreshold = app.Option("-t|--threshold <NUMBER>", "Threshold votes for a match. Default: 4", CommandOptionType.SingleValue);
             var optionSkipDuration = app.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds, used together with scandir", CommandOptionType.SingleValue);
             var optionTake = app.Option("-t|--take <NUMBER>", "Number of matches to return when querying", CommandOptionType.SingleValue);
             var argumentSilent = app.Argument("--silent", "Do not output so much info, used together with scandir");
@@ -45,7 +46,7 @@ namespace FindSimilar
 
                 if (optionMatchFile.HasValue())
                 {
-                    MatchFile(optionMatchFile.Value());
+                    MatchFile(optionMatchFile.Value(), (optionMatchThreshold.HasValue() ? int.Parse(optionMatchThreshold.Value()) : -1));
                     return 0;
                 }
 
@@ -64,21 +65,35 @@ namespace FindSimilar
                 skipDurationAboveSeconds = double.Parse(skipDurationAboveSecondsString);
             }
 
-            // https://github.com/AddictedCS/soundfingerprinting.duplicatesdetector/blob/master/src/SoundFingerprinting.DuplicatesDetector/DuplicatesDetectorService.cs
-            // https://github.com/protyposis/Aurio/tree/master/Aurio/Aurio     
-            var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
-            fingerprinter.FingerprintDirectory(directoryPath, skipDurationAboveSeconds);
-            fingerprinter.Snapshot(DATABASE_PATH);
-        }
-        private static void MatchFile(string filePath)
-        {
-            var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
-            var results = fingerprinter.GetBestMatchesForSong(filePath);
-
-            Console.WriteLine("Found {0} similar tracks", results.Count());
-            foreach (var result in results)
+            if (Directory.Exists(directoryPath))
             {
-                Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", result.Track.ISRC, result.Confidence, result.Coverage, result.EstimatedCoverage);
+                // https://github.com/AddictedCS/soundfingerprinting.duplicatesdetector/blob/master/src/SoundFingerprinting.DuplicatesDetector/DuplicatesDetectorService.cs
+                // https://github.com/protyposis/Aurio/tree/master/Aurio/Aurio     
+                var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
+                fingerprinter.FingerprintDirectory(Path.GetFullPath(directoryPath), skipDurationAboveSeconds);
+                fingerprinter.Snapshot(DATABASE_PATH);
+            }
+            else
+            {
+                Console.Error.WriteLine("The directory cannot be found {0}", directoryPath);
+            }
+        }
+        private static void MatchFile(string filePath, int thresholdVotes)
+        {
+            if (File.Exists(filePath))
+            {
+                var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
+                var results = fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), thresholdVotes);
+
+                Console.WriteLine("Found {0} similar tracks", results.Count());
+                foreach (var result in results)
+                {
+                    Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", result.Track.ISRC, result.Confidence, result.Coverage, result.EstimatedCoverage);
+                }
+            }
+            else
+            {
+                Console.Error.WriteLine("The file cannot be found {0}", filePath);
             }
         }
     }

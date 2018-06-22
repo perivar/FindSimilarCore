@@ -23,6 +23,7 @@ using SoundFingerprinting.MinHash;
 using SoundFingerprinting.Wavelets;
 using SoundFingerprinting.Utils;
 using SoundFingerprinting.Math;
+using Serilog;
 
 namespace FindSimilarServices
 {
@@ -119,7 +120,8 @@ namespace FindSimilarServices
                     var track = new TrackData(fileInfo.FullName, null, fileInfo.Name, null, 0, duration);
                     if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track))
                     {
-                        Console.Out.WriteLine("Failed! Could not generate audio fingerprint for {0}!", file);
+                        Console.Error.WriteLine("Failed! Could not generate audio fingerprint for {0}!", file);
+                        Log.Warning("Failed! Could not generate audio fingerprint for {0}!", file);
                     }
                     else
                     {
@@ -127,10 +129,11 @@ namespace FindSimilarServices
                         // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
                         var filesCounterNow = Interlocked.Increment(ref filesCounter);
                         var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
-                        Console.Out.WriteLine("[{1}/{2} - {3}/{4}] Successfully added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
+                        Console.Out.WriteLine("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
                     }
                 } else {
                     Console.Out.WriteLine("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
+                    Log.Information("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                 }
             });
 
@@ -167,9 +170,10 @@ namespace FindSimilarServices
             }
         }
 
-        public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile)
+        public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile, int thresholdVotes)
         {
             var queryConfig = new ShortSamplesQueryConfiguration();
+            if (thresholdVotes > 0) queryConfig.ThresholdVotes = thresholdVotes;
 
             // query the underlying database for similar audio sub-fingerprints
             var queryResult = new QueryCommandBuilder(fingerprintCommandBuilder, QueryFingerprintService.Instance)
