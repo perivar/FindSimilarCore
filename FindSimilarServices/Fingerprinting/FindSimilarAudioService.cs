@@ -104,9 +104,43 @@ namespace FindSimilarServices.Audio
             }
             catch (System.Exception e)
             {
-                Console.Error.WriteLine("GetLengthInSeconds failed for {0}: {1}", pathToSourceFile, e.Message);
+                //Console.Error.WriteLine("GetLengthInSeconds failed for {0}: {1}", pathToSourceFile, e.Message);
             }
             return duration;
+        }
+
+        public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
+        {
+            float[] downsampled = new float[0];
+            try
+            {
+                var soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+                var sampleSource = soundSource.ToSampleSource();
+
+                int srcSampleRate = sampleSource.WaveFormat.SampleRate;
+                int srcChannelCount = sampleSource.WaveFormat.Channels;
+                float[] sampleBuffer = new float[srcSampleRate * srcChannelCount]; // 1 sec
+                int read;
+                var floatChannelSamples = new List<float>();
+                while ((read = sampleSource.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
+                {
+                    floatChannelSamples.AddRange(sampleBuffer);
+                }
+
+                float[] monoSamples = GetMonoSignal(floatChannelSamples.ToArray(), srcChannelCount);
+
+                downsampled = ToTargetSampleRate(monoSamples, srcSampleRate, sampleRate);
+                audioSamplesNormalizer.NormalizeInPlace(downsampled);
+                CutRegion(downsampled, sampleRate, seconds, startAt);
+                sampleSource.Dispose();
+                soundSource.Dispose();
+            }
+            catch (System.Exception e)
+            {
+                //Console.Error.WriteLine("ReadMonoSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message);
+            }
+
+            return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
         }
 
         /// <summary>
@@ -165,40 +199,6 @@ namespace FindSimilarServices.Audio
                 // don't support multi channel audio files (more than 2 channels)
                 throw new ArgumentException("No support multi channel audio files (more than 2 channels)!");
             }
-        }
-
-        public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
-        {
-            float[] downsampled = new float[0];
-            try
-            {
-                var soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
-                var sampleSource = soundSource.ToSampleSource();
-
-                int srcSampleRate = sampleSource.WaveFormat.SampleRate;
-                int srcChannelCount = sampleSource.WaveFormat.Channels;
-                float[] sampleBuffer = new float[srcSampleRate * srcChannelCount]; // 1 sec
-                int read;
-                var floatChannelSamples = new List<float>();
-                while ((read = sampleSource.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
-                {
-                    floatChannelSamples.AddRange(sampleBuffer);
-                }
-
-                float[] monoSamples = GetMonoSignal(floatChannelSamples.ToArray(), srcChannelCount);
-
-                downsampled = ToTargetSampleRate(monoSamples, srcSampleRate, sampleRate);
-                audioSamplesNormalizer.NormalizeInPlace(downsampled);
-                CutRegion(downsampled, sampleRate, seconds, startAt);
-                sampleSource.Dispose();
-                soundSource.Dispose();
-            }
-            catch (System.Exception e)
-            {
-                Console.Error.WriteLine("ReadMonoSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message);
-            }
-
-            return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
         }
 
         private void CutRegion(float[] monoAudio, int sampleRate, double seconds, double startAt)
