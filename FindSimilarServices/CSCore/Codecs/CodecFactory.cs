@@ -7,6 +7,8 @@ using System.Text;
 using CSCore.Codecs.AIFF;
 using CSCore.Codecs.FLAC;
 using CSCore.Codecs.WAV;
+using CSCore.Codecs.OGG;
+using NVorbis;
 /* using CSCore.Codecs.AAC;
 using CSCore.Codecs.DDP;
 using CSCore.Codecs.MP1;
@@ -30,6 +32,7 @@ namespace CSCore.Codecs
         private CodecFactory()
         {
             _codecs = new Dictionary<object, CodecFactoryEntry>();
+
             /*             Register("mp3", new CodecFactoryEntry(s =>
                         {
                             try
@@ -65,6 +68,10 @@ namespace CSCore.Codecs
                 "flac", "fla"));
             Register("aiff", new CodecFactoryEntry(s => new AiffReader(s),
                 "aiff", "aif", "aifc"));
+
+            // ADDED BY PER IVAR
+            Register("ogg-vorbis", new CodecFactoryEntry(s => new NVorbisSource(s).ToWaveSource(), "ogg"));
+
 
             /*             if (AacDecoder.IsSupported)
                         {
@@ -255,7 +262,7 @@ namespace CSCore.Codecs
         {
             /*             return new MediaFoundationDecoder(url);
              */
-             return null;
+            return null;
         }
 
         /// <summary>
@@ -316,16 +323,16 @@ namespace CSCore.Codecs
                 Debug.WriteLine(String.Format("{0} not found.", uri.OriginalString));
             }
 
-/*             var path = Win32.NativeMethods.PathCreateFromUrl(uri.OriginalString);
-            if (path == null || !File.Exists(path))
-            {
-                path = Win32.NativeMethods.PathCreateFromUrl(uri.AbsoluteUri);
-            }
-            if (path != null && File.Exists(path))
-            {
-                return path;
-            }
- */
+            /*             var path = Win32.NativeMethods.PathCreateFromUrl(uri.OriginalString);
+                        if (path == null || !File.Exists(path))
+                        {
+                            path = Win32.NativeMethods.PathCreateFromUrl(uri.AbsoluteUri);
+                        }
+                        if (path != null && File.Exists(path))
+                        {
+                            return path;
+                        }
+             */
             return null;
         }
 

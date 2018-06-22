@@ -32,7 +32,7 @@ namespace FindSimilarServices.Audio
         {
             get
             {
-                return new[] { ".wav", ".aif", ".aiff", ".fla", ".flac" };
+                return new[] { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg" };
             }
         }
 
