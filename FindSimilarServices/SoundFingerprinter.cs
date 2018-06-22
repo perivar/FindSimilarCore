@@ -109,17 +109,8 @@ namespace FindSimilarServices
                 var fileInfo = new FileInfo(file);
 
                 // Try to check duration
-                double duration = 0;
-                try
-                {
-                    duration = audioService.GetLengthInSeconds(fileInfo.FullName);
-                }
-                catch (System.ArgumentException ae)
-                {
-                    Console.Out.WriteLine("Failed! Could not get duration for {0}", file);
-                    Console.Out.WriteLine(ae.Message);
-                }
-
+                double duration = audioService.GetLengthInSeconds(fileInfo.FullName);
+                
                 // check if we should skip files longer than x seconds
                 if ((skipDurationAboveSeconds > 0 && duration > 0 && duration < skipDurationAboveSeconds)
                     || skipDurationAboveSeconds <= 0
@@ -138,6 +129,8 @@ namespace FindSimilarServices
                         var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
                         Console.Out.WriteLine("[{1}/{2} - {3}/{4}] Successfully added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
                     }
+                } else {
+                    Console.Out.WriteLine("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                 }
             });
 

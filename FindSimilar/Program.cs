@@ -39,7 +39,7 @@ namespace FindSimilar
             {
                 if (optionScanDir.HasValue())
                 {
-                    ProcessDir(optionScanDir.Value());
+                    ProcessDir(optionScanDir.Value(), optionSkipDuration.Value());
                     return 0;
                 }
 
@@ -56,10 +56,13 @@ namespace FindSimilar
             return app.Execute(args);
         }
 
-        private static void ProcessDir(string directoryPath)
+        private static void ProcessDir(string directoryPath, string skipDurationAboveSecondsString)
         {
-            double skipDurationAboveSeconds = 30;
-
+            double skipDurationAboveSeconds = 0; 
+            if (!string.IsNullOrEmpty(skipDurationAboveSecondsString)) {
+                skipDurationAboveSeconds = double.Parse(skipDurationAboveSecondsString);
+            }
+ 
             // https://github.com/AddictedCS/soundfingerprinting.duplicatesdetector/blob/master/src/SoundFingerprinting.DuplicatesDetector/DuplicatesDetectorService.cs
             // https://github.com/protyposis/Aurio/tree/master/Aurio/Aurio     
             var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
