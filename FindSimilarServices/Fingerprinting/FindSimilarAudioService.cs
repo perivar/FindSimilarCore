@@ -4,6 +4,8 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using CommonUtils;
 using CommonUtils.Audio;
+using CSCore;
+using CSCore.Codecs;
 using SoundFingerprinting.Audio;
 using SoundFingerprinting.SoundTools.DrawningTool;
 using SoundFingerprinting.Wavelets;
@@ -30,7 +32,7 @@ namespace FindSimilarServices.Audio
         {
             get
             {
-                return new[] { ".wav" };
+                return new[] { ".wav", ".aif", ".aiff", ".fla", ".flac" };
             }
         }
 
@@ -92,55 +94,40 @@ namespace FindSimilarServices.Audio
 
         public override float GetLengthInSeconds(string pathToSourceFile)
         {
-            float lengthInSeconds = 0;
-            try
-            {
-                lengthInSeconds = SoundIO.ReadWaveDurationInSeconds(new BinaryFile(pathToSourceFile));
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine(e.Message + ": " + pathToSourceFile);
-            }
-            return lengthInSeconds;
+            IWaveSource soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            var time = soundSource.GetLength();
+            soundSource.Dispose();
+            return (float)time.TotalSeconds;
         }
 
-        public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
+        /// <summary>
+        /// Take an input signal and return the mono signal as requested using the MonoSummingType
+        /// Note! Does not support more than 2 channels yet
+        /// </summary>
+        /// <param name="audioSamples">float array (mono or multi channel)</param>
+        /// <param name="channels">number of channels</param>
+        /// <param name="monoType">Define how converting to mono should happen (mix, left or right)</param>
+        /// <returns></returns>
+        public static float[] GetMonoSignal(float[] audioSamples, int channels, MonoSummingType monoType = MonoSummingType.Mix)
         {
-            int srcChannels = -1;
-            int srcSampleCount = -1;
-            int srcSampleRate = -1;
-            float srcLengthInSeconds = -1;
-            float[][] audioData;
-            try
+            if (channels == 1)
             {
-                audioData = SoundIO.ReadWaveFile(new BinaryFile(pathToSourceFile), ref srcChannels, ref srcSampleCount, ref srcSampleRate, ref srcLengthInSeconds);
+                return audioSamples;
             }
-            catch (Exception e)
-            {
-                throw new ArgumentException(e.Message);
-            }
-
-            // convert to mono
-            var monoType = MonoSummingType.Mix;
-            int samplesPerChannel = srcSampleCount;
-
-            float[] monoSamples;
-            if (srcChannels == 1)
-            {
-                monoSamples = audioData[0];
-            }
-            else if (srcChannels == 2)
+            else if (channels == 2)
             {
                 // we are getting a stereo channel file back
                 float sampleValueLeft = 0;
                 float sampleValueRight = 0;
                 float sampleValueMono = 0;
 
-                monoSamples = new float[samplesPerChannel];
+                int samplesPerChannel = (int)((double)audioSamples.Length / (double)channels);
+                var channelSamples = new float[samplesPerChannel];
+
                 for (int i = 0; i < samplesPerChannel; i++)
                 {
-                    sampleValueLeft = audioData[0][i];
-                    sampleValueRight = audioData[1][i];
+                    sampleValueLeft = audioSamples[channels * i];
+                    sampleValueRight = audioSamples[channels * i + 1];
 
                     switch (monoType)
                     {
@@ -158,35 +145,62 @@ namespace FindSimilarServices.Audio
                             sampleValueMono = sampleValueRight;
                             break;
                     }
-                    monoSamples[i] = sampleValueMono;
+
+                    channelSamples[i] = sampleValueMono;
                 }
+
+                return channelSamples;
             }
             else
             {
-                // we don't support more than 2 channels
-                throw new NotSupportedException("More than 2 channels not supported");
+                // don't support multi channel audio files (more than 2 channels)
+                throw new ArgumentException("Don't support multi channel audio files (more than 2 channels)");
             }
+        }
+
+        public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
+        {
+            var soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            var sampleSource = soundSource.ToSampleSource();
+
+            int srcSampleRate = sampleSource.WaveFormat.SampleRate;
+            int srcChannelCount = sampleSource.WaveFormat.Channels;
+            float[] sampleBuffer = new float[srcSampleRate * srcChannelCount]; // 1 sec
+            int read;
+            var floatChannelSamples = new List<float>();
+            while ((read = sampleSource.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
+            {
+                floatChannelSamples.AddRange(sampleBuffer);
+            }
+
+            float[] monoSamples = GetMonoSignal(floatChannelSamples.ToArray(), srcChannelCount);
 
             float[] downsampled = ToTargetSampleRate(monoSamples, srcSampleRate, sampleRate);
             audioSamplesNormalizer.NormalizeInPlace(downsampled);
+            CutRegion(downsampled, sampleRate, seconds, startAt);
+            sampleSource.Dispose();
+            soundSource.Dispose();
 
+            return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
+        }
+
+        private void CutRegion(float[] monoAudio, int sampleRate, double seconds, double startAt)
+        {
             // Select specific part of the song
-            if ((float)(downsampled.Length) / srcSampleRate < (seconds + startAt))
+            if ((float)(monoAudio.Length) / sampleRate < (seconds + startAt))
             {
                 // not enough samples to return the requested data
                 throw new ArgumentOutOfRangeException("Not enough samples to return the requested part of the audio-file");
             }
 
-            int start = (int)((float)startAt * srcSampleRate);
-            int end = (seconds <= 0) ? srcSampleRate : (int)((float)(startAt + seconds) * srcSampleRate);
-            if (start != 0 || end != srcSampleRate)
+            int start = (int)((float)startAt * sampleRate);
+            int end = (seconds <= 0) ? sampleRate : (int)((float)(startAt + seconds) * sampleRate);
+            if (start != 0 || end != sampleRate)
             {
                 var temp = new float[end - start];
-                Array.Copy(downsampled, start, temp, 0, end - start);
-                downsampled = temp;
+                Array.Copy(monoAudio, start, temp, 0, end - start);
+                monoAudio = temp;
             }
-
-            return new AudioSamples(downsampled, pathToSourceFile, srcSampleRate);
         }
     }
 }
