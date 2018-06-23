@@ -32,6 +32,8 @@ namespace FindSimilarServices
         // Supported audio files
         private static string[] extensions = { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg", ".mp1", ".m1a", ".mp2", ".m2a", ".mp3", ".mpg", ".mpeg", ".mpeg3" };
 
+        private readonly object _lockObj = new object();
+
         private IModelService modelService;
         private IAudioService audioService;
 
@@ -145,29 +147,32 @@ namespace FindSimilarServices
         {
             if (track == null) return false;
 
-            var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
-
-            // create hashed fingerprints
-            var hashedFingerprints = fingerprintCommandBuilder
-                                        .BuildFingerprintCommand()
-                                        .From(pathToAudioFile)
-                                        .WithFingerprintConfig(fingerprintConfig)
-                                        .UsingServices(audioService)
-                                        .Hash()
-                                        .Result;
-
-            if (hashedFingerprints.Count > 0)
+            lock (_lockObj)
             {
-                // store track metadata in the datasource
-                var trackReference = modelService.InsertTrack(track);
+                var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
 
-                // store hashes in the database for later retrieval
-                modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
-                return true;
-            }
-            else
-            {
-                return false;
+                // create hashed fingerprints
+                var hashedFingerprints = fingerprintCommandBuilder
+                                            .BuildFingerprintCommand()
+                                            .From(pathToAudioFile)
+                                            .WithFingerprintConfig(fingerprintConfig)
+                                            .UsingServices(audioService)
+                                            .Hash()
+                                            .Result;
+
+                if (hashedFingerprints.Count > 0)
+                {
+                    // store track metadata in the datasource
+                    var trackReference = modelService.InsertTrack(track);
+
+                    // store hashes in the database for later retrieval
+                    modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
 
