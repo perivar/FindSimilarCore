@@ -58,9 +58,14 @@ namespace CSCore.Codecs.MP3
         public void Dispose()
         {
             if (!_disposed)
+            {
                 _mpegFile.Dispose();
+            }
             else
-                throw new ObjectDisposedException("NLayerSource");
+            {
+                // TODO: Why does this happen?
+                //throw new ObjectDisposedException("NLayerSource");
+            }
             _disposed = true;
         }
     }
