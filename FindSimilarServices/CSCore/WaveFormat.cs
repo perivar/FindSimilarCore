@@ -30,7 +30,7 @@ namespace CSCore
             get { return _channels; }
             protected internal set
             {
-                _channels = (short) value;
+                _channels = (short)value;
                 UpdateProperties();
             }
         }
@@ -67,7 +67,7 @@ namespace CSCore
         public virtual int BlockAlign
         {
             get { return _blockAlign; }
-            protected internal set { _blockAlign = (short) value; }
+            protected internal set { _blockAlign = (short)value; }
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace CSCore
             get { return _bitsPerSample; }
             protected internal set
             {
-                _bitsPerSample = (short) value;
+                _bitsPerSample = (short)value;
                 UpdateProperties();
             }
         }
@@ -89,7 +89,7 @@ namespace CSCore
         public virtual int ExtraSize
         {
             get { return _extraSize; }
-            protected internal set { _extraSize = (short) value; }
+            protected internal set { _extraSize = (short)value; }
         }
 
         /// <summary>
@@ -168,12 +168,12 @@ namespace CSCore
                 throw new ArgumentOutOfRangeException("channels", "Number of channels has to be bigger than 0.");
 
             _sampleRate = sampleRate;
-            _bitsPerSample = (short) bits;
-            _channels = (short) channels;
+            _bitsPerSample = (short)bits;
+            _channels = (short)channels;
             _encoding = encoding;
-            _extraSize = (short) extraSize;
+            _extraSize = (short)extraSize;
 
-// ReSharper disable once DoNotCallOverridableMethodsInConstructor
+            // ReSharper disable once DoNotCallOverridableMethodsInConstructor
             UpdateProperties();
         }
 
@@ -184,7 +184,7 @@ namespace CSCore
         /// <returns>Duration in bytes.</returns>
         public long MillisecondsToBytes(double milliseconds)
         {
-            var result = (long) ((BytesPerSecond / 1000.0) * milliseconds);
+            var result = (long)((BytesPerSecond / 1000.0) * milliseconds);
             result -= result % BlockAlign;
             return result;
         }
@@ -197,7 +197,7 @@ namespace CSCore
         public double BytesToMilliseconds(long bytes)
         {
             bytes -= bytes % BlockAlign;
-            var result = ((bytes / (double) BytesPerSecond) * 1000.0);
+            var result = ((bytes / (double)BytesPerSecond) * 1000.0);
             return result;
         }
 
@@ -251,7 +251,9 @@ namespace CSCore
         /// </summary>
         internal protected virtual void UpdateProperties()
         {
-            BlockAlign = (BitsPerSample / 8) * Channels;
+            // PIN: Added to ensure this doesn't return 0 when BitsPerSample is less than 8 (e.g. for adpcm)
+            double d = (double)BitsPerSample / (double)8;
+            BlockAlign = (int)(d * Channels);
             BytesPerSecond = BlockAlign * SampleRate;
         }
 

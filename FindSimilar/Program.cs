@@ -8,6 +8,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using FindSimilarServices.Audio;
 
 namespace FindSimilar
 {
@@ -18,6 +19,13 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
+            /*             var test = new FindSimilarAudioService();
+                        var data1 = test.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\kick afrpck 6.wav", 32000, 0, 0);
+                        var data2 = test.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", 32000, 0, 0);
+                        var data3 = test.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", 32000, 0, 0);
+
+                        return 0;
+             */
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.File("findsimilar.log")
                 .CreateLogger();

@@ -33,7 +33,9 @@ namespace CSCore.Codecs
                  res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.Extensible)
              {
-                 throw new ArgumentException("Non PCM, IEEE or Extensible Wave files not supported.");
+                 throw new ArgumentException(string.Format("Non PCM, IEEE or Extensible wave-files not supported: ({0})", res.WaveFormat.WaveFormatTag));
+                 //res.Dispose();
+                 //res = new NVorbisSource(s).ToWaveSource();
              }
              return res;
          },
@@ -122,7 +124,7 @@ namespace CSCore.Codecs
                         }
                         catch (Exception ex)
                         {
-                            Debug.WriteLine(ex.ToString());
+                            Debug.WriteLine(ex.Message);
                         }
                     }
                 }
