@@ -7,16 +7,9 @@ using System.Text;
 using CSCore.Codecs.AIFF;
 using CSCore.Codecs.FLAC;
 using CSCore.Codecs.WAV;
-using CSCore.Codecs.OGG;
-using NVorbis;
-/* using CSCore.Codecs.AAC;
-using CSCore.Codecs.DDP;
-using CSCore.Codecs.MP1;
-using CSCore.Codecs.MP2;
 using CSCore.Codecs.MP3;
-using CSCore.Codecs.WMA;
-using CSCore.MediaFoundation;
- */
+using CSCore.Codecs.OGG;
+
 namespace CSCore.Codecs
 {
     /// <summary>
@@ -33,21 +26,6 @@ namespace CSCore.Codecs
         {
             _codecs = new Dictionary<object, CodecFactoryEntry>();
 
-            /*             Register("mp3", new CodecFactoryEntry(s =>
-                        {
-                            try
-                            {
-                                return new DmoMp3Decoder(s);
-                            }
-                            catch (Exception)
-                            {
-                                if (Mp3MediafoundationDecoder.IsSupported)
-                                    return new Mp3MediafoundationDecoder(s);
-                                throw;
-                            }
-                        },
-                            "mp3", "mpeg3"));
-             */
             Register("wave", new CodecFactoryEntry(s =>
          {
              IWaveSource res = new WaveFileReader(s);
@@ -55,10 +33,6 @@ namespace CSCore.Codecs
                  res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.Extensible)
              {
-                 /*                     res.Dispose();
-                                     res = new MediaFoundationDecoder(s);
-
-                     */
                  throw new ArgumentException("Non PCM, IEEE or Extensible Wave files not supported.");
              }
              return res;
@@ -71,39 +45,8 @@ namespace CSCore.Codecs
 
             // ADDED BY PER IVAR
             Register("ogg-vorbis", new CodecFactoryEntry(s => new NVorbisSource(s).ToWaveSource(), "ogg"));
-
-
-            /*             if (AacDecoder.IsSupported)
-                        {
-                            Register("aac", new CodecFactoryEntry(s => new AacDecoder(s),
-                                "aac", "adt", "adts", "m2ts", "mp2", "3g2", "3gp2", "3gp", "3gpp", "m4a", "m4v", "mp4v", "mp4",
-                                "mov"));
-                        }
-
-                        if (WmaDecoder.IsSupported)
-                        {
-                            Register("wma", new CodecFactoryEntry(s => new WmaDecoder(s),
-                                "asf", "wm", "wmv", "wma"));
-                        }
-
-                        if (Mp1Decoder.IsSupported)
-                        {
-                            Register("mp1", new CodecFactoryEntry(s => new Mp1Decoder(s),
-                                "mp1", "m2ts"));
-                        }
-
-                        if (Mp2Decoder.IsSupported)
-                        {
-                            Register("mp2", new CodecFactoryEntry(s => new Mp2Decoder(s),
-                                "mp2", "m2ts"));
-                        }
-
-                        if (DDPDecoder.IsSupported)
-                        {
-                            Register("ddp", new CodecFactoryEntry(s => new DDPDecoder(s),
-                                "mp2", "m2ts", "m4a", "m4v", "mp4v", "mp4", "mov", "asf", "wm", "wmv", "wma", "avi", "ac3", "ec3"));
-                        }
-             */
+            Register("mpeg", new CodecFactoryEntry(s => new NLayerSource(s).ToWaveSource(),
+            "mp1", "m1a", "mp2", "m2a", "mp3", "mpg", "mpeg", "mpeg3"));
         }
 
         /// <summary>

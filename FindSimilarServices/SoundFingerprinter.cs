@@ -30,8 +30,7 @@ namespace FindSimilarServices
     public class SoundFingerprinter
     {
         // Supported audio files
-        //private static string[] extensions = { ".wav", ".ogg", ".mp1", ".m1a", ".mp2", ".m2a", ".mpa", ".mus", ".mp3", ".mpg", ".mpeg", ".mp3pro", ".aif", ".aiff", ".bwf", ".wma", ".wmv", ".aac", ".adts", ".mp4", ".m4a", ".m4b", ".mod", ".mdz", ".mo3", ".s3m", ".s3z", ".xm", ".xmz", ".it", ".itz", ".umx", ".mtm", ".flac", ".fla", ".oga", ".ogg", ".aac", ".m4a", ".m4b", ".mp4", ".mpc", ".mp+", ".mpp", ".ac3", ".wma", ".ape", ".mac" };
-        private static string[] extensions = { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg" };
+        private static string[] extensions = { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg", ".mp1", ".m1a", ".mp2", ".m2a", ".mp3", ".mpg", ".mpeg", ".mpeg3" };
 
         private IModelService modelService;
         private IAudioService audioService;
@@ -111,7 +110,7 @@ namespace FindSimilarServices
 
                 // Try to check duration
                 double duration = audioService.GetLengthInSeconds(fileInfo.FullName);
-                
+
                 // check if we should skip files longer than x seconds
                 if ((skipDurationAboveSeconds > 0 && duration > 0 && duration < skipDurationAboveSeconds)
                     || skipDurationAboveSeconds <= 0
@@ -131,7 +130,9 @@ namespace FindSimilarServices
                         var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
                         Console.Out.WriteLine("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
                     }
-                } else {
+                }
+                else
+                {
                     Console.Out.WriteLine("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                     Log.Information("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                 }
