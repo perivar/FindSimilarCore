@@ -171,10 +171,13 @@ namespace FindSimilarServices
             }
         }
 
-        public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile, int thresholdVotes)
+        public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile, int thresholdVotes, int maxTracksToReturn)
         {
             var queryConfig = new ShortSamplesQueryConfiguration();
+
+            // override threshold and max if they were passed
             if (thresholdVotes > 0) queryConfig.ThresholdVotes = thresholdVotes;
+            if (maxTracksToReturn > 0) queryConfig.MaxTracksToReturn = maxTracksToReturn;
 
             // query the underlying database for similar audio sub-fingerprints
             var queryResult = new QueryCommandBuilder(fingerprintCommandBuilder, QueryFingerprintService.Instance)

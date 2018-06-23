@@ -24,34 +24,81 @@ namespace FindSimilar
 
             // https://natemcmaster.github.io/CommandLineUtils/
             // https://gist.github.com/iamarcel/8047384bfbe9941e52817cf14a79dc34
+            // https://gist.github.com/TerribleDev/06abb67350745a58f9fab080bee74be1#file-program-cs
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";
             app.HelpOption();
 
-            var optionScanDir = app.Option("-s|--scandir <DIR>", "Scan directory path and create audio fingerprints (ignore existing files)", CommandOptionType.SingleValue);
-            var optionMatchFile = app.Option("-m|--match <FILE>", "Path to the wave file to find matches for", CommandOptionType.SingleValue);
-            var optionMatchThreshold = app.Option("-t|--threshold <NUMBER>", "Threshold votes for a match. Default: 4", CommandOptionType.SingleValue);
-            var optionSkipDuration = app.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds, used together with scandir", CommandOptionType.SingleValue);
-            var optionTake = app.Option("-t|--take <NUMBER>", "Number of matches to return when querying", CommandOptionType.SingleValue);
-            var argumentSilent = app.Argument("--silent", "Do not output so much info, used together with scandir");
+            app.Command("scan", (command) =>
+                {
+                    command.Description = "Scan directory and add audio-fingerprints to database (defaults to ignoring already added files)";
+                    command.HelpOption();
+
+                    // argument
+                    var scanArgument = command.Argument("[directory]", "Directory to scan and create audio fingerprints from");
+
+                    // options
+                    var optionSkipDuration = command.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
+                    var argumentSilent = command.Option("-s|--silent", "Do not output so much info", CommandOptionType.NoValue);
+
+                    command.OnExecute(() =>
+                        {
+                            if (!string.IsNullOrEmpty(scanArgument.Value))
+                            {
+                                ProcessDir(scanArgument.Value, optionSkipDuration.Value());
+                                return 0;
+                            }
+                            else
+                            {
+                                command.ShowHelp();
+                                return 1;
+                            }
+                        });
+                });
+
+            app.Command("match", (command) =>
+                {
+                    command.Description = "Find matches for specified audio-file";
+                    command.HelpOption();
+
+                    // argument
+                    var matchArgument = command.Argument("[file path]", "Path to audio-file to find matches for");
+
+                    // options
+                    var optionMatchThreshold = command.Option("-t|--threshold <NUMBER>", "Threshold votes for a match. Default: 4", CommandOptionType.SingleValue);
+                    var optionMaxNumber = command.Option("-n|--num <NUMBER>", "Maximal number of matches to return when querying. Default: 25", CommandOptionType.SingleValue);
+
+                    command.OnExecute(() =>
+                        {
+                            if (!string.IsNullOrEmpty(matchArgument.Value))
+                            {
+                                int threshold = -1;
+                                if (optionMatchThreshold.HasValue())
+                                {
+                                    threshold = int.Parse(optionMatchThreshold.Value());
+                                }
+                                int maxTracksToReturn = -1;
+                                if (optionMaxNumber.HasValue())
+                                {
+                                    maxTracksToReturn = int.Parse(optionMaxNumber.Value());
+                                }
+
+                                MatchFile(matchArgument.Value, threshold, maxTracksToReturn);
+                                return 0;
+                            }
+                            else
+                            {
+                                command.ShowHelp();
+                                return 1;
+                            }
+                        });
+                });
 
             app.OnExecute(() =>
             {
-                if (optionScanDir.HasValue())
-                {
-                    ProcessDir(optionScanDir.Value(), optionSkipDuration.Value());
-                    return 0;
-                }
-
-                if (optionMatchFile.HasValue())
-                {
-                    MatchFile(optionMatchFile.Value(), (optionMatchThreshold.HasValue() ? int.Parse(optionMatchThreshold.Value()) : -1));
-                    return 0;
-                }
-
                 app.ShowHelp();
-                return 0;
+                return 1;
             });
 
             return app.Execute(args);
@@ -75,15 +122,15 @@ namespace FindSimilar
             }
             else
             {
-                Console.Error.WriteLine("The directory cannot be found {0}", directoryPath);
+                Console.Error.WriteLine("The directory '{0}' cannot be found.", directoryPath);
             }
         }
-        private static void MatchFile(string filePath, int thresholdVotes)
+        private static void MatchFile(string filePath, int thresholdVotes, int maxTracksToReturn)
         {
             if (File.Exists(filePath))
             {
                 var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
-                var results = fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), thresholdVotes);
+                var results = fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), thresholdVotes, maxTracksToReturn);
 
                 Console.WriteLine("Found {0} similar tracks", results.Count());
                 foreach (var result in results)
@@ -93,7 +140,7 @@ namespace FindSimilar
             }
             else
             {
-                Console.Error.WriteLine("The file cannot be found {0}", filePath);
+                Console.Error.WriteLine("The file '{0}' cannot be found.", filePath);
             }
         }
     }

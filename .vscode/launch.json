@@ -12,7 +12,7 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
             "args": [
-                "-s",
+                "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
@@ -29,8 +29,10 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
             "args": [
-                "-m",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav"
+                "match",
+                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
+                "-t",
+                "4"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
