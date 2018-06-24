@@ -5,7 +5,7 @@ using CSCore.Codecs.WAV;
 
 namespace FindSimilarServices.CSCore.Codecs.ADPCM
 {
-    public class AdpcmSource : IWaveSource
+    public class AdpcmSource : ISampleSource
     {
         private readonly object _lockObj = new object();
 
@@ -37,11 +37,12 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 throw new ArgumentException("Not supported encoding: {" + waveFormat.WaveFormatTag + "}");
 
             // fix new format identifiers
-            waveFormat.BitsPerSample = 16; // originally 4
-            waveFormat.WaveFormatTag = AudioEncoding.Pcm; // originally adpcm
+            //waveFormat.BitsPerSample = 16; // originally 4
+            //waveFormat.WaveFormatTag = AudioEncoding.Pcm; // originally adpcm
+            //_waveFormat = waveFormat;
 
             _stream = stream;
-            _waveFormat = waveFormat;
+            _waveFormat = new WaveFormat(waveFormat.SampleRate, 32, waveFormat.Channels, AudioEncoding.IeeeFloat);
         }
 
         /// <summary>
@@ -79,6 +80,40 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                     Buffer.BlockCopy(outBuffer, 0, buffer, 0, returnCount);
                     return returnCount;
+                }
+                return read;
+            }
+        }
+
+        public int Read(float[] buffer, int offset, int count)
+        {
+            lock (_lockObj)
+            {
+                CheckForDisposed();
+
+                count = (int)Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
+                count -= count % 1; // block align is 1
+                if (count <= 0)
+                    return 0;
+
+                var inBuffer = new byte[count];
+                int read = _stream.Read(inBuffer, 0, count);
+                if (read > 0)
+                {
+                    var outBuffer = new float[read * 2];
+                    var returnCount = _adpcm.AdpcmDecode(inBuffer, outBuffer, inBuffer.Length, WaveFormat.Channels);
+                    Buffer.BlockCopy(outBuffer, 0, buffer, 0, returnCount);
+                    return returnCount;
+
+                    /*                     var outBuffer = _adpcm.DecodeAdpcmMono(inBuffer);
+                                        Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
+                                        return outBuffer.Length; 
+                    */
+
+                    /*                     var outBuffer = _adpcm.DecodeImaFloats(inBuffer, offset, inBuffer.Length);
+                                        Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
+                                        return outBuffer.Length;
+                     */
                 }
                 return read;
             }
