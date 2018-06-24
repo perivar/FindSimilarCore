@@ -22,6 +22,8 @@ namespace CSCore.Codecs.WAV
         private readonly DataChunk _dataChunk;
         private readonly bool _closeStream;
 
+        public DataChunk DataChunk { get { return _dataChunk; } }
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="WaveFileReader" /> class.
         /// </summary>
@@ -89,7 +91,7 @@ namespace CSCore.Codecs.WAV
             {
                 CheckForDisposed();
 
-                count = (int) Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
+                count = (int)Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
                 count -= count % WaveFormat.BlockAlign;
                 if (count <= 0)
                     return 0;

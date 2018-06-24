@@ -9,6 +9,7 @@ using CSCore.Codecs.FLAC;
 using CSCore.Codecs.WAV;
 using CSCore.Codecs.MP3;
 using CSCore.Codecs.OGG;
+using FindSimilarServices.CSCore.Codecs.ADPCM;
 
 namespace CSCore.Codecs
 {
@@ -33,9 +34,15 @@ namespace CSCore.Codecs
                  res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.Extensible)
              {
-                 throw new ArgumentException(string.Format("Non PCM, IEEE or Extensible wave-files not supported: ({0})", res.WaveFormat.WaveFormatTag));
-                 //res.Dispose();
-                 //res = new NVorbisSource(s).ToWaveSource();
+                 if (res.WaveFormat.WaveFormatTag == AudioEncoding.Adpcm)
+                 {
+                     res.Dispose();
+                     res = new AdpcmSource(s, res.WaveFormat, ((WaveFileReader)res).DataChunk);
+                 }
+                 else
+                 {
+                     throw new ArgumentException(string.Format("Non PCM, IEEE or Extensible wave-files not supported: ({0})", res.WaveFormat.WaveFormatTag));
+                 }
              }
              return res;
          },
