@@ -1,51 +1,30 @@
 namespace FindSimilarServices.CSCore.Codecs.ADPCM
 {
     // see https://github.com/jwzhangjie/Adpcm_Pcm/blob/master/Adpcm.c
+    // https://sourceforge.net/p/openbor/tools/3174/tree/tools/openwav2bor/source/adpcm.c?diff=50c8e1ce1be1ce03cfa5c218:3173
     // https://gist.github.com/jaames/c837fb87a6a5585d47baa1b8e2408234
     // https://github.com/srnsw/xena/blob/master/plugins/audio/ext/src/tritonus/src/classes/org/tritonus/sampled/convert/ImaAdpcmFormatConversionProvider.java
     // https://github.com/lguipeng/TwoWayRadio/blob/master/app/src/main/java/com/szu/twowayradio/utils/Adpcm.java
 
-    /*
-    ** Intel/DVI Adpcm coder/decoder.
-    **
-    ** The algorithm for this coder was taken from the IMA Compatability Project
-    ** proceedings, Vol 2, Number 2; May 1992.
-    **
-    ** Version 1.2, 18-Dec-92.
-    **
-    ** Change log:
-    ** - Fixed a stupid bug, where the delta was computed as
-    **   stepsize*code/4 in stead of stepsize*(code+0.5)/4.
-    ** - There was an off-by-one error causing it to pick
-    **   an incorrect delta once in a blue moon.
-    ** - The NODIVMUL define has been removed. Computations are now always done
-    **   using shifts, adds and subtracts. It turned out that, because the standard
-    **   is defined using shift/add/subtract, you needed bits of fixup code
-    **   (because the div/mul simulation using shift/add/sub made some rounding
-    **   errors that real div/mul don't make) and all together the resultant code
-    **   ran slower than just using the shifts all the time.
-    ** - Changed some of the variable names to be more meaningful.
-    */
-
-    /* modefied by juguofeng<jgfntu@163.com> 2012-05-20 */
     public class AdpcmState
     {
-        public int ValuePredicted
-        {
-            get; set;
-        }
-        public int Index
-        {
-            get; set;
-        }
+        /* Previous output value */
+        public int[] ValuePrevious = new int[2];
+
+        /* Index into stepsize table */
+        public int[] Index = new int[2];
     }
 
     public class Adpcm
     {
+        AdpcmState state = null;
+
         private bool isBigEndian = false;
 
-        private int leftStepIndexEnc, rightStepIndexEnc, leftPredictedEnc, rightPredictedEnc;
-        private int leftStepIndexDec, rightStepIndexDec, leftPredictedDec, rightPredictedDec;
+        // variables for the decode IMA implementation
+        private int predictedSample = 0;
+        private int index = 0;
+        private int stepSize = 7;
 
         static int[] stepIndexTable =
         {
@@ -53,7 +32,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             -1, -1, -1, -1, 2, 4, 6, 8,
             };
 
-        static int[] stepTable =
+        static int[] stepSizeTable =
         {
             7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
             19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
@@ -72,185 +51,58 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         public Adpcm(bool isBigEndian = false)
         {
             this.isBigEndian = isBigEndian;
-            this.ResetEncoder();
-            this.ResetDecoder();
+            this.state = new AdpcmState();
         }
 
-        /**
-        * Reset the ADPCM predictor.
-        * Call when encoding a new stream.
-        */
-        public void ResetEncoder()
+        public int AdpcmDecode(byte[] inBuffer, byte[] outBuffer, int len, int channels)
         {
-            leftStepIndexEnc = rightStepIndexEnc = 0;
-            leftPredictedEnc = rightPredictedEnc = 0;
-        }
-
-        /**
-         * Reset the ADPCM predictor.
-         * Call when decoding a new stream.
-         */
-        public void ResetDecoder()
-        {
-            leftStepIndexDec = rightStepIndexDec = 0;
-            leftPredictedDec = rightPredictedDec = 0;
-        }
-
-        public int AdpcmCoder(byte[] inBuffer, byte[] outBuffer, int outByteOffset, int inFrameCount, AdpcmState state)
-        {
-            int inp;        /* Input buffer pointer */
-            int outp;       /* output buffer pointer */
-            int val;        /* Current input sample value */
-            int sign;       /* Current Adpcm sign bit */
-            int delta;      /* Current Adpcm output value */
-            int diff;       /* Difference between val and valprev */
-            int step;       /* Stepsize */
-            int valpred;    /* Predicted output value */
-            int vpdiff;     /* Current change to valpred */
-            int index;      /* Current step change index */
-            int outputbuffer = 0;   /* place to keep previous 4-bit value */
-            bool bufferstep;    /* toggle between outputbuffer/output */
-            int len = inFrameCount;
-
-            inp = 0;
-            outp = outByteOffset;
-
-            valpred = state.ValuePredicted;
-            index = state.Index;
-            step = stepTable[index];
-
-            bufferstep = true;
-
-            for (; len > 0; len--)
+            if (channels == 2)
             {
-                val = isBigEndian ?
-                    ((inBuffer[inp] << 8) | (inBuffer[inp + 1] & 0xFF)) :
-                    ((inBuffer[inp + 1] << 8) | (inBuffer[inp] & 0xFF));
-                inp += 2;
-
-                /* Step 1 - compute difference with previous value */
-                diff = val - valpred;
-                sign = (diff < 0) ? 8 : 0;
-                if (sign != 0)
-                    diff = (-diff);
-
-                /* Step 2 - Divide and clamp */
-                /* Note:
-				** This code *approximately* computes:
-				**    delta = diff*4/step;
-				**    vpdiff = (delta+0.5)*step/4;
-				** but in shift step bits are dropped. The net result of this is
-				** that even if you have fast mul/div hardware you cannot Put it to
-				** good use since the fixup would be too expensive.
-				*/
-                delta = 0;
-                vpdiff = (step >> 3);
-
-                if (diff >= step)
-                {
-                    delta = 4;
-                    diff -= step;
-                    vpdiff += step;
-                }
-                step >>= 1;
-                if (diff >= step)
-                {
-                    delta |= 2;
-                    diff -= step;
-                    vpdiff += step;
-                }
-                step >>= 1;
-                if (diff >= step)
-                {
-                    delta |= 1;
-                    vpdiff += step;
-                }
-
-                /* Step 3 - Update previous value */
-                if (sign != 0)
-                    valpred -= vpdiff;
-                else
-                    valpred += vpdiff;
-
-                /* Step 4 - Clamp previous value to 16 bits */
-                if (valpred > 32767)
-                    valpred = 32767;
-                else if (valpred < -32768)
-                    valpred = -32768;
-
-                /* Step 5 - Assemble value, update index and step values */
-                delta |= sign;
-
-                index += stepIndexTable[delta];
-                if (index < 0)
-                    index = 0;
-                if (index > 88)
-                    index = 88;
-                step = stepTable[index];
-
-                /* Step 6 - Output value */
-                if (bufferstep)
-                {
-                    outputbuffer = (delta << 4) & 0xf0;
-                }
-                else
-                {
-                    outBuffer[outp++] = (byte)((delta & 0x0f) | outputbuffer);
-                }
-                bufferstep = !bufferstep;
+                return AdpcmDecodeStereo(inBuffer, outBuffer, len);
             }
-
-            /* Output last step, if needed */
-            if (!bufferstep)
-                outBuffer[outp++] = (byte)outputbuffer;
-
-            state.ValuePredicted = valpred;
-            state.Index = index;
-            return inFrameCount;
+            return AdpcmDecodeStereo(inBuffer, outBuffer, len);
         }
 
-        public int AdpcmDecoder(byte[] inBuffer, byte[] outBuffer, int outByteOffset, int inFrameCount, AdpcmState state)
+        // len = input buffer size in bytes
+        // see https://github.com/rofl0r/openbor-legacy/blob/master/source/adpcmlib/adpcm.c
+        public int AdpcmDecodeMono(byte[] inBuffer, byte[] outBuffer, int len)
         {
-            int inp;        /* Input buffer pointer */
-            int outp;       /* output buffer pointer */
-            int sign;       /* Current Adpcm sign bit */
-            int delta;      /* Current Adpcm output value */
-            int step;       /* Stepsize */
-            int valpred;    /* Predicted value */
-            int vpdiff;     /* Current change to valpred */
-            int index;      /* Current step change index */
-            int inputbuffer = 0;    /* place to keep next 4-bit value */
-            bool bufferstep;    /* toggle between inputbuffer/input */
-            int len = inFrameCount;
+            int sign;            /* Current Adpcm sign bit */
+            int delta;           /* Current Adpcm output value */
+            int step;            /* Stepsize */
+            int valuePred;       /* Predicted value */
+            int valuePredDiff;   /* Current change to valpred */
+            int stepIndex;       /* Current step change index */
+            int inputBuffer = 0; /* place to keep next 4-bit value */
+            int bytesDecoded = 0;
 
-            inp = 0;
-            outp = outByteOffset;
+            if (inBuffer.Length == 0 || outBuffer.Length == 0 || len < 1)
+                return 0;
 
-            valpred = state.ValuePredicted;
-            index = state.Index;
-            step = stepTable[index];
+            len *= 2;
+            valuePred = state.ValuePrevious[0];
+            stepIndex = state.Index[0];
+            step = stepSizeTable[stepIndex];
 
-            bufferstep = false;
-
-            for (; len > 0; len--)
+            int inputIndex = 0;
+            int outputIndex = 0;
+            for (bytesDecoded = 0; bytesDecoded < len; bytesDecoded++)
             {
                 /* Step 1 - Get the delta value */
-                if (bufferstep)
+                if ((bytesDecoded & 1) != 0)
                 {
-                    delta = inputbuffer & 0xf;
+                    delta = inputBuffer & 0xf;
                 }
                 else
                 {
-                    inputbuffer = inBuffer[inp];
-                    inp++;
-                    delta = (inputbuffer >> 4) & 0xf;
+                    inputBuffer = inBuffer[inputIndex++];
+                    delta = (inputBuffer >> 4) & 0xf;
                 }
-                bufferstep = !bufferstep;
 
                 /* Step 2 - Find new index value (for later) */
-                index += stepIndexTable[delta];
-                if (index < 0) index = 0;
-                if (index > 88) index = 88;
+                stepIndex += stepIndexTable[delta];
+                if (stepIndex < 0) stepIndex = 0;
+                if (stepIndex > 88) stepIndex = 88;
 
                 /* Step 3 - Separate sign and magnitude */
                 sign = delta & 8;
@@ -258,130 +110,190 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                 /* Step 4 - Compute difference and new predicted value */
                 /*
-				** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
-				** in Adpcm_coder.
-				*/
-                vpdiff = step >> 3;
-                if ((delta & 4) != 0)
-                    vpdiff += step;
-                if ((delta & 2) != 0)
-                    vpdiff += step >> 1;
-                if ((delta & 1) != 0)
-                    vpdiff += step >> 2;
+                ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
+                ** in Adpcm_coder.
+                */
+                valuePredDiff = step >> 3;
+                if ((delta & 4) != 0) valuePredDiff += step;
+                if ((delta & 2) != 0) valuePredDiff += step >> 1;
+                if ((delta & 1) != 0) valuePredDiff += step >> 2;
 
+                // handle sign bit
                 if (sign != 0)
-                    valpred -= vpdiff;
+                    valuePred -= valuePredDiff;
                 else
-                    valpred += vpdiff;
+                    valuePred += valuePredDiff;
 
                 /* Step 5 - clamp output value */
-                if (valpred > 32767)
-                    valpred = 32767;
-                else if (valpred < -32768)
-                    valpred = -32768;
+                if (valuePred > 32767)
+                    valuePred = 32767;
+                else if (valuePred < -32768)
+                    valuePred = -32768;
 
                 /* Step 6 - Update step value */
-                step = stepTable[index];
+                step = stepSizeTable[stepIndex];
 
                 /* Step 7 - Output value */
                 if (isBigEndian)
                 {
-                    outBuffer[outp++] = (byte)(valpred >> 8);
-                    outBuffer[outp++] = (byte)(valpred & 0xFF);
+                    outBuffer[outputIndex++] = (byte)(valuePred >> 8);
+                    outBuffer[outputIndex++] = (byte)(valuePred & 0xFF);
                 }
                 else
                 {
-                    outBuffer[outp++] = (byte)(valpred & 0xFF);
-                    outBuffer[outp++] = (byte)(valpred >> 8);
+                    outBuffer[outputIndex++] = (byte)(valuePred & 0xFF);
+                    outBuffer[outputIndex++] = (byte)(valuePred >> 8);
                 }
             }
 
-            state.ValuePredicted = valpred;
-            state.Index = index;
-            return inFrameCount;
+            state.ValuePrevious[0] = valuePred;
+            state.Index[0] = stepIndex;
+            return bytesDecoded * 2;
         }
 
-        /**
-          * Encode 16-bit stereo little-endian PCM audio data to 8-bit ADPCM audio data.
-          *
-          * @param input 16-bit stereo little-endian PCM audio data
-          * @return 8-bit ADPCM audio data
-          */
-        public byte[] Encode(short[] input)
+
+        // len = input buffer size in bytes
+        // see https://github.com/rofl0r/openbor-legacy/blob/master/source/adpcmlib/adpcm.c
+        public int AdpcmDecodeStereo(byte[] inBuffer, byte[] outBuffer, int len)
         {
-            int count = input.Length / 2;
-            byte[] output = new byte[count];
+            int sign = 0;               /* Current adpcm sign bit */
+            int delta = 0;              /* Current adpcm output value */
+            int[] step = { 0, 0 };      /* Stepsize */
+            int[] valuePred = { 0, 0 }; /* Predicted value */
+            int valuePredDiff = 0;      /* Current change to valpred */
+            int[] index = { 0, 0 };     /* Current step change index */
+            int inputBuffer = 0;        /* place to keep next 4-bit value */
+            int bytesDecoded = 0;
 
-            int inputIndex = 0, outputIndex = 0;
-            while (outputIndex < count)
+            if (inBuffer.Length == 0 || outBuffer.Length == 0 || len < 1)
+                return 0;
+
+            valuePred[0] = state.ValuePrevious[0];
+            valuePred[1] = state.ValuePrevious[1];
+            index[0] = state.Index[0];
+            index[1] = state.Index[1];
+            step[0] = stepSizeTable[index[0]];
+            step[1] = stepSizeTable[index[1]];
+
+            int inputIndex = 0;
+            int outputIndex = 0;
+            for (bytesDecoded = 0; bytesDecoded < len; bytesDecoded++)
             {
-                int leftSample = input[inputIndex++];
-                int rightSample = input[inputIndex++];
-                int leftStep = stepTable[leftStepIndexEnc];
-                int rightStep = stepTable[rightStepIndexEnc];
-                int leftCode = ((leftSample - leftPredictedEnc) * 4 + leftStep * 8) / leftStep;
-                int rightCode = ((rightSample - rightPredictedEnc) * 4 + rightStep * 8) / rightStep;
-                if (leftCode > 15) leftCode = 15;
-                if (rightCode > 15) rightCode = 15;
-                if (leftCode < 0) leftCode = 0;
-                if (rightCode < 0) rightCode = 0;
-                leftPredictedEnc += ((leftCode * leftStep) >> 2) - ((15 * leftStep) >> 3);
-                rightPredictedEnc += ((rightCode * rightStep) >> 2) - ((15 * rightStep) >> 3);
-                if (leftPredictedEnc > 32767) leftPredictedEnc = 32767;
-                if (rightPredictedEnc > 32767) rightPredictedEnc = 32767;
-                if (leftPredictedEnc < -32768) leftPredictedEnc = -32768;
-                if (rightPredictedEnc < -32768) rightPredictedEnc = -32768;
-                leftStepIndexEnc += stepIndexTable[leftCode];
-                rightStepIndexEnc += stepIndexTable[rightCode];
-                if (leftStepIndexEnc > 88) leftStepIndexEnc = 88;
-                if (rightStepIndexEnc > 88) rightStepIndexEnc = 88;
-                if (leftStepIndexEnc < 0) leftStepIndexEnc = 0;
-                if (rightStepIndexEnc < 0) rightStepIndexEnc = 0;
+                inputBuffer = inBuffer[inputIndex++];
 
-                output[outputIndex++] = (byte)((rightCode << 4) | rightCode);
+                /* Left Channel */
+                /* Step 1 - get the delta value */
+                delta = (inputBuffer >> 4) & 0xf;
+
+                /* Step 2 - Find new index value (for later) */
+                index[0] += stepIndexTable[delta];
+                if (index[0] < 0)
+                    index[0] = 0;
+                if (index[0] > 88)
+                    index[0] = 88;
+
+                /* Step 3 - Separate sign and magnitude */
+                sign = delta & 8;
+                delta = delta & 7;
+
+                /* Step 4 - Compute difference and new predicted value */
+                /*
+                 ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
+                 ** in adpcm_coder.
+                 */
+                valuePredDiff = step[0] >> 3;
+                if ((delta & 4) != 0) valuePredDiff += step[0];
+                if ((delta & 2) != 0) valuePredDiff += step[0] >> 1;
+                if ((delta & 1) != 0) valuePredDiff += step[0] >> 2;
+
+                if (sign != 0)
+                    valuePred[0] -= valuePredDiff;
+                else
+                    valuePred[0] += valuePredDiff;
+
+                /* Step 5 - clamp output value */
+                if (valuePred[0] > 32767)
+                    valuePred[0] = 32767;
+                else if (valuePred[0] < -32768)
+                    valuePred[0] = -32768;
+
+                /* Step 6 - Update step value */
+                step[0] = stepSizeTable[index[0]];
+
+                /* Step 7 - Output value */
+                if (isBigEndian)
+                {
+                    outBuffer[outputIndex++] = (byte)(valuePred[0] >> 8);
+                    outBuffer[outputIndex++] = (byte)(valuePred[0] & 0xFF);
+                }
+                else
+                {
+                    outBuffer[outputIndex++] = (byte)(valuePred[0] & 0xFF);
+                    outBuffer[outputIndex++] = (byte)(valuePred[0] >> 8);
+                }
+
+                /* Right Channel */
+                /* Step 1 - get the delta value */
+                delta = inputBuffer & 0xf;
+
+                /* Step 2 - Find new index value (for later) */
+                index[1] += stepIndexTable[delta];
+                if (index[1] < 0)
+                    index[1] = 0;
+                if (index[1] > 88)
+                    index[1] = 88;
+
+                /* Step 3 - Separate sign and magnitude */
+                sign = delta & 8;
+                delta = delta & 7;
+
+                /* Step 4 - Compute difference and new predicted value */
+                /*
+                 ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
+                 ** in adpcm_coder.
+                 */
+                valuePredDiff = step[1] >> 3;
+                if ((delta & 4) != 0) valuePredDiff += step[1];
+                if ((delta & 2) != 0) valuePredDiff += step[1] >> 1;
+                if ((delta & 1) != 0) valuePredDiff += step[1] >> 2;
+
+                if (sign != 0)
+                    valuePred[1] -= valuePredDiff;
+                else
+                    valuePred[1] += valuePredDiff;
+
+                /* Step 5 - clamp output value */
+                if (valuePred[1] > 32767)
+                    valuePred[1] = 32767;
+                else if (valuePred[1] < -32768)
+                    valuePred[1] = -32768;
+
+                /* Step 6 - Update step value */
+                step[1] = stepSizeTable[index[1]];
+
+                /* Step 7 - Output value */
+                if (isBigEndian)
+                {
+                    outBuffer[outputIndex++] = (byte)(valuePred[1] >> 8);
+                    outBuffer[outputIndex++] = (byte)(valuePred[1] & 0xFF);
+                }
+                else
+                {
+                    outBuffer[outputIndex++] = (byte)(valuePred[1] & 0xFF);
+                    outBuffer[outputIndex++] = (byte)(valuePred[1] >> 8);
+                }
             }
-            return output;
-        }
 
-        /**
-         * Decode 8-bit ADPCM audio data to 16-bit stereo little-endian PCM audio data.
-         *
-         * @param input 8-bit ADPCM audio data
-         * @return 16-bit stereo little-endian PCM audio data
-         */
-        public short[] Decode(byte[] input)
-        {
-            int count = input.Length * 2;
-            short[] output = new short[count];
+            state.ValuePrevious[0] = valuePred[0];
+            state.ValuePrevious[1] = valuePred[1];
+            state.Index[0] = index[0];
+            state.Index[1] = index[1];
 
-            int inputIndex = 0, outputIndex = 0;
-            while (outputIndex < count)
-            {
-                int leftCode = input[inputIndex++] & 0xFF;
-                int rightCode = leftCode & 0xF;
-                leftCode = leftCode >> 4;
-                int leftStep = stepTable[leftStepIndexDec];
-                int rightStep = stepTable[rightStepIndexDec];
-                leftPredictedDec += ((leftCode * leftStep) >> 2) - ((15 * leftStep) >> 3);
-                rightPredictedDec += ((rightCode * rightStep) >> 2) - ((15 * rightStep) >> 3);
-                if (leftPredictedDec > 32767) leftPredictedDec = 32767;
-                if (rightPredictedDec > 32767) rightPredictedDec = 32767;
-                if (leftPredictedDec < -32768) leftPredictedDec = -32768;
-                if (rightPredictedDec < -32768) rightPredictedDec = -32768;
-                output[outputIndex++] = (short)leftPredictedDec;
-                output[outputIndex++] = (short)rightPredictedDec;
-                leftStepIndexDec += stepIndexTable[leftCode];
-                rightStepIndexDec += stepIndexTable[rightCode];
-                if (leftStepIndexDec > 88) leftStepIndexDec = 88;
-                if (rightStepIndexDec > 88) rightStepIndexDec = 88;
-                if (leftStepIndexDec < 0) leftStepIndexDec = 0;
-                if (rightStepIndexDec < 0) rightStepIndexDec = 0;
-            }
-            return output;
+            return bytesDecoded * 4;
         }
 
         /// <summary>
-        /// Decode 4-bit ADPCM samples into 16-bit linear PCM data (signed, big endian).     
+        /// Decode 4-bit ADPCM samples into 16-bit linear PCM data (signed).     
         /// </summary>
         /// <param name="raw">raw 4-bit ADPCM samples</param>
         /// <param name="offset">offset</param>
@@ -389,10 +301,6 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /// <returns>Decoded samples</returns>
         public byte[] DecodeIma(byte[] raw, int offset, int len)
         {
-            int predictedSample = 0;
-            int index = 0;
-            int stepSize = 7;     // Only for IMA impl.
-
             byte[] ret = new byte[len * 4];
 
             // Use 2x length because we examine each byte twice.
@@ -408,6 +316,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     originalSample = (raw[i / 2] & 0xFF) >> 4;     //top four bits
                 }
 
+                // compute difference and new predicted value
                 int difference = 0;
                 if ((originalSample & 4) != 0)  //b0000 0100
                 {
@@ -421,23 +330,28 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 {
                     difference += stepSize >> 2;
                 }
+
                 difference += stepSize >> 3;
+
+                // handle sign bit
                 if ((originalSample & 8) != 0)  //b0000 1000
                 {
                     difference = -difference;
                 }
 
                 predictedSample += difference;
+
+                // clamp output value
                 if (predictedSample > 32767)
                     predictedSample = 32767;
                 else if (predictedSample < -32768)
                     predictedSample = -32768;
 
-                /* Step 7 - Output value */
+                // Output value
                 if (isBigEndian)
                 {
-                    ret[i * 2] = (byte)(predictedSample >> 8);    // top 8 bits
-                    ret[i * 2 + 1] = (byte)(predictedSample & 0xFF);  // bottom 8 bits
+                    ret[i * 2] = (byte)(predictedSample >> 8);        // top 8 bits
+                    ret[i * 2 + 1] = (byte)(predictedSample & 0xFF);  // bottom 8 bits                
                 }
                 else
                 {
@@ -445,13 +359,14 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     ret[i * 2 + 1] = (byte)(predictedSample >> 8);  // bottom 8 bits
                 }
 
+                // find new index value
                 index += stepIndexTable[originalSample];
                 if (index < 0)
                     index = 0;
                 else if (index > 88)  // Size of step_table
                     index = 88;
 
-                stepSize = stepTable[index];
+                stepSize = stepSizeTable[index];
             }
             return ret;
         }

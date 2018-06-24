@@ -66,7 +66,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 CheckForDisposed();
 
                 count = (int)Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
-                count -= count % WaveFormat.BlockAlign;
+                count -= count % 1; // block align is 1
                 if (count <= 0)
                     return 0;
 
@@ -74,13 +74,11 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 int read = _stream.Read(inBuffer, 0, count);
                 if (read > 0)
                 {
-                    //var outBuffer = new byte[read * 2];
-                    var state = new AdpcmState();
-                    //var returnCount = _adpcm.AdpcmDecoder(inBuffer, outBuffer, 0, read, state);
-                    var outBuffer = _adpcm.DecodeIma(inBuffer, 0, read);
+                    var outBuffer = new byte[read * 4];
+                    var returnCount = _adpcm.AdpcmDecode(inBuffer, outBuffer, inBuffer.Length, WaveFormat.Channels);
 
-                    Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
-                    return outBuffer.Length;
+                    Buffer.BlockCopy(outBuffer, 0, buffer, 0, returnCount);
+                    return returnCount;
                 }
                 return read;
             }
