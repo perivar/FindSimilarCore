@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 using CommonUtils;
 using CommonUtils.Audio;
 using CSCore;
@@ -124,11 +125,11 @@ namespace FindSimilarServices.Audio
                 var floatChannelSamples = new List<float>();
                 while ((read = sampleSource.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
                 {
-                    floatChannelSamples.AddRange(sampleBuffer);
+                    // add the number of samples we read
+                    floatChannelSamples.AddRange(sampleBuffer.Take(read));
                 }
 
-                float[] monoSamples = GetMonoSignal(floatChannelSamples.ToArray(), srcChannelCount);
-
+                float[] monoSamples = ToMonoSignal(floatChannelSamples.ToArray(), srcChannelCount);
                 downsampled = ToTargetSampleRate(monoSamples, srcSampleRate, sampleRate);
                 audioSamplesNormalizer.NormalizeInPlace(downsampled);
                 CutRegion(downsampled, sampleRate, seconds, startAt);
@@ -151,7 +152,7 @@ namespace FindSimilarServices.Audio
         /// <param name="channels">number of channels</param>
         /// <param name="monoType">Define how converting to mono should happen (mix, left or right)</param>
         /// <returns></returns>
-        public static float[] GetMonoSignal(float[] audioSamples, int channels, MonoSummingType monoType = MonoSummingType.Mix)
+        public static float[] ToMonoSignal(float[] audioSamples, int channels, MonoSummingType monoType = MonoSummingType.Mix)
         {
             if (channels == 1)
             {

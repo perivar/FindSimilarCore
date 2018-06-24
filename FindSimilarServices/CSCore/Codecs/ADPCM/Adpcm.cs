@@ -44,18 +44,16 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
     {
         private bool isBigEndian = false;
 
-        public Adpcm(bool isBigEndian = false)
-        {
-            this.isBigEndian = isBigEndian;
-        }
+        private int leftStepIndexEnc, rightStepIndexEnc, leftPredictedEnc, rightPredictedEnc;
+        private int leftStepIndexDec, rightStepIndexDec, leftPredictedDec, rightPredictedDec;
 
-        static int[] indexTable =
+        static int[] stepIndexTable =
         {
             -1, -1, -1, -1, 2, 4, 6, 8,
             -1, -1, -1, -1, 2, 4, 6, 8,
             };
 
-        static int[] stepsizeTable =
+        static int[] stepTable =
         {
             7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
             19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
@@ -67,6 +65,36 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899,
             15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
             };
+
+        /**
+        * Creates a ADPCM encoder/decoder.
+        */
+        public Adpcm(bool isBigEndian = false)
+        {
+            this.isBigEndian = isBigEndian;
+            this.ResetEncoder();
+            this.ResetDecoder();
+        }
+
+        /**
+        * Reset the ADPCM predictor.
+        * Call when encoding a new stream.
+        */
+        public void ResetEncoder()
+        {
+            leftStepIndexEnc = rightStepIndexEnc = 0;
+            leftPredictedEnc = rightPredictedEnc = 0;
+        }
+
+        /**
+         * Reset the ADPCM predictor.
+         * Call when decoding a new stream.
+         */
+        public void ResetDecoder()
+        {
+            leftStepIndexDec = rightStepIndexDec = 0;
+            leftPredictedDec = rightPredictedDec = 0;
+        }
 
         public int AdpcmCoder(byte[] inBuffer, byte[] outBuffer, int outByteOffset, int inFrameCount, AdpcmState state)
         {
@@ -89,7 +117,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             valpred = state.ValuePredicted;
             index = state.Index;
-            step = stepsizeTable[index];
+            step = stepTable[index];
 
             bufferstep = true;
 
@@ -153,12 +181,12 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 /* Step 5 - Assemble value, update index and step values */
                 delta |= sign;
 
-                index += indexTable[delta];
+                index += stepIndexTable[delta];
                 if (index < 0)
                     index = 0;
                 if (index > 88)
                     index = 88;
-                step = stepsizeTable[index];
+                step = stepTable[index];
 
                 /* Step 6 - Output value */
                 if (bufferstep)
@@ -200,7 +228,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             valpred = state.ValuePredicted;
             index = state.Index;
-            step = stepsizeTable[index];
+            step = stepTable[index];
 
             bufferstep = false;
 
@@ -220,7 +248,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 bufferstep = !bufferstep;
 
                 /* Step 2 - Find new index value (for later) */
-                index += indexTable[delta];
+                index += stepIndexTable[delta];
                 if (index < 0) index = 0;
                 if (index > 88) index = 88;
 
@@ -253,7 +281,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     valpred = -32768;
 
                 /* Step 6 - Update step value */
-                step = stepsizeTable[index];
+                step = stepTable[index];
 
                 /* Step 7 - Output value */
                 if (isBigEndian)
@@ -271,6 +299,161 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             state.ValuePredicted = valpred;
             state.Index = index;
             return inFrameCount;
+        }
+
+        /**
+          * Encode 16-bit stereo little-endian PCM audio data to 8-bit ADPCM audio data.
+          *
+          * @param input 16-bit stereo little-endian PCM audio data
+          * @return 8-bit ADPCM audio data
+          */
+        public byte[] Encode(short[] input)
+        {
+            int count = input.Length / 2;
+            byte[] output = new byte[count];
+
+            int inputIndex = 0, outputIndex = 0;
+            while (outputIndex < count)
+            {
+                int leftSample = input[inputIndex++];
+                int rightSample = input[inputIndex++];
+                int leftStep = stepTable[leftStepIndexEnc];
+                int rightStep = stepTable[rightStepIndexEnc];
+                int leftCode = ((leftSample - leftPredictedEnc) * 4 + leftStep * 8) / leftStep;
+                int rightCode = ((rightSample - rightPredictedEnc) * 4 + rightStep * 8) / rightStep;
+                if (leftCode > 15) leftCode = 15;
+                if (rightCode > 15) rightCode = 15;
+                if (leftCode < 0) leftCode = 0;
+                if (rightCode < 0) rightCode = 0;
+                leftPredictedEnc += ((leftCode * leftStep) >> 2) - ((15 * leftStep) >> 3);
+                rightPredictedEnc += ((rightCode * rightStep) >> 2) - ((15 * rightStep) >> 3);
+                if (leftPredictedEnc > 32767) leftPredictedEnc = 32767;
+                if (rightPredictedEnc > 32767) rightPredictedEnc = 32767;
+                if (leftPredictedEnc < -32768) leftPredictedEnc = -32768;
+                if (rightPredictedEnc < -32768) rightPredictedEnc = -32768;
+                leftStepIndexEnc += stepIndexTable[leftCode];
+                rightStepIndexEnc += stepIndexTable[rightCode];
+                if (leftStepIndexEnc > 88) leftStepIndexEnc = 88;
+                if (rightStepIndexEnc > 88) rightStepIndexEnc = 88;
+                if (leftStepIndexEnc < 0) leftStepIndexEnc = 0;
+                if (rightStepIndexEnc < 0) rightStepIndexEnc = 0;
+
+                output[outputIndex++] = (byte)((rightCode << 4) | rightCode);
+            }
+            return output;
+        }
+
+        /**
+         * Decode 8-bit ADPCM audio data to 16-bit stereo little-endian PCM audio data.
+         *
+         * @param input 8-bit ADPCM audio data
+         * @return 16-bit stereo little-endian PCM audio data
+         */
+        public short[] Decode(byte[] input)
+        {
+            int count = input.Length * 2;
+            short[] output = new short[count];
+
+            int inputIndex = 0, outputIndex = 0;
+            while (outputIndex < count)
+            {
+                int leftCode = input[inputIndex++] & 0xFF;
+                int rightCode = leftCode & 0xF;
+                leftCode = leftCode >> 4;
+                int leftStep = stepTable[leftStepIndexDec];
+                int rightStep = stepTable[rightStepIndexDec];
+                leftPredictedDec += ((leftCode * leftStep) >> 2) - ((15 * leftStep) >> 3);
+                rightPredictedDec += ((rightCode * rightStep) >> 2) - ((15 * rightStep) >> 3);
+                if (leftPredictedDec > 32767) leftPredictedDec = 32767;
+                if (rightPredictedDec > 32767) rightPredictedDec = 32767;
+                if (leftPredictedDec < -32768) leftPredictedDec = -32768;
+                if (rightPredictedDec < -32768) rightPredictedDec = -32768;
+                output[outputIndex++] = (short)leftPredictedDec;
+                output[outputIndex++] = (short)rightPredictedDec;
+                leftStepIndexDec += stepIndexTable[leftCode];
+                rightStepIndexDec += stepIndexTable[rightCode];
+                if (leftStepIndexDec > 88) leftStepIndexDec = 88;
+                if (rightStepIndexDec > 88) rightStepIndexDec = 88;
+                if (leftStepIndexDec < 0) leftStepIndexDec = 0;
+                if (rightStepIndexDec < 0) rightStepIndexDec = 0;
+            }
+            return output;
+        }
+
+        /// <summary>
+        /// Decode 4-bit ADPCM samples into 16-bit linear PCM data (signed, big endian).     
+        /// </summary>
+        /// <param name="raw">raw 4-bit ADPCM samples</param>
+        /// <param name="offset">offset</param>
+        /// <param name="len">length</param>
+        /// <returns>Decoded samples</returns>
+        public byte[] DecodeIma(byte[] raw, int offset, int len)
+        {
+            int predictedSample = 0;
+            int index = 0;
+            int stepSize = 7;     // Only for IMA impl.
+
+            byte[] ret = new byte[len * 4];
+
+            // Use 2x length because we examine each byte twice.
+            for (int i = offset; i < (offset + len) * 2; i++)
+            {
+                int originalSample; // 4 bits
+                if (i % 2 != 0)   // odd i
+                {
+                    originalSample = (raw[i / 2] & 0xFF) & 0x0F;   //bottom four bits
+                }
+                else                // even i
+                {
+                    originalSample = (raw[i / 2] & 0xFF) >> 4;     //top four bits
+                }
+
+                int difference = 0;
+                if ((originalSample & 4) != 0)  //b0000 0100
+                {
+                    difference += stepSize;
+                }
+                if ((originalSample & 2) != 0)  //b0000 0010
+                {
+                    difference += stepSize >> 1;
+                }
+                if ((originalSample & 1) != 0)  //b0000 0001
+                {
+                    difference += stepSize >> 2;
+                }
+                difference += stepSize >> 3;
+                if ((originalSample & 8) != 0)  //b0000 1000
+                {
+                    difference = -difference;
+                }
+
+                predictedSample += difference;
+                if (predictedSample > 32767)
+                    predictedSample = 32767;
+                else if (predictedSample < -32768)
+                    predictedSample = -32768;
+
+                /* Step 7 - Output value */
+                if (isBigEndian)
+                {
+                    ret[i * 2] = (byte)(predictedSample >> 8);    // top 8 bits
+                    ret[i * 2 + 1] = (byte)(predictedSample & 0xFF);  // bottom 8 bits
+                }
+                else
+                {
+                    ret[i * 2] = (byte)(predictedSample & 0xFF);    // top 8 bits
+                    ret[i * 2 + 1] = (byte)(predictedSample >> 8);  // bottom 8 bits
+                }
+
+                index += stepIndexTable[originalSample];
+                if (index < 0)
+                    index = 0;
+                else if (index > 88)  // Size of step_table
+                    index = 88;
+
+                stepSize = stepTable[index];
+            }
+            return ret;
         }
     }
 }

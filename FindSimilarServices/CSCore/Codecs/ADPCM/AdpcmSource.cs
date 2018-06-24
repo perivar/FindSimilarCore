@@ -74,9 +74,10 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 int read = _stream.Read(inBuffer, 0, count);
                 if (read > 0)
                 {
-                    var outBuffer = new byte[read * 2];
+                    //var outBuffer = new byte[read * 2];
                     var state = new AdpcmState();
-                    var returnCount = _adpcm.AdpcmDecoder(inBuffer, outBuffer, 0, read, state);
+                    //var returnCount = _adpcm.AdpcmDecoder(inBuffer, outBuffer, 0, read, state);
+                    var outBuffer = _adpcm.DecodeIma(inBuffer, 0, read);
 
                     Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
                     return outBuffer.Length;
