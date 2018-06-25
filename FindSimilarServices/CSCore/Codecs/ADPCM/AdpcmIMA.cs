@@ -1,6 +1,6 @@
 namespace FindSimilarServices.CSCore.Codecs.ADPCM
 {
-    // see https://github.com/jwzhangjie/Adpcm_Pcm/blob/master/Adpcm.c
+    // see https://github.com/jwzhangjie/Adpcm_Pcm/blob/master/adpcm.c
     // https://sourceforge.net/p/openbor/tools/3174/tree/tools/openwav2bor/source/adpcm.c?diff=50c8e1ce1be1ce03cfa5c218:3173
     // https://gist.github.com/jaames/c837fb87a6a5585d47baa1b8e2408234
     // https://github.com/srnsw/xena/blob/master/plugins/audio/ext/src/tritonus/src/classes/org/tritonus/sampled/convert/ImaAdpcmFormatConversionProvider.java
@@ -15,7 +15,30 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         public int[] PreviousIndex = new int[2];
     }
 
-    public class Adpcm
+    /*
+    ** Intel/DVI ADPCM coder/decoder.
+    **
+    ** The algorithm for this coder was taken from the IMA Compatability Project
+    ** proceedings, Vol 2, Number 2; May 1992.
+    **
+    ** Version 1.2, 18-Dec-92.
+    **
+    ** Change log:
+    ** - Fixed a stupid bug, where the delta was computed as
+    **   stepsize*code/4 in stead of stepsize*(code+0.5)/4.
+    ** - There was an off-by-one error causing it to pick
+    **   an incorrect delta once in a blue moon.
+    ** - The NODIVMUL define has been removed. Computations are now always done
+    **   using shifts, adds and subtracts. It turned out that, because the standard
+    **   is defined using shift/add/subtract, you needed bits of fixup code
+    **   (because the div/mul simulation using shift/add/sub made some rounding
+    **   errors that real div/mul don't make) and all together the resultant code
+    **   ran slower than just using the shifts all the time.
+    ** - Changed some of the variable names to be more meaningful.
+    */
+
+    /* modefied by juguofeng<jgfntu@163.com> 2012-05-20 */
+    public class AdpcmIMA
     {
         AdpcmState state = null;
 
@@ -48,7 +71,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /**
         * Creates a ADPCM encoder/decoder.
         */
-        public Adpcm(bool isBigEndian = false)
+        public AdpcmIMA(bool isBigEndian = false)
         {
             this.isBigEndian = isBigEndian;
             this.state = new AdpcmState();

@@ -138,7 +138,7 @@ namespace FindSimilarServices.Audio
             }
             catch (System.Exception e)
             {
-                //Console.Error.WriteLine("ReadMonoSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message);
+                Console.Error.WriteLine("ReadMonoSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message);
             }
 
             return new AudioSamples(downsampled, pathToSourceFile, sampleRate);

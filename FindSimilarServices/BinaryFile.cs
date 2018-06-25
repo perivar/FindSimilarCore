@@ -59,10 +59,17 @@ namespace CommonUtils
             this.byteOrder = byteOrder;
         }
 
-        public BinaryFile(MemoryStream stream, ByteOrder byteOrder)
+        public BinaryFile(MemoryStream stream, ByteOrder byteOrder, bool doRead = false)
         {
             this.memStream = stream;
-            this.binaryWriter = new BinaryWriter(memStream, Encoding.Default);
+            if (doRead)
+            {
+                this.binaryReader = new BinaryReader(memStream, Encoding.Default);
+            }
+            else
+            {
+                this.binaryWriter = new BinaryWriter(memStream, Encoding.Default);
+            }
 
             // Set position to the beginning of the stream.
             this.memStream.Position = 0;

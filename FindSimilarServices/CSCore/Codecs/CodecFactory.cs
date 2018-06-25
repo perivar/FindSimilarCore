@@ -37,7 +37,7 @@ namespace CSCore.Codecs
                  if (res.WaveFormat.WaveFormatTag == AudioEncoding.Adpcm)
                  {
                      res.Dispose();
-                     res = new AdpcmSource(s, res.WaveFormat, ((WaveFileReader)res).DataChunk).ToWaveSource();
+                     res = new AdpcmSource(s, res.WaveFormat, ((WaveFileReader)res).DataChunk);
                  }
                  else
                  {
