@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using CSCore;
 using CSCore.Codecs.WAV;
 
@@ -10,10 +13,17 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         private readonly object _lockObj = new object();
 
         private readonly AdpcmMS _adpcm;
+        private readonly int _channels;
+        private readonly int _blockAlign;
+        private readonly int _samplesPerBlock;
+        private readonly int _bytesPerBlock;
+        private readonly int _nCoefs;
+
+        private WaveFormat _waveFormat;
+        private readonly ReadOnlyCollection<WaveFileChunk> _chunks;
+
         private bool _disposed;
         private Stream _stream;
-        private WaveFormat _waveFormat;
-        private readonly DataChunk _dataChunk;
         private readonly bool _closeStream;
 
         /// <summary>
@@ -21,7 +31,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /// </summary>
         /// <param name="stream"><see cref="Stream" /> which contains raw waveform-audio data.</param>
         /// <param name="waveFormat">The format of the waveform-audio data within the <paramref name="stream" />.</param>
-        public AdpcmSource(Stream stream, WaveFormat waveFormat, DataChunk dataChunk)
+        public AdpcmSource(Stream stream, WaveFormat waveFormat, ReadOnlyCollection<WaveFileChunk> chunks)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
@@ -30,19 +40,99 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             if (!stream.CanRead)
                 throw new ArgumentException("stream is not readable", "stream");
 
-            _adpcm = new AdpcmMS();
-            _dataChunk = dataChunk;
-
             if (waveFormat.WaveFormatTag != AudioEncoding.Adpcm)
-                throw new ArgumentException("Not supported encoding: {" + waveFormat.WaveFormatTag + "}");
+                throw new ArgumentException(string.Format("Not supported encoding: {0}", waveFormat.WaveFormatTag));
 
-            // fix new format identifiers
+            this._chunks = chunks;
+
+            // check format
+            var fmtChunk = (FmtChunk)_chunks.FirstOrDefault(x => x is FmtChunk);
+            if (fmtChunk != null)
+            {
+                // https://github.com/chirlu/sox/blob/4927023d0978615c74e8a511ce981cf4c29031f1/src/wav.c
+                long oldPosition = stream.Position;
+                long startPosition = fmtChunk.StartPosition;
+                long endPosition = fmtChunk.EndPosition;
+                long chunkDataSize = fmtChunk.ChunkDataSize;
+
+                stream.Position = startPosition;
+                var reader = new BinaryReader(stream);
+                var encoding = (AudioEncoding)reader.ReadInt16();
+                _channels = reader.ReadInt16();
+                int sampleRate = reader.ReadInt32();
+                int avgBps = reader.ReadInt32();
+                _blockAlign = reader.ReadInt16();
+                int bitsPerSample = reader.ReadInt16();
+
+                int extraSize = 0;
+                if (fmtChunk.ChunkDataSize > 16)
+                {
+                    extraSize = reader.ReadInt16();
+
+                    if (extraSize < 4)
+                    {
+                        throw new ArgumentException(string.Format("Format {0}: Expects extra size >= 4", encoding));
+                    }
+
+                    if (bitsPerSample != 4)
+                    {
+                        throw new ArgumentException(string.Format("Can only handle 4-bit MS ADPCM in wav files: {0}", bitsPerSample));
+                    }
+
+                    _samplesPerBlock = reader.ReadInt16();
+                    _bytesPerBlock = MSAdpcmBytesPerBlock(_channels, _samplesPerBlock);
+                    if (_bytesPerBlock > _blockAlign)
+                    {
+                        throw new ArgumentException(string.Format("Format {0}: samplesPerBlock {1} incompatible with blockAlign {2}", encoding, _samplesPerBlock, _bytesPerBlock));
+                    }
+
+                    _nCoefs = reader.ReadInt16();
+                    if (_nCoefs < 7 || _nCoefs > 0x100)
+                    {
+                        throw new ArgumentException(string.Format("ADPCM file nCoefs {0} makes no sense", _nCoefs));
+                    }
+
+                    if (waveFormat.ExtraSize < 4 + 4 * _nCoefs)
+                    {
+                        throw new ArgumentException(string.Format("Wave header error: wExtSize {0} too small for nCoefs {1}", extraSize, _nCoefs));
+                    }
+
+                    // check the coefficients up against the stored legal table of predictor value pairs
+                    int len = extraSize - 4;
+                    int i, errorControl = 0;
+                    var msAdpcmICoefs = new int[_nCoefs * 2];
+                    for (i = 0; len >= 2 && i < 2 * _nCoefs; i++)
+                    {
+                        msAdpcmICoefs[i] = reader.ReadInt16();
+                        len -= 2;
+                        if (i < 14) errorControl += (msAdpcmICoefs[i] != AdpcmMS.MSAdpcmICoef[i / 2][i % 2] ? 1 : 0);
+                    }
+                    if (errorControl > 0) throw new ArgumentException(string.Format("base lsx_ms_adpcm_i_coefs differ in {0}/14 positions", errorControl));
+                }
+
+                // reset position
+                stream.Position = oldPosition;
+            }
+
+            var dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
+            if (dataChunk != null)
+            {
+                // read num samples in the data chunk
+                int samples = MSApcmSamples((int)dataChunk.ChunkDataSize, _channels, _blockAlign, _samplesPerBlock);
+            }
+            else
+            {
+                throw new ArgumentException("The specified stream does not contain any data chunks.", "stream");
+            }
+
+            _adpcm = new AdpcmMS();
+
+            // set the format identifiers to what this class returns
             waveFormat.BitsPerSample = 16; // originally 4
             waveFormat.WaveFormatTag = AudioEncoding.Pcm; // originally adpcm
             _waveFormat = waveFormat;
 
             _stream = stream;
-            //_waveFormat = new WaveFormat(waveFormat.SampleRate, 32, waveFormat.Channels, AudioEncoding.IeeeFloat);
         }
 
         /// <summary>
@@ -66,65 +156,16 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             {
                 CheckForDisposed();
 
-                count = (int)Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
-                count -= count % 1; // block align is 1
-                if (count <= 0)
-                    return 0;
-
-                /*                 var inBuffer = new byte[count];
-                                int read = _stream.Read(inBuffer, 0, count);
-                                if (read > 0)
-                                {
-                                    var outBuffer = new byte[read * 4];
-                                    var returnCount = _adpcm.AdpcmDecode(inBuffer, outBuffer, inBuffer.Length, WaveFormat.Channels);
-
-                                    Buffer.BlockCopy(outBuffer, 0, buffer, 0, returnCount);
-                                    return returnCount;
-                                }
-                                return read; */
-
                 var inBuffer = new byte[count];
                 int read = _stream.Read(inBuffer, 0, count);
                 if (read > 0)
                 {
                     var memStream = new MemoryStream(inBuffer, 0, read);
                     var binaryReader = new BinaryReader(memStream);
-                    var outBuffer = AdpcmMS.ConvertToPCM(binaryReader, WaveFormat.Channels, 1);
+                    var outBuffer = AdpcmMS.ConvertToPCM(binaryReader, _channels, _blockAlign);
+
+                    Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
                     return outBuffer.Length;
-                }
-                return read;
-            }
-        }
-
-        public int Read(float[] buffer, int offset, int count)
-        {
-            lock (_lockObj)
-            {
-                CheckForDisposed();
-
-                count = (int)Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
-                count -= count % 1; // block align is 1
-                if (count <= 0)
-                    return 0;
-
-                var inBuffer = new byte[count];
-                int read = _stream.Read(inBuffer, 0, count);
-                if (read > 0)
-                {
-                    /*                     var outBuffer = new float[read * 2];
-                                        var returnCount = _adpcm.AdpcmDecode(inBuffer, outBuffer, inBuffer.Length, WaveFormat.Channels);
-                                        Buffer.BlockCopy(outBuffer, 0, buffer, 0, returnCount);
-                                        return returnCount;
-                     */
-                    /*                     var outBuffer = _adpcm.DecodeAdpcmMono(inBuffer);
-                                        Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
-                                        return outBuffer.Length; 
-                    */
-
-                    /*                     var outBuffer = _adpcm.DecodeImaFloats(inBuffer, offset, inBuffer.Length);
-                                        Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
-                                        return outBuffer.Length;
-                     */
                 }
                 return read;
             }
@@ -135,7 +176,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /// </summary>
         public bool CanSeek
         {
-            get { return true; }
+            get { return _stream.CanSeek; }
         }
 
         /// <summary>
@@ -151,7 +192,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /// </summary>
         public long Position
         {
-            get { return _stream != null ? _stream.Position - _dataChunk.DataStartPosition : 0; }
+            get { return _stream.Position; }
             set
             {
                 lock (_lockObj)
@@ -160,8 +201,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                     if (value > Length || value < 0)
                         throw new ArgumentOutOfRangeException("value", "The position must not be bigger than the length or less than zero.");
-                    value -= (value % WaveFormat.BlockAlign);
-                    _stream.Position = value + _dataChunk.DataStartPosition;
+                    _stream.Position = value;
                 }
             }
         }
@@ -177,7 +217,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /// </summary>
         public long Length
         {
-            get { return _dataChunk != null ? _dataChunk.ChunkDataSize : 0; }
+            get { return 0; }
         }
 
         /// <summary>
@@ -216,6 +256,55 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         ~AdpcmSource()
         {
             Dispose(false);
+        }
+
+        /*
+         * lsx_ms_adpcm_samples_in(dataLen, chans, blockAlign, samplesPerBlock)
+         *  returns the number of samples/channel which would be
+         *  in the dataLen, given the other parameters ...
+         *  if input samplesPerBlock is 0, then returns the max
+         *  samplesPerBlock which would go into a block of size blockAlign
+         *  Yes, it is confusing usage.
+         */
+        private int MSApcmSamples(
+                int dataLen,
+                int chans,
+                int blockAlign,
+                int samplesPerBlock
+        )
+        {
+            int m, n = 0;
+
+            if (samplesPerBlock > 0)
+            {
+                n = (dataLen / blockAlign) * samplesPerBlock;
+                m = (dataLen % blockAlign);
+            }
+            else
+            {
+                n = 0;
+                m = blockAlign;
+            }
+            if (m >= (int)(7 * chans))
+            {
+                m -= 7 * chans;          /* bytes beyond block-header */
+                m = (2 * m) / chans + 2;   /* nibbles/chans + 2 in header */
+                if (samplesPerBlock > 0 && m > samplesPerBlock) m = samplesPerBlock;
+                n += m;
+            }
+            return n;
+        }
+
+        private int MSAdpcmBytesPerBlock(
+            int channels,
+            int samplesPerBlock)
+        {
+            int n = 7 * channels;  /* header */
+
+            if (samplesPerBlock > 2)
+                n += ((samplesPerBlock - 2) * channels + 1) / 2;
+
+            return n;
         }
     }
 }

@@ -37,7 +37,7 @@ namespace CSCore.Codecs.WAV
 
             if (ChunkID == FmtChunkID) //"fmt "
             {
-                var encoding = (AudioEncoding) reader.ReadInt16();
+                var encoding = (AudioEncoding)reader.ReadInt16();
                 int channels = reader.ReadInt16();
                 int sampleRate = reader.ReadInt32();
                 int avgBps = reader.ReadInt32();
@@ -50,17 +50,18 @@ namespace CSCore.Codecs.WAV
                     extraSize = reader.ReadInt16();
                     if (extraSize != ChunkDataSize - 18)
                         //TODO: Check whether this is the correct way of reading a fmt chunk
-                        extraSize = (int) (ChunkDataSize - 18);
+                        extraSize = (int)(ChunkDataSize - 18);
 
-                    for (int i = (int) (ChunkDataSize - 16); i > 0; i--)
+                    for (int i = (int)(ChunkDataSize - 16); i > 0; i--)
                     {
+                        // ignore extra size bytes
                         reader.ReadByte();
                     }
 
                     reader.BaseStream.Position -= 2;
                 }
 
-                _waveFormat = new WaveFormat(sampleRate, (short) bitsPerSample, (short) channels, encoding, extraSize);
+                _waveFormat = new WaveFormat(sampleRate, (short)bitsPerSample, (short)channels, encoding, extraSize);
             }
         }
 

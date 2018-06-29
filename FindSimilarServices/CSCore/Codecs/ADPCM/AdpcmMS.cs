@@ -22,6 +22,17 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             0, -256, 0, 64, 0, -208, -232
         };
 
+        public static readonly int[][] MSAdpcmICoef = {
+                        new int[] { 256,   0},
+                        new int[] { 512,-256},
+                        new int[] {   0,   0},
+                        new int[] { 192,  64},
+                        new int[] { 240,   0},
+                        new int[] { 460,-208},
+                        new int[] { 392,-232}
+                        };
+
+
         /**
 		 * Splits the MSADPCM samples from each byte block.
 		 * @param block An MSADPCM sample byte
@@ -50,7 +61,10 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             ref short delta
         )
         {
-            if (predictor < 0 || predictor > 6) throw new ArgumentException("ADPCMMS failed, predictor is outside the range 0-6: " + predictor);
+            if (predictor < 0 || predictor > 6)
+            {
+                throw new ArgumentException("ADPCMMS failed, predictor is outside the range 0-6: " + predictor);
+            }
 
             // Get a signed number out of the nibble. We need to retain the
             // original nibble value for when we access AdaptionTable[].
@@ -63,7 +77,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             // Calculate new sample
             int sampleInt = (
                 ((sample_1 * AdaptCoeff_1[predictor]) +
-                    (sample_2 * AdaptCoeff_2[predictor])
+                 (sample_2 * AdaptCoeff_2[predictor])
                 ) / 256
             );
             sampleInt += signedNibble * delta;

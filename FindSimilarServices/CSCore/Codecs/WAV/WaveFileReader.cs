@@ -50,8 +50,11 @@ namespace CSCore.Codecs.WAV
             var reader = new BinaryReader(stream);
             if (new String(reader.ReadChars(4)) == "RIFF")
             {
-                reader.ReadInt32(); //FileLength
-                reader.ReadChars(4);
+                // read RIFF data size
+                var chunkSize = reader.ReadInt32();
+
+                // read form-type (WAVE etc)
+                var field = new string(reader.ReadChars(4));
             }
 
             _chunks = ReadChunks(stream);

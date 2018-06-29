@@ -28,6 +28,8 @@ namespace CSCore.Codecs.WAV
                 throw new ArgumentNullException("reader");
             ChunkID = reader.ReadInt32();
             ChunkDataSize = reader.ReadUInt32();
+
+            StartPosition = reader.BaseStream.Position;
         }
 
         /// <summary>
@@ -65,6 +67,16 @@ namespace CSCore.Codecs.WAV
             if (id == DataChunk.DataChunkID)
                 return new DataChunk(reader);
             return new WaveFileChunk(reader);
+        }
+
+        /// <summary>
+        /// Gets the zero-based position inside of the stream at which the audio data starts.
+        /// </summary>
+        public long StartPosition { get; private set; }
+
+        public long EndPosition
+        {
+            get { return StartPosition + ChunkDataSize; }
         }
     }
 }
