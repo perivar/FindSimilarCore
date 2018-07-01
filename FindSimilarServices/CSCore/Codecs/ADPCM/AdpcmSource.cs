@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using CommonUtils.Audio;
 using CSCore;
 using CSCore.Codecs.WAV;
 
@@ -12,15 +13,10 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
     {
         private readonly object _lockObj = new object();
 
-        private readonly AdpcmMS _adpcm;
-        private readonly int _channels;
-        private readonly int _blockAlign;
-        private readonly int _samplesPerBlock;
-        private readonly int _bytesPerBlock;
-        private readonly int _nCoefs;
-
-        private WaveFormat _waveFormat;
+        private readonly WaveFormat _waveFormat;
+        private readonly AudioFormat _audioFormat;
         private readonly ReadOnlyCollection<WaveFileChunk> _chunks;
+        private readonly Adpcm.Decoder _decoder;
 
         private bool _disposed;
         private Stream _stream;
@@ -46,6 +42,9 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             this._chunks = chunks;
 
             // check format
+            var audioFormat = new AudioFormat();
+            this._audioFormat = audioFormat;
+
             var fmtChunk = (FmtChunk)_chunks.FirstOrDefault(x => x is FmtChunk);
             if (fmtChunk != null)
             {
@@ -57,55 +56,55 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                 stream.Position = startPosition;
                 var reader = new BinaryReader(stream);
-                var encoding = (AudioEncoding)reader.ReadInt16();
-                _channels = reader.ReadInt16();
-                int sampleRate = reader.ReadInt32();
-                int avgBps = reader.ReadInt32();
-                _blockAlign = reader.ReadInt16();
-                int bitsPerSample = reader.ReadInt16();
 
-                int extraSize = 0;
+                audioFormat.Encoding = (AudioEncoding)reader.ReadInt16();
+                audioFormat.Channels = reader.ReadInt16();
+                audioFormat.SampleRate = reader.ReadInt32();
+                audioFormat.BytesPerSecond = reader.ReadInt32();
+                audioFormat.BlockAlign = reader.ReadInt16();
+                audioFormat.BitsPerSample = reader.ReadInt16();
+
                 if (fmtChunk.ChunkDataSize > 16)
                 {
-                    extraSize = reader.ReadInt16();
+                    audioFormat.ExtraSize = reader.ReadInt16();
 
-                    if (extraSize < 4)
+                    if (audioFormat.ExtraSize < 4)
                     {
-                        throw new ArgumentException(string.Format("Format {0}: Expects extra size >= 4", encoding));
+                        throw new ArgumentException(string.Format("Format {0}: Expects extra size >= 4", audioFormat.Encoding));
                     }
 
-                    if (bitsPerSample != 4)
+                    if (audioFormat.BitsPerSample != 4)
                     {
-                        throw new ArgumentException(string.Format("Can only handle 4-bit MS ADPCM in wav files: {0}", bitsPerSample));
+                        throw new ArgumentException(string.Format("Can only handle 4-bit MS ADPCM in wav files: {0}", audioFormat.BitsPerSample));
                     }
 
-                    _samplesPerBlock = reader.ReadInt16();
-                    _bytesPerBlock = MSAdpcmBytesPerBlock(_channels, _samplesPerBlock);
-                    if (_bytesPerBlock > _blockAlign)
+                    audioFormat.SamplesPerBlock = reader.ReadInt16();
+                    audioFormat.BytesPerBlock = MSAdpcmBytesPerBlock(audioFormat.Channels, audioFormat.SamplesPerBlock);
+                    if (audioFormat.BytesPerBlock > audioFormat.BlockAlign)
                     {
-                        throw new ArgumentException(string.Format("Format {0}: samplesPerBlock {1} incompatible with blockAlign {2}", encoding, _samplesPerBlock, _bytesPerBlock));
+                        throw new ArgumentException(string.Format("Format {0}: samplesPerBlock {1} incompatible with blockAlign {2}", audioFormat.Encoding, audioFormat.SamplesPerBlock, audioFormat.BytesPerBlock));
                     }
 
-                    _nCoefs = reader.ReadInt16();
-                    if (_nCoefs < 7 || _nCoefs > 0x100)
+                    audioFormat.Coefficients = reader.ReadInt16();
+                    if (audioFormat.Coefficients < 7 || audioFormat.Coefficients > 0x100)
                     {
-                        throw new ArgumentException(string.Format("ADPCM file nCoefs {0} makes no sense", _nCoefs));
+                        throw new ArgumentException(string.Format("ADPCM file number of coeffs {0} makes no sense", audioFormat.Coefficients));
                     }
 
-                    if (waveFormat.ExtraSize < 4 + 4 * _nCoefs)
+                    if (waveFormat.ExtraSize < 4 + 4 * audioFormat.Coefficients)
                     {
-                        throw new ArgumentException(string.Format("Wave header error: wExtSize {0} too small for nCoefs {1}", extraSize, _nCoefs));
+                        throw new ArgumentException(string.Format("Wave header error: extrasize {0} too small for num coeffs {1}", audioFormat.ExtraSize, audioFormat.Coefficients));
                     }
 
                     // check the coefficients up against the stored legal table of predictor value pairs
-                    int len = extraSize - 4;
+                    int len = audioFormat.ExtraSize - 4;
                     int i, errorControl = 0;
-                    var msAdpcmICoefs = new int[_nCoefs * 2];
-                    for (i = 0; len >= 2 && i < 2 * _nCoefs; i++)
+                    var msAdpcmCoefficients = new int[audioFormat.Coefficients * 2];
+                    for (i = 0; len >= 2 && i < 2 * audioFormat.Coefficients; i++)
                     {
-                        msAdpcmICoefs[i] = reader.ReadInt16();
+                        msAdpcmCoefficients[i] = reader.ReadInt16();
                         len -= 2;
-                        if (i < 14) errorControl += (msAdpcmICoefs[i] != AdpcmMS.MSAdpcmICoef[i / 2][i % 2] ? 1 : 0);
+                        if (i < 14) errorControl += (msAdpcmCoefficients[i] != AdpcmMS.MSAdpcmICoef[i / 2][i % 2] ? 1 : 0);
                     }
                     if (errorControl > 0) throw new ArgumentException(string.Format("base lsx_ms_adpcm_i_coefs differ in {0}/14 positions", errorControl));
                 }
@@ -117,15 +116,23 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             var dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
             if (dataChunk != null)
             {
+                audioFormat.BytesDataSize = dataChunk.ChunkDataSize;
                 // read num samples in the data chunk
-                int samples = MSApcmSamples((int)dataChunk.ChunkDataSize, _channels, _blockAlign, _samplesPerBlock);
+                audioFormat.SamplesPerChannel = MSApcmSamples((int)dataChunk.ChunkDataSize, audioFormat.Channels, audioFormat.BlockAlign, audioFormat.SamplesPerBlock);
             }
             else
             {
-                throw new ArgumentException("The specified stream does not contain any data chunks.", "stream");
+                throw new ArgumentException("The specified stream does not contain any data chunks.");
             }
 
-            _adpcm = new AdpcmMS();
+            Debug.WriteLine(audioFormat.ToString());
+
+            var decoder = new Adpcm.Decoder();
+            decoder.AudioFormat = audioFormat;
+            if ((decoder = Adpcm.OpenDecoder(decoder)).Success)
+            {
+                _decoder = decoder;
+            }
 
             // set the format identifiers to what this class returns
             waveFormat.BitsPerSample = 16; // originally 4
@@ -162,7 +169,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 {
                     var memStream = new MemoryStream(inBuffer, 0, read);
                     var binaryReader = new BinaryReader(memStream);
-                    var outBuffer = AdpcmMS.ConvertToPCM(binaryReader, _channels, _blockAlign);
+                    var outBuffer = Adpcm.DecodeAudio(_decoder, binaryReader, read);
 
                     Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
                     return outBuffer.Length;

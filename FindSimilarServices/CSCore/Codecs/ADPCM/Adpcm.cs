@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using CSCore;
+using CommonUtils.Audio;
 
 namespace FindSimilarServices.CSCore.Codecs.ADPCM
 {
@@ -54,7 +55,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         public struct Decoder
         {
             public DecoderSys Sys;
-            public WaveFormat WaveFormat;
+            public AudioFormat AudioFormat;
+            public bool Success;
         }
 
         public struct DecoderSys
@@ -107,11 +109,16 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /*****************************************************************************
          * OpenDecoder: probe the decoder and return score
          *****************************************************************************/
-        static bool OpenDecoder(Decoder decoder, WaveFormat format)
+        public static Decoder OpenDecoder(Decoder decoder)
         {
-            DecoderSys sys = new DecoderSys();
+            var format = decoder.AudioFormat;
 
-            switch (format.WaveFormatTag)
+            var sys = new DecoderSys();
+            sys.Prev = null;
+            sys.SamplesPerBlock = 0;
+            sys.Codec = AdpcmCodecType.ADPCM_MS;
+
+            switch (format.Encoding)
             {
                 // case VLC_CODEC_ADPCM_IMA_QT:
                 case AudioEncoding.ImaAdpcm:
@@ -121,22 +128,20 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     // case VLC_CODEC_ADPCM_XA_EA:
                     break;
                 default:
-                    return false;
+                    decoder.Success = false;
+                    return decoder;
             }
 
             if (format.SampleRate <= 0)
             {
                 Console.Error.WriteLine("Bad samplerate {0}", format.SampleRate);
-                return false;
+                decoder.Success = false;
+                return decoder;
             }
-
-            sys.Prev = null;
-            sys.SamplesPerBlock = 0;
-            sys.Codec = AdpcmCodecType.ADPCM_MS;
 
             int channels = format.Channels;
             byte maxChannels = 5;
-            switch (format.WaveFormatTag)
+            switch (format.Encoding)
             {
                 //  case VLC_CODEC_ADPCM_IMA_QT: /* IMA ADPCM */
                 // sys.codec = adpcmCodecE.ADPCM_IMA_QT;
@@ -166,7 +171,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             if (channels > maxChannels || channels == 0)
             {
                 Console.Error.WriteLine("Invalid number of channels {0}", channels);
-                return false;
+                decoder.Success = false;
+                return decoder;
             }
 
             if (format.BlockAlign <= 0)
@@ -222,27 +228,28 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     break;
             }
 
-            Debug.WriteLine("Format: samplerate:{0} Hz channels:{1} bits/sample:{2} blockalign:{3} samplesperblock:{4}",
+            Debug.WriteLine("Format: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockalign: {3}, samplesperblock: {4}",
             format.SampleRate, format.Channels, format.BitsPerSample, sys.BlockAlign, sys.SamplesPerBlock);
 
             if (sys.SamplesPerBlock == 0)
             {
                 Console.Error.WriteLine("Error computing number of samples per block");
-                return false;
+                decoder.Success = false;
+                return decoder;
             }
 
             decoder.Sys = sys;
-
-            return true;
+            decoder.Success = true;
+            return decoder;
         }
 
         /*****************************************************************************
          * DecodeBlock:
          *****************************************************************************/
-        static byte[] DecodeBlock(Decoder decoder, byte[] buffer)
+        public static byte[] DecodeBlock(Decoder decoder, BinaryReader binaryReader)
         {
             DecoderSys sys = decoder.Sys;
-            BinaryReader binaryReader = null;
+            byte[] buffer = null;
 
             switch (sys.Codec)
             {
@@ -271,22 +278,41 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             return buffer;
         }
 
+        public static byte[] DecodeAudio(Decoder decoder, BinaryReader binaryReader, int count)
+        {
+            // We write to output when reading the PCM data, then we convert
+            // it back to a short array at the end.
+            MemoryStream output = new MemoryStream();
+            BinaryWriter pcmOut = new BinaryWriter(output);
+
+            byte[] buffer = null;
+            while ((buffer = DecodeBlock(decoder, binaryReader)) != null)
+            {
+                pcmOut.Write(buffer);
+            }
+
+            // We're done writing PCM data
+            pcmOut.Close();
+            output.Close();
+
+            // Return the array.
+            return output.ToArray();
+        }
+
         /*
          * MS
          */
         public struct adpcmMsChannel
         {
-            public int Delta;
-            public int Sample1, Sample2;
-            public int Coeff1, Coeff2;
+            public short Delta;
+            public short Sample1, Sample2;
+            public short Coeff1, Coeff2;
 
         };
 
-        static int AdpcmMsExpandNibble(adpcmMsChannel channel,
+        static short AdpcmMsExpandNibble(adpcmMsChannel channel,
                                        int nibble)
         {
-            int predictor;
-
             // Get a signed number out of the nibble. We need to retain the
             // original nibble value for when we access AdaptionTable[].
             sbyte signedNibble = (sbyte)nibble;
@@ -296,26 +322,25 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             }
 
             // Calculate new sample
-            predictor = (channel.Sample1 * channel.Coeff1 +
+            int predictor = (channel.Sample1 * channel.Coeff1 +
                             channel.Sample2 * channel.Coeff2) / 256 +
                           signedNibble * channel.Delta;
 
-            // Clamp result to 32-bit
-            predictor = Clamp(predictor, -32768, 32767);
+            // Clamp result to 16-bit, -32768 - 32767
+            predictor = Clamp(predictor, short.MinValue, short.MaxValue);
 
             // Shuffle samples, get new delta
             channel.Sample2 = channel.Sample1;
-            channel.Sample1 = predictor;
+            channel.Sample1 = (short)predictor;
 
-            channel.Delta = (AdaptationTable[nibble] *
-                                    channel.Delta) / 256;
+            channel.Delta = (short)((AdaptationTable[nibble] * channel.Delta) / 256);
 
             // Saturate the delta to a lower bound of 16
             if (channel.Delta < 16)
             {
                 channel.Delta = 16;
             }
-            return predictor;
+            return (short)predictor;
         }
 
         static byte[] DecodeAdpcmMs(Decoder decoder, BinaryReader binaryReader)
@@ -332,21 +357,21 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             if (totalSamples < 2)
                 return null;
 
-            bool isStereo = decoder.WaveFormat.Channels == 2 ? true : false;
+            bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
             byte blockPredictor = 0;
             blockPredictor = binaryReader.ReadByte();
             blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
 
-            channel[0].Coeff1 = AdaptationCoeff1[blockPredictor];
-            channel[0].Coeff2 = AdaptationCoeff2[blockPredictor];
+            channel[0].Coeff1 = (short)AdaptationCoeff1[blockPredictor];
+            channel[0].Coeff2 = (short)AdaptationCoeff2[blockPredictor];
 
             if (isStereo)
             {
                 blockPredictor = binaryReader.ReadByte();
                 blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
-                channel[1].Coeff1 = AdaptationCoeff1[blockPredictor];
-                channel[1].Coeff2 = AdaptationCoeff2[blockPredictor];
+                channel[1].Coeff1 = (short)AdaptationCoeff1[blockPredictor];
+                channel[1].Coeff2 = (short)AdaptationCoeff2[blockPredictor];
             }
             channel[0].Delta = binaryReader.ReadInt16();
             if (isStereo)
@@ -445,7 +470,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
             int nibbles;
             short[] sample = new short[1000];
-            bool isStereo = decoder.WaveFormat.Channels == 2 ? true : false;
+            bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
             channel[0].Predictor = binaryReader.ReadInt16();
             channel[0].StepIndex = binaryReader.ReadByte();
@@ -511,9 +536,9 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             byte[] buffer = new byte[1000];
             short[] sample = new short[1000];
 
-            int step = decoder.WaveFormat.Channels;
+            int channels = decoder.AudioFormat.Channels;
 
-            for (int iCh = 0; iCh < step; iCh++)
+            for (int iCh = 0; iCh < channels; iCh++)
             {
                 /* load preamble */
                 channel[iCh].Predictor = (short)((((buffer[0] << 1) | (buffer[1] >> 7))) << 7);
@@ -554,7 +579,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
             int nibbles;
 
-            bool isStereo = decoder.WaveFormat.Channels == 2 ? true : false;
+            bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
             channel[0].Predictor = binaryReader.ReadInt16();
             channel[0].StepIndex = binaryReader.ReadByte();
@@ -670,7 +695,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         }
 
 
-        public struct AdpcmEASpl {
+        public struct AdpcmEASpl
+        {
             public UInt32 u; // unsigned
             public Int32 i; // signed
         }
@@ -698,7 +724,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             int[] c2 = new int[2];
             int[] d = new int[2];
 
-            int channels = decoder.WaveFormat.Channels;
+            int channels = decoder.AudioFormat.Channels;
             short[] prev = sys.Prev;
             int[] cur = new int[prev.Length + channels];
 
@@ -733,7 +759,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     spl.u = (uint)(buffer[c] & 0x0fu) << 28;
                     spl.i >>= d[c];
                     spl.i = (spl.i + cur[c] * c1[c] + prev[c] * c2[c] + 0x80) >> 8;
-                    
+
                     Clamp(spl.i, -32768, 32767);
                     prev[c] = (short)cur[c];
                     cur[c] = spl.i;
