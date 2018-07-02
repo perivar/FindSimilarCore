@@ -203,9 +203,16 @@ namespace CommonUtils.Audio
         private StringBuilder GetInformation()
         {
             var builder = new StringBuilder();
-            builder.AppendFormat("Reading Wave file: {0} format, {1} channels, {2} samp/sec\n", _encoding, _channels, _sampleRate);
-            builder.AppendFormat("{0} byte/sec, {1} block align, {2} bits/samp, {3} data bytes\n", _bytesPerSecond, _blockAlign, _bitsPerSample, _bytesDataSize);
-            builder.AppendFormat("{0} Extsize, {1} Samps/block, {2} bytes/block {3} Num Coefs, {4} Samps/chan\n", _extraSize, _samplesPerBlock, _bytesPerBlock, _coefficients, _samplesPerChannel);
+            builder.AppendFormat("Reading Wave file: {0} format, {1} channels, {2} samp/sec", _encoding, _channels, _sampleRate);
+            builder.AppendLine();
+            builder.AppendFormat("{0} byte/sec, {1} block align, {2} bits/samp, {3} data bytes", _bytesPerSecond, _blockAlign, _bitsPerSample, _bytesDataSize);
+            builder.AppendLine();
+            builder.AppendFormat("{0} Extsize", _extraSize);
+            builder.AppendFormat(", {0} Samps/block", _samplesPerBlock);
+            builder.AppendFormat(", {0} bytes/block", _bytesPerBlock);
+            if (_coefficients > 0) builder.AppendFormat(", {0} Num Coefs", _coefficients);
+            builder.AppendFormat(", {0} Samps/chan", _samplesPerChannel);
+            builder.AppendLine();
             return builder;
         }
     }

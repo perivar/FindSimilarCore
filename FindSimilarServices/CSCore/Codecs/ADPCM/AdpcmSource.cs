@@ -36,8 +36,10 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             if (!stream.CanRead)
                 throw new ArgumentException("stream is not readable", "stream");
 
-            if (waveFormat.WaveFormatTag != AudioEncoding.Adpcm)
+            if (waveFormat.WaveFormatTag != AudioEncoding.Adpcm && waveFormat.WaveFormatTag != AudioEncoding.ImaAdpcm)
+            {
                 throw new ArgumentException(string.Format("Not supported encoding: {0}", waveFormat.WaveFormatTag));
+            }
 
             this._chunks = chunks;
 
@@ -68,45 +70,50 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 {
                     audioFormat.ExtraSize = reader.ReadInt16();
 
-                    if (audioFormat.ExtraSize < 4)
-                    {
-                        throw new ArgumentException(string.Format("Format {0}: Expects extra size >= 4", audioFormat.Encoding));
-                    }
-
                     if (audioFormat.BitsPerSample != 4)
                     {
                         throw new ArgumentException(string.Format("Can only handle 4-bit MS ADPCM in wav files: {0}", audioFormat.BitsPerSample));
                     }
 
-                    audioFormat.SamplesPerBlock = reader.ReadInt16();
-                    audioFormat.BytesPerBlock = MSAdpcmBytesPerBlock(audioFormat.Channels, audioFormat.SamplesPerBlock);
-                    if (audioFormat.BytesPerBlock > audioFormat.BlockAlign)
+                    if (audioFormat.ExtraSize >= 2)
                     {
-                        throw new ArgumentException(string.Format("Format {0}: samplesPerBlock {1} incompatible with blockAlign {2}", audioFormat.Encoding, audioFormat.SamplesPerBlock, audioFormat.BytesPerBlock));
+                        audioFormat.SamplesPerBlock = reader.ReadInt16();
                     }
 
-                    audioFormat.Coefficients = reader.ReadInt16();
-                    if (audioFormat.Coefficients < 7 || audioFormat.Coefficients > 0x100)
+                    if (waveFormat.WaveFormatTag == AudioEncoding.Adpcm)
                     {
-                        throw new ArgumentException(string.Format("ADPCM file number of coeffs {0} makes no sense", audioFormat.Coefficients));
-                    }
+                        if (audioFormat.ExtraSize < 4)
+                        {
+                            throw new ArgumentException(string.Format("Format {0}: Expects extra size >= 4", audioFormat.Encoding));
+                        }
+                        if (audioFormat.BytesPerBlock > audioFormat.BlockAlign)
+                        {
+                            throw new ArgumentException(string.Format("Format {0}: samplesPerBlock {1} incompatible with blockAlign {2}", audioFormat.Encoding, audioFormat.SamplesPerBlock, audioFormat.BytesPerBlock));
+                        }
 
-                    if (waveFormat.ExtraSize < 4 + 4 * audioFormat.Coefficients)
-                    {
-                        throw new ArgumentException(string.Format("Wave header error: extrasize {0} too small for num coeffs {1}", audioFormat.ExtraSize, audioFormat.Coefficients));
-                    }
+                        audioFormat.Coefficients = reader.ReadInt16();
+                        if (audioFormat.Coefficients < 7 || audioFormat.Coefficients > 0x100)
+                        {
+                            throw new ArgumentException(string.Format("ADPCM file number of coeffs {0} makes no sense", audioFormat.Coefficients));
+                        }
 
-                    // check the coefficients up against the stored legal table of predictor value pairs
-                    int len = audioFormat.ExtraSize - 4;
-                    int i, errorControl = 0;
-                    var msAdpcmCoefficients = new int[audioFormat.Coefficients * 2];
-                    for (i = 0; len >= 2 && i < 2 * audioFormat.Coefficients; i++)
-                    {
-                        msAdpcmCoefficients[i] = reader.ReadInt16();
-                        len -= 2;
-                        if (i < 14) errorControl += (msAdpcmCoefficients[i] != AdpcmMS.MSAdpcmICoef[i / 2][i % 2] ? 1 : 0);
+                        if (waveFormat.ExtraSize < 4 + 4 * audioFormat.Coefficients)
+                        {
+                            throw new ArgumentException(string.Format("Wave header error: extrasize {0} too small for num coeffs {1}", audioFormat.ExtraSize, audioFormat.Coefficients));
+                        }
+
+                        // check the coefficients up against the stored legal table of predictor value pairs
+                        int len = audioFormat.ExtraSize - 4;
+                        int i, errorControl = 0;
+                        var msAdpcmCoefficients = new int[audioFormat.Coefficients * 2];
+                        for (i = 0; len >= 2 && i < 2 * audioFormat.Coefficients; i++)
+                        {
+                            msAdpcmCoefficients[i] = reader.ReadInt16();
+                            len -= 2;
+                            if (i < 14) errorControl += (msAdpcmCoefficients[i] != Adpcm.MSAdpcmICoeff[i / 2][i % 2] ? 1 : 0);
+                        }
+                        if (errorControl > 0) throw new ArgumentException(string.Format("base lsx_ms_adpcm_i_coefs differ in {0}/14 positions", errorControl));
                     }
-                    if (errorControl > 0) throw new ArgumentException(string.Format("base lsx_ms_adpcm_i_coefs differ in {0}/14 positions", errorControl));
                 }
 
                 // reset position
@@ -117,8 +124,18 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             if (dataChunk != null)
             {
                 audioFormat.BytesDataSize = dataChunk.ChunkDataSize;
-                // read num samples in the data chunk
-                audioFormat.SamplesPerChannel = MSApcmSamples((int)dataChunk.ChunkDataSize, audioFormat.Channels, audioFormat.BlockAlign, audioFormat.SamplesPerBlock);
+
+                switch (waveFormat.WaveFormatTag)
+                {
+                    case AudioEncoding.Adpcm:
+                        audioFormat.BytesPerBlock = MSBytesPerBlock(audioFormat.Channels, audioFormat.SamplesPerBlock);
+                        audioFormat.SamplesPerChannel = MSSamplesLength((int)dataChunk.ChunkDataSize, audioFormat.Channels, audioFormat.BlockAlign, audioFormat.SamplesPerBlock);
+                        break;
+                    case AudioEncoding.ImaAdpcm:
+                        audioFormat.BytesPerBlock = ImaBytesPerBlock(audioFormat.Channels, audioFormat.SamplesPerBlock);
+                        audioFormat.SamplesPerChannel = ImaSamplesLength((int)dataChunk.ChunkDataSize, audioFormat.Channels, audioFormat.BlockAlign, audioFormat.SamplesPerBlock);
+                        break;
+                }
             }
             else
             {
@@ -270,7 +287,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
          *  samplesPerBlock which would go into a block of size blockAlign
          *  Yes, it is confusing usage.
          */
-        private int MSApcmSamples(
+        private int MSSamplesLength(
                 int dataLen,
                 int chans,
                 int blockAlign,
@@ -299,16 +316,76 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             return n;
         }
 
-        private int MSAdpcmBytesPerBlock(
+        private int MSBytesPerBlock(
             int channels,
             int samplesPerBlock)
         {
             int n = 7 * channels;  /* header */
 
             if (samplesPerBlock > 2)
-                n += ((samplesPerBlock - 2) * channels + 1) / 2;
+                n += (((int)samplesPerBlock - 2) * channels + 1) / 2;
 
             return n;
         }
+
+        /*
+         * lsxImaSamplesIn(dataLen, chans, blockAlign, samplesPerBlock)
+         *  returns the number of samples/channel which would go
+         *  in the dataLen, given the other parameters ...
+         *  if input samplesPerBlock is 0, then returns the max
+         *  samplesPerBlock which would go into a block of size blockAlign
+         *  Yes, it is confusing.
+         */
+        private int ImaSamplesLength(
+          int dataLen,
+          int chans,
+          int blockAlign,
+          int samplesPerBlock
+        )
+        {
+            int m, n;
+
+            if (samplesPerBlock > 0)
+            {
+                n = (dataLen / blockAlign) * samplesPerBlock;
+                m = (dataLen % blockAlign);
+            }
+            else
+            {
+                n = 0;
+                m = blockAlign;
+            }
+            if (m >= (int)4 * chans)
+            {
+                m -= 4 * chans;    /* number of bytes beyond block-header */
+                m /= 4 * chans;    /* number of 4-byte blocks/channel beyond header */
+                m = 8 * m + 1;     /* samples/chan beyond header + 1 in header */
+                if (samplesPerBlock > 0 && m > samplesPerBlock) m = samplesPerBlock;
+                n += m;
+            }
+
+            return n;
+        }
+
+        /*
+         * int lsxImaBytesPerBlock(chans, samplesPerBlock)
+         * return minimum blocksize which would be required
+         * to encode number of chans with given samplesPerBlock
+         */
+        private int ImaBytesPerBlock(
+          int chans,
+          int samplesPerBlock
+        )
+        {
+            int n;
+            /* per channel, ima has blocks of len 4, the 1st has 1st sample, the others
+             * up to 8 samples per block,
+             * so number of later blocks is (nsamp-1 + 7)/8, total blocks/chan is
+             * (nsamp-1+7)/8 + 1 = (nsamp+14)/8
+             */
+            n = ((int)samplesPerBlock + 14) / 8 * 4 * chans;
+            return n;
+        }
+
     }
 }

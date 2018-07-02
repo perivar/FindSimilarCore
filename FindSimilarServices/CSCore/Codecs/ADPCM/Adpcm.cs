@@ -6,38 +6,14 @@ using CommonUtils.Audio;
 
 namespace FindSimilarServices.CSCore.Codecs.ADPCM
 {
+    // Based on VLC ADPCM class
+    // GNU Lesser General Public License
+    // https://github.com/videolan/vlc/blob/master/modules/codec/adpcm.c
     public class Adpcm
     {
-
-        /*****************************************************************************
-         * adpcm.c : adpcm variant audio decoder
-         *****************************************************************************
-         * Copyright (C) 2001, 2002 VLC authors and VideoLAN
-         * $Id$
-         *
-         * Authors: Laurent Aimar <fenrir@via.ecp.fr>
-         *          Rémi Denis-Courmont <rem # videolan.org>
-         *
-         * This program is free software; you can redistribute it and/or modify it
-         * under the terms of the GNU Lesser General Public License as published by
-         * the Free Software Foundation; either version 2.1 of the License, or
-         * (at your option) any later version.
-         *
-         * This program is distributed in the hope that it will be useful,
-         * but WITHOUT ANY WARRANTY; without even the implied warranty of
-         * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-         * GNU Lesser General Public License for more details.
-         *
-         * You should have received a copy of the GNU Lesser General Public License
-         * along with this program; if not, write to the Free Software Foundation,
-         * Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
-         *****************************************************************************/
-
-        /*****************************************************************************
-         * Preamble
-         *
-         * Documentation: http://www.pcistate.net/~melanson/codecs/adpcm.txt
-         *****************************************************************************/
+        // use sox to convert from wav to ADPCM:
+        // sox snare.wav -e ms-adpcm snare-ms-adpcm.wav
+        // sox snare.wav -e ima-adpcm snare-ima-adpcm.wav
 
         /*****************************************************************************
          * Local prototypes
@@ -104,6 +80,16 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         {
             0, -256, 0, 64, 0, -208, -232
         };
+
+        public static readonly int[][] MSAdpcmICoeff = {
+                        new int[] { 256,   0},
+                        new int[] { 512,-256},
+                        new int[] {   0,   0},
+                        new int[] { 192,  64},
+                        new int[] { 240,   0},
+                        new int[] { 460,-208},
+                        new int[] { 392,-232}
+                        };
 
         /*****************************************************************************
          * OpenDecoder: probe the decoder and return score
@@ -224,8 +210,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     break;
             }
 
-            Debug.WriteLine("Format: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockalign: {3}, samplesperblock: {4}",
-            format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
+            // Debug.WriteLine("Format: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockalign: {3}, samplesperblock: {4}",
+            // format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
 
             if (state.SamplesPerBlock == 0)
             {
@@ -339,10 +325,15 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
         private static void DecodeAdpcmMs(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
+            // https://wiki.multimedia.cx/index.php/Microsoft_ADPCM
+            // see also https://github.com/DeltaEngine/DeltaEngine/blob/master/Multimedia/OpenAL/Helpers/MsAdpcmConverter.cs
+
             DecoderState state = decoder.State;
             adpcmMsChannel[] channel = new adpcmMsChannel[2];
 
             // determine total number of samples in this block
+            // the initial 2 samples from the block preamble are sent directly to the output.
+            // therefore, deduct 2 from the samples per block to calculate the remaining samples
             int totalSamples = (state.SamplesPerBlock - 2) * decoder.AudioFormat.Channels;
             if (totalSamples < 2)
                 return;
@@ -397,7 +388,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 writer.Write(channel[0].Sample1);
             }
 
-            // decode all samples
+            // decode the rest of the samples
             for (int index = 0; index < totalSamples; index += 2)
             {
                 byte nibble = reader.ReadByte();
@@ -419,11 +410,9 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         private static int AdpcmImaWavExpandNibble(AdpcmImaWavChannel channel,
                                            int nibble)
         {
-            /* Step 4 - Compute difference and new predicted value */
-            /*
-             ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
-             ** in adpcm_coder.
-             */
+            // Compute difference and new predicted value
+            // Computes 'vpdiff = (delta+0.5)*step/4', 
+            // but see comment in adpcm_coder.             
             int diff = StepTable[channel.StepIndex] >> 3;
             if ((nibble & 0x04) != 0) diff += StepTable[channel.StepIndex];
             if ((nibble & 0x02) != 0) diff += StepTable[channel.StepIndex] >> 1;
@@ -434,12 +423,11 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 channel.Predictor += diff;
 
 
-            /* Step 5 - clamp output value */
-            channel.Predictor = Clamp(channel.Predictor, -32768, 32767);
+            // Clamp result to 16-bit, -32768 - 32767
+            channel.Predictor = Clamp(channel.Predictor, short.MinValue, short.MaxValue);
 
-            /* Step 6 - Update step value */
+            // Find new index value (for later)
             channel.StepIndex += IndexTable[nibble];
-
             channel.StepIndex = Clamp(channel.StepIndex, 0, 88);
 
             return channel.Predictor;
@@ -447,10 +435,11 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
         private static void DecodeAdpcmImaWav(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
+            // https://wiki.multimedia.cx/index.php/IMA_ADPCM
+
             DecoderState state = decoder.State;
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
-            int nibbles;
-            short[] sample = new short[1000];
+            int nibbles = 0;
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
             channel[0].Predictor = reader.ReadInt16();
@@ -466,26 +455,32 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 reader.ReadByte();
             }
 
+            short[] sample = new short[2 * (state.BlockAlign - 8)];
             if (isStereo)
             {
+                int blockIndex = 1;
                 for (nibbles = 2 * (state.BlockAlign - 8); nibbles > 0; nibbles -= 16)
                 {
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[i * 4] = (short)AdpcmImaWavExpandNibble(channel[0], buffer & 0x0f);
-                        sample[i * 4 + 2] = (short)AdpcmImaWavExpandNibble(channel[0], buffer >> 4);
+                        sample[blockIndex * i * 4 + 0] = (short)AdpcmImaWavExpandNibble(channel[0], buffer & 0x0f);
+                        sample[blockIndex * i * 4 + 2] = (short)AdpcmImaWavExpandNibble(channel[0], buffer >> 4);
                     }
-                    reader.ReadInt32();
 
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[i * 4 + 1] = (short)AdpcmImaWavExpandNibble(channel[1], buffer & 0x0f);
-                        sample[i * 4 + 3] = (short)AdpcmImaWavExpandNibble(channel[1], buffer >> 4);
+                        sample[blockIndex * i * 4 + 1] = (short)AdpcmImaWavExpandNibble(channel[1], buffer & 0x0f);
+                        sample[blockIndex * i * 4 + 3] = (short)AdpcmImaWavExpandNibble(channel[1], buffer >> 4);
                     }
-                    reader.ReadInt32();
-                    // sample += 16;
+
+                    blockIndex++;
+                }
+
+                for (int i = 0; i < state.SamplesPerBlock; i++)
+                {
+                    writer.Write(sample[i]);
                 }
             }
             else
@@ -493,8 +488,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 for (nibbles = 2 * (state.BlockAlign - 4); nibbles > 0; nibbles -= 2)
                 {
                     byte buffer = reader.ReadByte();
-                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) & 0x0f));
-                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
+                    writer.Write((short)AdpcmImaWavExpandNibble(channel[0], (buffer) & 0x0f));
+                    writer.Write((short)AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
                 }
             }
         }
