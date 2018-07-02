@@ -167,16 +167,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 int readCount = _stream.Read(inBuffer, 0, count);
                 if (readCount > 0)
                 {
-                    // var processBuffer = new byte[readCount];
-                    // Buffer.BlockCopy(inBuffer, 0, processBuffer, 0, readCount);
-                    // var converter = new MsAdpcmConverter(_audioFormat.Channels, (short)_audioFormat.SamplesPerBlock, (short)_audioFormat.BlockAlign);
-                    // var outBuffer = converter.ConvertToPcm(processBuffer);
-
-                    var memStream = new MemoryStream(inBuffer, 0, readCount);
-                    var binaryReader = new BinaryReader(memStream);
-                    var outBuffer = Adpcm.DecodeAudio(_decoder, binaryReader, readCount);
-                    //var outBuffer = AdpcmMS.ConvertToPCM(binaryReader, _audioFormat.Channels, _audioFormat.BlockAlign);
-
+                    var outBuffer = Adpcm.DecodeAudio(_decoder, inBuffer, readCount);
                     Buffer.BlockCopy(outBuffer, 0, buffer, 0, outBuffer.Length);
                     return outBuffer.Length;
                 }

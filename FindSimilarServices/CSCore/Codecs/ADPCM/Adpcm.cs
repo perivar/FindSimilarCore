@@ -240,62 +240,58 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /*****************************************************************************
          * DecodeBlock:
          *****************************************************************************/
-        private static byte[] DecodeBlock(Decoder decoder, BinaryReader binaryReader)
+        private static void DecodeBlock(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
             DecoderState state = decoder.State;
-            byte[] buffer = null;
-
             switch (state.Codec)
             {
                 case AdpcmCodecType.ADPCM_IMA_QT:
-                    buffer = DecodeAdpcmImaQT(decoder, binaryReader);
+                    DecodeAdpcmImaQT(decoder, reader, writer);
                     break;
                 case AdpcmCodecType.ADPCM_IMA_WAV:
-                    buffer = DecodeAdpcmImaWav(decoder, binaryReader);
+                    DecodeAdpcmImaWav(decoder, reader, writer);
                     break;
                 case AdpcmCodecType.ADPCM_MS:
-                    buffer = DecodeAdpcmMs(decoder, binaryReader);
+                    DecodeAdpcmMs(decoder, reader, writer);
                     break;
                 case AdpcmCodecType.ADPCM_DK4:
-                    buffer = DecodeAdpcmDk4(decoder, binaryReader);
+                    DecodeAdpcmDk4(decoder, reader, writer);
                     break;
                 case AdpcmCodecType.ADPCM_DK3:
-                    buffer = DecodeAdpcmDk3(decoder, binaryReader);
+                    DecodeAdpcmDk3(decoder, reader, writer);
                     break;
                 case AdpcmCodecType.ADPCM_EA:
-                    DecodeAdpcmEA(decoder, binaryReader);
+                    DecodeAdpcmEA(decoder, reader, writer);
                     break;
                 default:
                     break;
             }
-
-            return buffer;
         }
 
-        public static byte[] DecodeAudio(Decoder decoder, BinaryReader binaryReader, int bytesDataSize)
+        public static byte[] DecodeAudio(Decoder decoder, byte[] data, int bytesDataSize)
         {
-            // We write to output when reading the PCM data, then we convert
-            // it back to a short array at the end.
-            MemoryStream output = new MemoryStream();
-            BinaryWriter pcmOut = new BinaryWriter(output);
-
-            // determine total number of blocks
-            double blocksFraction = (double)bytesDataSize / (double)decoder.AudioFormat.BytesPerBlock;
-            int totalBlocks = (int)blocksFraction;
-
-            byte[] buffer = null;
-            for (int i = 0; i < totalBlocks; i++)
+            byte[] resultBytes;
+            using (MemoryStream result = new MemoryStream())
             {
-                buffer = DecodeBlock(decoder, binaryReader);
-                if (buffer != null) pcmOut.Write(buffer);
+                BinaryReader reader = new BinaryReader(new MemoryStream(data, 0, bytesDataSize));
+                BinaryWriter writer = new BinaryWriter(result);
+                DecodeAllBlocks(decoder, bytesDataSize, reader, writer);
+                resultBytes = result.ToArray();
             }
 
-            // We're done writing PCM data
-            pcmOut.Close();
-            output.Close();
+            return resultBytes;
+        }
 
-            // Return the array.
-            return output.ToArray();
+        private static void DecodeAllBlocks(Decoder decoder, int bytesDataSize, BinaryReader reader, BinaryWriter writer)
+        {
+            // determine total number of blocks
+            double blocksFraction = (double)bytesDataSize / (double)decoder.AudioFormat.BytesPerBlock;
+            int numberOfBlocks = (int)blocksFraction;
+
+            for (int i = 0; i < numberOfBlocks; i++)
+            {
+                DecodeBlock(decoder, reader, writer);
+            }
         }
 
         /*
@@ -309,8 +305,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
         };
 
-        private static short AdpcmMsExpandNibble(ref adpcmMsChannel channel,
-                                       byte nibble)
+        private static short AdpcmMsExpandNibble(ref adpcmMsChannel channel, byte nibble)
         {
             // Get a signed number out of the nibble. We need to retain the
             // original nibble value for when we access AdaptionTable[].
@@ -342,25 +337,20 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             return (short)predictor;
         }
 
-        private static byte[] DecodeAdpcmMs(Decoder decoder, BinaryReader binaryReader)
+        private static void DecodeAdpcmMs(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
-            // We write to output when reading the PCM data, then we convert
-            // it back to a short array at the end.
-            MemoryStream output = new MemoryStream();
-            BinaryWriter pcmOut = new BinaryWriter(output);
-
             DecoderState state = decoder.State;
             adpcmMsChannel[] channel = new adpcmMsChannel[2];
 
             // determine total number of samples in this block
             int totalSamples = (state.SamplesPerBlock - 2) * decoder.AudioFormat.Channels;
             if (totalSamples < 2)
-                return null;
+                return;
 
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
             byte blockPredictor = 0;
-            blockPredictor = binaryReader.ReadByte();
+            blockPredictor = reader.ReadByte();
             blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
 
             channel[0].Coeff1 = (short)AdaptationCoeff1[blockPredictor];
@@ -368,59 +358,49 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             if (isStereo)
             {
-                blockPredictor = binaryReader.ReadByte();
+                blockPredictor = reader.ReadByte();
                 blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
                 channel[1].Coeff1 = (short)AdaptationCoeff1[blockPredictor];
                 channel[1].Coeff2 = (short)AdaptationCoeff2[blockPredictor];
             }
-            channel[0].Delta = binaryReader.ReadInt16();
+            channel[0].Delta = reader.ReadInt16();
             if (isStereo)
             {
-                channel[1].Delta = binaryReader.ReadInt16();
+                channel[1].Delta = reader.ReadInt16();
             }
 
-            channel[0].Sample1 = binaryReader.ReadInt16();
+            channel[0].Sample1 = reader.ReadInt16();
             if (isStereo)
             {
-                channel[1].Sample1 = binaryReader.ReadInt16();
+                channel[1].Sample1 = reader.ReadInt16();
             }
 
-            channel[0].Sample2 = binaryReader.ReadInt16();
+            channel[0].Sample2 = reader.ReadInt16();
             if (isStereo)
             {
-                channel[1].Sample2 = binaryReader.ReadInt16();
+                channel[1].Sample2 = reader.ReadInt16();
             }
 
             // output the samples
             if (isStereo)
             {
-                pcmOut.Write(channel[0].Sample2);
-                pcmOut.Write(channel[1].Sample2);
-                pcmOut.Write(channel[0].Sample1);
-                pcmOut.Write(channel[1].Sample1);
+                writer.Write(channel[0].Sample2);
+                writer.Write(channel[1].Sample2);
+                writer.Write(channel[0].Sample1);
+                writer.Write(channel[1].Sample1);
             }
             else
             {
-                pcmOut.Write(channel[0].Sample2);
-                pcmOut.Write(channel[0].Sample1);
+                writer.Write(channel[0].Sample2);
+                writer.Write(channel[0].Sample1);
             }
 
             for (int index = 0; index < totalSamples; index += 2)
             {
-                byte nibble = binaryReader.ReadByte();
-                byte nibbleBlock0 = (byte)(nibble >> 4); // Upper half
-                byte nibbleBlock1 = (byte)(nibble & 0xF); // Lower half
-
-                pcmOut.Write(AdpcmMsExpandNibble(ref channel[0], nibbleBlock0));
-                pcmOut.Write(AdpcmMsExpandNibble(ref channel[isStereo ? 1 : 0], nibbleBlock1));
+                byte nibble = reader.ReadByte();
+                writer.Write(AdpcmMsExpandNibble(ref channel[0], (byte)(nibble >> 4)));
+                writer.Write(AdpcmMsExpandNibble(ref channel[isStereo ? 1 : 0], (byte)(nibble & 0xF)));
             }
-
-            // We're done writing PCM data
-            pcmOut.Close();
-            output.Close();
-
-            // Return the array.
-            return output.ToArray();
         }
 
         /*
@@ -462,30 +442,25 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             return channel.Predictor;
         }
 
-        private static byte[] DecodeAdpcmImaWav(Decoder decoder, BinaryReader binaryReader)
+        private static void DecodeAdpcmImaWav(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
-            // We write to output when reading the PCM data, then we convert
-            // it back to a short array at the end.
-            MemoryStream output = new MemoryStream();
-            BinaryWriter pcmOut = new BinaryWriter(output);
-
             DecoderState state = decoder.State;
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
             int nibbles;
             short[] sample = new short[1000];
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
-            channel[0].Predictor = binaryReader.ReadInt16();
-            channel[0].StepIndex = binaryReader.ReadByte();
+            channel[0].Predictor = reader.ReadInt16();
+            channel[0].StepIndex = reader.ReadByte();
             Clamp(channel[0].StepIndex, 0, 88);
-            binaryReader.ReadByte();
+            reader.ReadByte();
 
             if (isStereo)
             {
-                channel[1].Predictor = binaryReader.ReadInt16();
-                channel[1].StepIndex = binaryReader.ReadByte();
+                channel[1].Predictor = reader.ReadInt16();
+                channel[1].StepIndex = reader.ReadByte();
                 Clamp(channel[1].StepIndex, 0, 88);
-                binaryReader.ReadByte();
+                reader.ReadByte();
             }
 
             if (isStereo)
@@ -494,19 +469,19 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 {
                     for (int i = 0; i < 4; i++)
                     {
-                        byte buffer = binaryReader.ReadByte();
+                        byte buffer = reader.ReadByte();
                         sample[i * 4] = (short)AdpcmImaWavExpandNibble(channel[0], buffer & 0x0f);
                         sample[i * 4 + 2] = (short)AdpcmImaWavExpandNibble(channel[0], buffer >> 4);
                     }
-                    binaryReader.ReadInt32();
+                    reader.ReadInt32();
 
                     for (int i = 0; i < 4; i++)
                     {
-                        byte buffer = binaryReader.ReadByte();
+                        byte buffer = reader.ReadByte();
                         sample[i * 4 + 1] = (short)AdpcmImaWavExpandNibble(channel[1], buffer & 0x0f);
                         sample[i * 4 + 3] = (short)AdpcmImaWavExpandNibble(channel[1], buffer >> 4);
                     }
-                    binaryReader.ReadInt32();
+                    reader.ReadInt32();
                     // sample += 16;
                 }
             }
@@ -514,24 +489,17 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             {
                 for (nibbles = 2 * (state.BlockAlign - 4); nibbles > 0; nibbles -= 2)
                 {
-                    byte buffer = binaryReader.ReadByte();
-                    pcmOut.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) & 0x0f));
-                    pcmOut.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
+                    byte buffer = reader.ReadByte();
+                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) & 0x0f));
+                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
                 }
             }
-
-            // We're done writing PCM data
-            pcmOut.Close();
-            output.Close();
-
-            // Return the array.
-            return output.ToArray();
         }
 
         /*
          * Ima4 in QT file
          */
-        private static byte[] DecodeAdpcmImaQT(Decoder decoder, BinaryReader binaryReader)
+        private static void DecodeAdpcmImaQT(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
             int nibbles;
@@ -558,81 +526,62 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     // sample = AdpcmImaWavExpandNibble(channel[iCh], (buffer >> 4) & 0x0f);
                     // sample += step;
 
-                    binaryReader.ReadByte();
+                    reader.ReadByte();
                 }
 
                 /* Next channel */
                 // sample += 1 - 64 * step;
             }
-
-            return null;
         }
 
         /*
          * Dk4
          */
-        private static byte[] DecodeAdpcmDk4(Decoder decoder, BinaryReader binaryReader)
+        private static void DecodeAdpcmDk4(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
-            // We write to output when reading the PCM data, then we convert
-            // it back to a short array at the end.
-            MemoryStream output = new MemoryStream();
-            BinaryWriter pcmOut = new BinaryWriter(output);
-
             DecoderState state = decoder.State;
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
             int nibbles;
 
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
-            channel[0].Predictor = binaryReader.ReadInt16();
-            channel[0].StepIndex = binaryReader.ReadByte();
+            channel[0].Predictor = reader.ReadInt16();
+            channel[0].StepIndex = reader.ReadByte();
             Clamp(channel[0].StepIndex, 0, 88);
-            binaryReader.ReadByte();
+            reader.ReadByte();
 
             if (isStereo)
             {
-                channel[1].Predictor = binaryReader.ReadInt16();
-                channel[1].StepIndex = binaryReader.ReadByte();
+                channel[1].Predictor = reader.ReadInt16();
+                channel[1].StepIndex = reader.ReadByte();
                 Clamp(channel[1].StepIndex, 0, 88);
-                binaryReader.ReadByte();
+                reader.ReadByte();
             }
 
             /* first output predictor */
-            pcmOut.Write(channel[0].Predictor);
+            writer.Write(channel[0].Predictor);
             if (isStereo)
             {
-                pcmOut.Write(channel[1].Predictor);
+                writer.Write(channel[1].Predictor);
             }
 
             for (nibbles = 0;
                  nibbles < state.BlockAlign - 4 * (isStereo ? 2 : 1);
                  nibbles++)
             {
-                byte buffer = binaryReader.ReadByte();
-                pcmOut.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
-                pcmOut.Write(AdpcmImaWavExpandNibble(channel[isStereo ? 1 : 0], (buffer) & 0x0f));
+                byte buffer = reader.ReadByte();
+                writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
+                writer.Write(AdpcmImaWavExpandNibble(channel[isStereo ? 1 : 0], (buffer) & 0x0f));
 
-                binaryReader.ReadByte();
+                reader.ReadByte();
             }
-
-            // We're done writing PCM data
-            pcmOut.Close();
-            output.Close();
-
-            // Return the array.
-            return output.ToArray();
         }
 
         /*
          * Dk3
          */
-        private static byte[] DecodeAdpcmDk3(Decoder decoder, BinaryReader binaryReader)
+        private static void DecodeAdpcmDk3(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
-            // We write to output when reading the PCM data, then we convert
-            // it back to a short array at the end.
-            MemoryStream output = new MemoryStream();
-            BinaryWriter pcmOut = new BinaryWriter(output);
-
             DecoderState state = decoder.State;
             byte[] buffer = new byte[1000];
             byte pEnd = buffer[state.BlockAlign];
@@ -642,10 +591,10 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             // buffer += 10;
 
-            sum.Predictor = binaryReader.ReadInt16();
-            diff.Predictor = binaryReader.ReadInt16();
-            sum.StepIndex = binaryReader.ReadByte();
-            diff.StepIndex = binaryReader.ReadByte();
+            sum.Predictor = reader.ReadInt16();
+            diff.Predictor = reader.ReadInt16();
+            sum.StepIndex = reader.ReadByte();
+            diff.StepIndex = reader.ReadByte();
 
             iDiffValue = diff.Predictor;
             /* we process 6 nibbles at once */
@@ -659,42 +608,35 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                 iDiffValue = (iDiffValue + diff.Predictor) / 2;
 
-                pcmOut.Write(sum.Predictor + iDiffValue);
-                pcmOut.Write(sum.Predictor - iDiffValue);
+                writer.Write(sum.Predictor + iDiffValue);
+                writer.Write(sum.Predictor - iDiffValue);
 
-                binaryReader.ReadByte();
+                reader.ReadByte();
 
                 AdpcmImaWavExpandNibble(sum, (buff) & 0x0f);
 
-                pcmOut.Write(sum.Predictor + iDiffValue);
-                pcmOut.Write(sum.Predictor - iDiffValue);
+                writer.Write(sum.Predictor + iDiffValue);
+                writer.Write(sum.Predictor - iDiffValue);
 
                 /* now last 3 nibbles */
                 AdpcmImaWavExpandNibble(sum, (buff) >> 4);
-                binaryReader.ReadByte();
+                reader.ReadByte();
                 if (i < pEnd)
                 {
                     AdpcmImaWavExpandNibble(diff, (buff) & 0x0f);
 
                     iDiffValue = (iDiffValue + diff.Predictor) / 2;
 
-                    pcmOut.Write(sum.Predictor + iDiffValue);
-                    pcmOut.Write(sum.Predictor - iDiffValue);
+                    writer.Write(sum.Predictor + iDiffValue);
+                    writer.Write(sum.Predictor - iDiffValue);
 
                     AdpcmImaWavExpandNibble(sum, (buff) >> 4);
-                    binaryReader.ReadByte();
+                    reader.ReadByte();
 
-                    pcmOut.Write(sum.Predictor + iDiffValue);
-                    pcmOut.Write(sum.Predictor - iDiffValue);
+                    writer.Write(sum.Predictor + iDiffValue);
+                    writer.Write(sum.Predictor - iDiffValue);
                 }
             }
-
-            // We're done writing PCM data
-            pcmOut.Close();
-            output.Close();
-
-            // Return the array.
-            return output.ToArray();
         }
 
 
@@ -707,13 +649,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
         /*
          * EA ADPCM
          */
-        private static byte[] DecodeAdpcmEA(Decoder decoder, BinaryReader binaryReader)
+        private static void DecodeAdpcmEA(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
-            // We write to output when reading the PCM data, then we convert
-            // it back to a short array at the end.
-            MemoryStream output = new MemoryStream();
-            BinaryWriter pcmOut = new BinaryWriter(output);
-
             int[] EATable =
             {
                 0x0000, 0x00F0, 0x01CC, 0x0188, 0x0000, 0x0000, 0xFF30, 0xFF24,
@@ -754,7 +691,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     prev[c] = (short)cur[c];
                     cur[c] = spl.i;
 
-                    pcmOut.Write(spl.i);
+                    writer.Write(spl.i);
                 }
 
                 for (int c = 0; c < channels; c++)
@@ -767,16 +704,9 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     prev[c] = (short)cur[c];
                     cur[c] = spl.i;
 
-                    pcmOut.Write(spl.i);
+                    writer.Write(spl.i);
                 }
             }
-
-            // We're done writing PCM data
-            pcmOut.Close();
-            output.Close();
-
-            // Return the array.
-            return output.ToArray();
         }
 
         // util to clamp a number within a given range
