@@ -349,6 +349,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
+            //  read predicates and deltas
             byte blockPredictor = 0;
             blockPredictor = reader.ReadByte();
             blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
@@ -369,6 +370,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 channel[1].Delta = reader.ReadInt16();
             }
 
+            //  read first samples and write them to result
             channel[0].Sample1 = reader.ReadInt16();
             if (isStereo)
             {
@@ -395,6 +397,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 writer.Write(channel[0].Sample1);
             }
 
+            // decode all samples
             for (int index = 0; index < totalSamples; index += 2)
             {
                 byte nibble = reader.ReadByte();
