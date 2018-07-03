@@ -407,8 +407,30 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
         };
 
-        private static int AdpcmImaWavExpandNibble(AdpcmImaWavChannel channel,
-                                           int nibble)
+        private static short AdpcmImaWavExpandNibble(AdpcmImaWavChannel channel, int nibble)
+        {
+            int step = StepTable[channel.StepIndex];
+
+            // perform direct multiplication instead of series of jumps proposed by
+            // the reference ADPCM implementation since modern CPUs can do the mults
+            // quickly enough
+            int diff = ((((nibble & 7) << 1) + 1) * step) >> 3;
+
+            if ((nibble & 8) != 0)
+                diff = -diff;
+
+            channel.Predictor = ((int)channel.Predictor) + diff;
+
+            // Clamp result to 16-bit, -32768 - 32767
+            channel.Predictor = Clamp(channel.Predictor, short.MinValue, short.MaxValue);
+
+            channel.StepIndex = channel.StepIndex + IndexTable[nibble];
+            channel.StepIndex = Clamp(channel.StepIndex, 0, 88);
+
+            return (short)channel.Predictor;
+        }
+
+        private static short AdpcmImaWavExpandNibbleOLD(AdpcmImaWavChannel channel, int nibble)
         {
             // Compute difference and new predicted value
             // Computes 'vpdiff = (delta+0.5)*step/4', 
@@ -430,18 +452,26 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             channel.StepIndex += IndexTable[nibble];
             channel.StepIndex = Clamp(channel.StepIndex, 0, 88);
 
-            return channel.Predictor;
+            return (short)channel.Predictor;
         }
 
         private static void DecodeAdpcmImaWav(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
             // https://wiki.multimedia.cx/index.php/IMA_ADPCM
+            // https://github.com/Nanook/TheGHOST/blob/master/ImaAdpcmPlugin/Ima.cs
+            // https://github.com/rochars/imaadpcm/blob/master/index.js
+            // https://github.com/Flitskikker/IMAADPCMEncoder/blob/master/WAV/IMAADPCM.cs
 
             DecoderState state = decoder.State;
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
             int nibbles = 0;
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
+            // https://www.microchip.com/forums/m698891.aspx
+            // Each block starts with a header consisting of the following 4 bytes:
+            //  16 bit audio sample (2 bytes, little endian)
+            //   8 bit step table index
+            //   dummy byte (set to zero)
             channel[0].Predictor = reader.ReadInt16();
             channel[0].StepIndex = reader.ReadByte();
             Clamp(channel[0].StepIndex, 0, 88);
@@ -455,6 +485,21 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 reader.ReadByte();
             }
 
+            // Note that we encode two samples per byte, 
+            // but there are an odd number samples per block.
+            // One of the samples is in the ADPCM block header. 
+            // So, a block looks like this:
+
+            // Example: BlockAlign 2048, SamplesPerBlock 4089
+            // 4 bytes, Block header including 1 sample
+            // 2048-4 = 2044 bytes with 4089-1 = 4088 samples
+            // Total of 4089 samples per block.
+
+            // Example: BlockAlign 512, SamplesPerBlock 505
+            // 4 bytes, Block header including 1 sample
+            // 512-4 = 508 bytes with 505-1 = 504 samples
+            // Total of 505 samples per block.
+
             short[] sample = new short[2 * (state.BlockAlign - 8)];
             if (isStereo)
             {
@@ -464,15 +509,15 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[blockIndex * i * 4 + 0] = (short)AdpcmImaWavExpandNibble(channel[0], buffer & 0x0f);
-                        sample[blockIndex * i * 4 + 2] = (short)AdpcmImaWavExpandNibble(channel[0], buffer >> 4);
+                        sample[blockIndex * i * 4 + 0] = AdpcmImaWavExpandNibble(channel[0], buffer & 0x0f);
+                        sample[blockIndex * i * 4 + 2] = AdpcmImaWavExpandNibble(channel[0], buffer >> 4);
                     }
 
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[blockIndex * i * 4 + 1] = (short)AdpcmImaWavExpandNibble(channel[1], buffer & 0x0f);
-                        sample[blockIndex * i * 4 + 3] = (short)AdpcmImaWavExpandNibble(channel[1], buffer >> 4);
+                        sample[blockIndex * i * 4 + 1] = AdpcmImaWavExpandNibble(channel[1], buffer & 0x0f);
+                        sample[blockIndex * i * 4 + 3] = AdpcmImaWavExpandNibble(channel[1], buffer >> 4);
                     }
 
                     blockIndex++;
@@ -488,8 +533,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 for (nibbles = 2 * (state.BlockAlign - 4); nibbles > 0; nibbles -= 2)
                 {
                     byte buffer = reader.ReadByte();
-                    writer.Write((short)AdpcmImaWavExpandNibble(channel[0], (buffer) & 0x0f));
-                    writer.Write((short)AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
+                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) & 0x0f));
+                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
                 }
             }
         }
