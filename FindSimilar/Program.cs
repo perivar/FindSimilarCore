@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using FindSimilarServices.Audio;
 using CommonUtils.Audio;
+using FindSimilarServices.CSCore.Codecs.ADPCM;
 
 namespace FindSimilar
 {
@@ -20,23 +21,28 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
+            var ima = new Ima();
+            ima.Decode(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", @"C:\Users\pnerseth\My Projects\output.wav");
+
             var testAudioService = new FindSimilarAudioService();
             int sampleRate = 32000;
 
             var data1 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile("data1.wav", data1.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data1.wav", data1.Samples, sampleRate);
 
             var data2 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile("data2.wav", data2.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data2.wav", data2.Samples, sampleRate);
 
             var data3 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Documents\Audacity\bass afrpck 8 - fix.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile("data3.wav", data3.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data3.wav", data3.Samples, sampleRate);
 
             var data4 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ms-adpcm.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile("data4.wav", data4.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data4.wav", data4.Samples, sampleRate);
 
             var data5 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile("data5.wav", data5.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data5.wav", data5.Samples, sampleRate);
+
+            testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", @"C:\Users\pnerseth\My Projects\data5-original.wav");
 
             var data6 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
             var data7 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);

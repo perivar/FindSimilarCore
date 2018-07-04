@@ -110,6 +110,49 @@ namespace FindSimilarServices.Audio
             return duration;
         }
 
+        public void ConvertToPCM16Bit(string pathToSourceFile, string pathToDestinationFile)
+        {
+            using (IWaveSource source = CodecFactory.Instance.GetCodec(pathToSourceFile))
+            {
+                using (IWaveSource destination = source.ToSampleSource().ToWaveSource(16))
+                {
+                    destination.WriteToFile(pathToDestinationFile);
+                }
+            }
+        }
+
+        public AudioSamples ReadSamplesFromFile(string pathToSourceFile)
+        {
+            float[] samples = new float[0];
+            int srcSampleRate = 0;
+            try
+            {
+                var soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+                var sampleSource = soundSource.ToSampleSource();
+
+                srcSampleRate = sampleSource.WaveFormat.SampleRate;
+                int srcChannelCount = sampleSource.WaveFormat.Channels;
+                float[] sampleBuffer = new float[srcSampleRate * srcChannelCount]; // 1 sec
+                int read;
+                var floatChannelSamples = new List<float>();
+                while ((read = sampleSource.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
+                {
+                    // add the number of samples we read
+                    floatChannelSamples.AddRange(sampleBuffer.Take(read));
+                }
+
+                samples = floatChannelSamples.ToArray();
+                sampleSource.Dispose();
+                soundSource.Dispose();
+            }
+            catch (System.Exception e)
+            {
+                Console.Error.WriteLine("ReadSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message);
+            }
+
+            return new AudioSamples(samples, pathToSourceFile, srcSampleRate);
+        }
+
         public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
         {
             float[] downsampled = new float[0];

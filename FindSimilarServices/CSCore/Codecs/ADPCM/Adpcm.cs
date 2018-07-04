@@ -210,8 +210,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     break;
             }
 
-            // Debug.WriteLine("Format: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockalign: {3}, samplesperblock: {4}",
-            // format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
+            Debug.WriteLine("Adpcm: Samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockalign: {3}, samplesperblock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
 
             if (state.SamplesPerBlock == 0)
             {
@@ -330,6 +329,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             DecoderState state = decoder.State;
             adpcmMsChannel[] channel = new adpcmMsChannel[2];
+            byte blockPredictor = 0;
 
             // determine total number of samples in this block
             // the initial 2 samples from the block preamble are sent directly to the output.
@@ -341,10 +341,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
 
             //  read predicates and deltas
-            byte blockPredictor = 0;
             blockPredictor = reader.ReadByte();
             blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
-
             channel[0].Coeff1 = (short)AdaptationCoeff1[blockPredictor];
             channel[0].Coeff2 = (short)AdaptationCoeff2[blockPredictor];
 
@@ -393,7 +391,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             {
                 byte nibble = reader.ReadByte();
                 writer.Write(AdpcmMsExpandNibble(ref channel[0], (byte)(nibble >> 4)));
-                writer.Write(AdpcmMsExpandNibble(ref channel[isStereo ? 1 : 0], (byte)(nibble & 0xF)));
+                writer.Write(AdpcmMsExpandNibble(ref channel[isStereo ? 1 : 0], (byte)(nibble & 0x0f)));
             }
         }
 
@@ -407,7 +405,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
         };
 
-        private static short AdpcmImaWavExpandNibble(AdpcmImaWavChannel channel, int nibble)
+        private static short AdpcmImaWavExpandNibble(ref AdpcmImaWavChannel channel, int nibble)
         {
             int step = StepTable[channel.StepIndex];
 
@@ -430,7 +428,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             return (short)channel.Predictor;
         }
 
-        private static short AdpcmImaWavExpandNibbleOLD(AdpcmImaWavChannel channel, int nibble)
+        private static short AdpcmImaWavExpandNibbleOriginal(ref AdpcmImaWavChannel channel, int nibble)
         {
             // Compute difference and new predicted value
             // Computes 'vpdiff = (delta+0.5)*step/4', 
@@ -457,10 +455,10 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
         private static void DecodeAdpcmImaWav(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
+            // reference implementations:
             // https://wiki.multimedia.cx/index.php/IMA_ADPCM
             // https://github.com/Nanook/TheGHOST/blob/master/ImaAdpcmPlugin/Ima.cs
             // https://github.com/rochars/imaadpcm/blob/master/index.js
-            // https://github.com/Flitskikker/IMAADPCMEncoder/blob/master/WAV/IMAADPCM.cs
 
             DecoderState state = decoder.State;
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
@@ -474,14 +472,14 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             //   dummy byte (set to zero)
             channel[0].Predictor = reader.ReadInt16();
             channel[0].StepIndex = reader.ReadByte();
-            Clamp(channel[0].StepIndex, 0, 88);
+            channel[0].StepIndex = Clamp(channel[0].StepIndex, 0, 88);
             reader.ReadByte();
 
             if (isStereo)
             {
                 channel[1].Predictor = reader.ReadInt16();
                 channel[1].StepIndex = reader.ReadByte();
-                Clamp(channel[1].StepIndex, 0, 88);
+                channel[1].StepIndex = Clamp(channel[1].StepIndex, 0, 88);
                 reader.ReadByte();
             }
 
@@ -500,41 +498,45 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             // 512-4 = 508 bytes with 505-1 = 504 samples
             // Total of 505 samples per block.
 
-            short[] sample = new short[2 * (state.BlockAlign - 8)];
             if (isStereo)
             {
-                int blockIndex = 1;
-                for (nibbles = 2 * (state.BlockAlign - 8); nibbles > 0; nibbles -= 16)
+                int offset = 0;
+                short[] sample = new short[2 * (state.BlockAlign - 8)];
+                for (nibbles = 2 * (state.BlockAlign - 8);
+                    nibbles > 0;
+                    nibbles -= 16)
                 {
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[blockIndex * i * 4 + 0] = AdpcmImaWavExpandNibble(channel[0], buffer & 0x0f);
-                        sample[blockIndex * i * 4 + 2] = AdpcmImaWavExpandNibble(channel[0], buffer >> 4);
+                        sample[offset + i * 4 + 0] = AdpcmImaWavExpandNibbleOriginal(ref channel[0], buffer & 0x0f);
+                        sample[offset + i * 4 + 2] = AdpcmImaWavExpandNibbleOriginal(ref channel[0], buffer >> 4);
                     }
 
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[blockIndex * i * 4 + 1] = AdpcmImaWavExpandNibble(channel[1], buffer & 0x0f);
-                        sample[blockIndex * i * 4 + 3] = AdpcmImaWavExpandNibble(channel[1], buffer >> 4);
+                        sample[offset + i * 4 + 1] = AdpcmImaWavExpandNibbleOriginal(ref channel[1], buffer & 0x0f);
+                        sample[offset + i * 4 + 3] = AdpcmImaWavExpandNibbleOriginal(ref channel[1], buffer >> 4);
                     }
 
-                    blockIndex++;
+                    offset += 16;
                 }
 
-                for (int i = 0; i < state.SamplesPerBlock; i++)
+                for (int i = 0; i < sample.Length; i++)
                 {
                     writer.Write(sample[i]);
                 }
             }
             else
             {
-                for (nibbles = 2 * (state.BlockAlign - 4); nibbles > 0; nibbles -= 2)
+                for (nibbles = 2 * (state.BlockAlign - 4);
+                    nibbles > 0;
+                    nibbles -= 2)
                 {
                     byte buffer = reader.ReadByte();
-                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) & 0x0f));
-                    writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
+                    writer.Write(AdpcmImaWavExpandNibbleOriginal(ref channel[0], (buffer) & 0x0f));
+                    writer.Write(AdpcmImaWavExpandNibbleOriginal(ref channel[0], (buffer) >> 4));
                 }
             }
         }
@@ -558,7 +560,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 channel[iCh].Predictor = (short)((((buffer[0] << 1) | (buffer[1] >> 7))) << 7);
                 channel[iCh].StepIndex = buffer[1] & 0x7f;
 
-                Clamp(channel[iCh].StepIndex, 0, 88);
+                channel[iCh].StepIndex = Clamp(channel[iCh].StepIndex, 0, 88);
                 // buffer += 2;
 
                 for (nibbles = 0; nibbles < 64; nibbles += 2)
@@ -590,14 +592,14 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             channel[0].Predictor = reader.ReadInt16();
             channel[0].StepIndex = reader.ReadByte();
-            Clamp(channel[0].StepIndex, 0, 88);
+            channel[0].StepIndex = Clamp(channel[0].StepIndex, 0, 88);
             reader.ReadByte();
 
             if (isStereo)
             {
                 channel[1].Predictor = reader.ReadInt16();
                 channel[1].StepIndex = reader.ReadByte();
-                Clamp(channel[1].StepIndex, 0, 88);
+                channel[1].StepIndex = Clamp(channel[1].StepIndex, 0, 88);
                 reader.ReadByte();
             }
 
@@ -613,8 +615,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                  nibbles++)
             {
                 byte buffer = reader.ReadByte();
-                writer.Write(AdpcmImaWavExpandNibble(channel[0], (buffer) >> 4));
-                writer.Write(AdpcmImaWavExpandNibble(channel[isStereo ? 1 : 0], (buffer) & 0x0f));
+                writer.Write(AdpcmImaWavExpandNibble(ref channel[0], (buffer) >> 4));
+                writer.Write(AdpcmImaWavExpandNibble(ref channel[isStereo ? 1 : 0], (buffer) & 0x0f));
 
                 reader.ReadByte();
             }
@@ -645,9 +647,9 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             {
                 byte buff = buffer[i];
                 /* first 3 nibbles */
-                AdpcmImaWavExpandNibble(sum, (buff) & 0x0f);
+                AdpcmImaWavExpandNibble(ref sum, (buff) & 0x0f);
 
-                AdpcmImaWavExpandNibble(diff, (buff) >> 4);
+                AdpcmImaWavExpandNibble(ref diff, (buff) >> 4);
 
                 iDiffValue = (iDiffValue + diff.Predictor) / 2;
 
@@ -656,24 +658,24 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                 reader.ReadByte();
 
-                AdpcmImaWavExpandNibble(sum, (buff) & 0x0f);
+                AdpcmImaWavExpandNibble(ref sum, (buff) & 0x0f);
 
                 writer.Write(sum.Predictor + iDiffValue);
                 writer.Write(sum.Predictor - iDiffValue);
 
                 /* now last 3 nibbles */
-                AdpcmImaWavExpandNibble(sum, (buff) >> 4);
+                AdpcmImaWavExpandNibble(ref sum, (buff) >> 4);
                 reader.ReadByte();
                 if (i < pEnd)
                 {
-                    AdpcmImaWavExpandNibble(diff, (buff) & 0x0f);
+                    AdpcmImaWavExpandNibble(ref diff, (buff) & 0x0f);
 
                     iDiffValue = (iDiffValue + diff.Predictor) / 2;
 
                     writer.Write(sum.Predictor + iDiffValue);
                     writer.Write(sum.Predictor - iDiffValue);
 
-                    AdpcmImaWavExpandNibble(sum, (buff) >> 4);
+                    AdpcmImaWavExpandNibble(ref sum, (buff) >> 4);
                     reader.ReadByte();
 
                     writer.Write(sum.Predictor + iDiffValue);
@@ -730,7 +732,9 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     spl.i >>= d[c];
                     spl.i = (spl.i + cur[c] * c1[c] + prev[c] * c2[c] + 0x80) >> 8;
 
-                    Clamp(spl.i, -32768, 32767);
+                    // Clamp result to 16-bit, -32768 - 32767
+                    spl.i = Clamp(spl.i, short.MinValue, short.MaxValue);
+
                     prev[c] = (short)cur[c];
                     cur[c] = spl.i;
 
@@ -743,7 +747,9 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     spl.i >>= d[c];
                     spl.i = (spl.i + cur[c] * c1[c] + prev[c] * c2[c] + 0x80) >> 8;
 
-                    Clamp(spl.i, -32768, 32767);
+                    // Clamp result to 16-bit, -32768 - 32767
+                    spl.i = Clamp(spl.i, short.MinValue, short.MaxValue);
+
                     prev[c] = (short)cur[c];
                     cur[c] = spl.i;
 
