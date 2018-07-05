@@ -21,7 +21,7 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
-/*             var testAudioService = new FindSimilarAudioService();
+            var testAudioService = new FindSimilarAudioService();
             int sampleRate = 32000;
 
             var data1 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
@@ -44,7 +44,7 @@ namespace FindSimilar
             var data6 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
             var data7 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
             return 0;
- */
+
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.File("findsimilar.log")
                 .CreateLogger();

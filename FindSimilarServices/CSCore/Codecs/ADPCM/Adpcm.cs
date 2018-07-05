@@ -46,13 +46,13 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
 
         /* Various table from http://www.pcistate.net/~melanson/codecs/adpcm.txt */
-        private static readonly int[] IndexTable =
+        private static readonly int[] IMAIndexTable =
         {
             -1, -1, -1, -1, 2, 4, 6, 8,
             -1, -1, -1, -1, 2, 4, 6, 8
         };
 
-        private static readonly int[] StepTable =
+        private static readonly int[] IMAStepTable =
         {
             7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
             19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
@@ -65,18 +65,18 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
         };
 
-        private static readonly int[] AdaptationTable =
+        private static readonly int[] MSAdaptationTable =
         {
             230, 230, 230, 230, 307, 409, 512, 614,
             768, 614, 512, 409, 307, 230, 230, 230
         };
 
-        private static readonly int[] AdaptationCoeff1 =
+        private static readonly int[] MSAdaptationCoeff1 =
         {
             256, 512, 0, 192, 240, 460, 392
         };
 
-        private static readonly int[] AdaptationCoeff2 =
+        private static readonly int[] MSAdaptationCoeff2 =
         {
             0, -256, 0, 64, 0, -208, -232
         };
@@ -103,14 +103,14 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             state.SamplesPerBlock = 0;
             state.Codec = AdpcmCodecType.ADPCM_MS;
 
-            switch (format.Encoding)
+            switch ((short)format.Encoding)
             {
-                // case VLC_CODEC_ADPCM_IMA_QT:
-                case AudioEncoding.ImaAdpcm:
-                case AudioEncoding.Adpcm:
-                    // case VLC_CODEC_ADPCM_DK4:
-                    // case VLC_CODEC_ADPCM_DK3:
-                    // case VLC_CODEC_ADPCM_XA_EA:
+                //case 0x00a4: // Apple QuickTime IMA ADPCM, FOURCCs: ima4
+                case 0x0002: // Microsoft ADPCM
+                case 0x0011: // IMA ADPCM   
+                case 0x0061: // Duck DK4 IMA ADPCM
+                case 0x0062: // Duck DK3 IMA ADPCM 
+                             //case 0x0000: // EA ADPCM, XA ADPCM, FOURCCs: XAJ0
                     break;
                 default:
                     return false;
@@ -124,30 +124,31 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             int channels = format.Channels;
             byte maxChannels = 5;
-            switch (format.Encoding)
+            switch ((short)format.Encoding)
             {
-                //  case VLC_CODEC_ADPCM_IMA_QT: /* IMA ADPCM */
-                // state.codec = adpcmCodecE.ADPCM_IMA_QT;
-                // iMaxChannels = 2;
+
+                // case 0x00a4: // Apple QuickTime IMA ADPCM, FOURCCs: ima4
+                // state.Codec = AdpcmCodecType.ADPCM_IMA_QT;
+                // maxChannels = 2;
                 // break;
-                case AudioEncoding.ImaAdpcm: /* IMA ADPCM */
-                    state.Codec = AdpcmCodecType.ADPCM_IMA_WAV;
-                    maxChannels = 2;
-                    break;
-                case AudioEncoding.Adpcm: /* MS ADPCM */
+                case 0x0002: // Microsoft ADPCM
                     state.Codec = AdpcmCodecType.ADPCM_MS;
                     maxChannels = 2;
                     break;
-                    // case VLC_CODEC_ADPCM_DK4: /* Duck DK4 ADPCM */
-                    // state.codec = adpcmCodecE.ADPCM_DK4;
-                    // iMaxChannels = 2;
-                    // break;
-                    // case VLC_CODEC_ADPCM_DK3: /* Duck DK3 ADPCM */
-                    // state.codec = adpcmCodecE.ADPCM_DK3;
-                    // iMaxChannels = 2;
-                    // break;
-                    // case VLC_CODEC_ADPCM_XA_EA: /* EA ADPCM */
-                    // state.codec = adpcmCodecE.ADPCM_EA;
+                case 0x0011: // IMA ADPCM
+                    state.Codec = AdpcmCodecType.ADPCM_IMA_WAV;
+                    maxChannels = 2;
+                    break;
+                case 0x0061: // Duck DK4 IMA ADPCM
+                    state.Codec = AdpcmCodecType.ADPCM_DK4;
+                    maxChannels = 2;
+                    break;
+                case 0x0062: // Duck DK3 IMA ADPCM 
+                    state.Codec = AdpcmCodecType.ADPCM_DK3;
+                    maxChannels = 2;
+                    break;
+                    // case 0x0000: // EA ADPCM, XA ADPCM, FOURCCs: XAJ0
+                    // state.Codec = AdpcmCodecType.ADPCM_EA;
                     // break;
             }
 
@@ -167,7 +168,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 state.BlockAlign = format.BlockAlign;
             }
 
-            /* calculate samples per block */
+            // calculate samples per block
             switch (state.Codec)
             {
                 case AdpcmCodecType.ADPCM_IMA_QT:
@@ -210,7 +211,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     break;
             }
 
-            Debug.WriteLine("Adpcm: Samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockalign: {3}, samplesperblock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
+            Debug.WriteLine("Adpcm: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockAlign: {3}, samplesPerBlock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
 
             if (state.SamplesPerBlock == 0)
             {
@@ -312,7 +313,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             channel.Sample2 = channel.Sample1;
             channel.Sample1 = (short)predictor;
 
-            channel.Delta = (short)((AdaptationTable[nibble] * channel.Delta) / 256);
+            channel.Delta = (short)((MSAdaptationTable[nibble] * channel.Delta) / 256);
 
             // Saturate the delta to a lower bound of 16
             if (channel.Delta < 16)
@@ -343,15 +344,15 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             //  read predicates and deltas
             blockPredictor = reader.ReadByte();
             blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
-            channel[0].Coeff1 = (short)AdaptationCoeff1[blockPredictor];
-            channel[0].Coeff2 = (short)AdaptationCoeff2[blockPredictor];
+            channel[0].Coeff1 = (short)MSAdaptationCoeff1[blockPredictor];
+            channel[0].Coeff2 = (short)MSAdaptationCoeff2[blockPredictor];
 
             if (isStereo)
             {
                 blockPredictor = reader.ReadByte();
                 blockPredictor = (byte)Clamp(blockPredictor, 0, 6);
-                channel[1].Coeff1 = (short)AdaptationCoeff1[blockPredictor];
-                channel[1].Coeff2 = (short)AdaptationCoeff2[blockPredictor];
+                channel[1].Coeff1 = (short)MSAdaptationCoeff1[blockPredictor];
+                channel[1].Coeff2 = (short)MSAdaptationCoeff2[blockPredictor];
             }
             channel[0].Delta = reader.ReadInt16();
             if (isStereo)
@@ -407,7 +408,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
         private static short AdpcmImaWavExpandNibble(ref AdpcmImaWavChannel channel, int nibble)
         {
-            int step = StepTable[channel.StepIndex];
+            int step = IMAStepTable[channel.StepIndex];
 
             // perform direct multiplication instead of series of jumps proposed by
             // the reference ADPCM implementation since modern CPUs can do the mults
@@ -422,7 +423,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             // Clamp result to 16-bit, -32768 - 32767
             channel.Predictor = Clamp(channel.Predictor, short.MinValue, short.MaxValue);
 
-            channel.StepIndex = channel.StepIndex + IndexTable[nibble];
+            channel.StepIndex = channel.StepIndex + IMAIndexTable[nibble];
             channel.StepIndex = Clamp(channel.StepIndex, 0, 88);
 
             return (short)channel.Predictor;
@@ -433,10 +434,10 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             // Compute difference and new predicted value
             // Computes 'vpdiff = (delta+0.5)*step/4', 
             // but see comment in adpcm_coder.             
-            int diff = StepTable[channel.StepIndex] >> 3;
-            if ((nibble & 0x04) != 0) diff += StepTable[channel.StepIndex];
-            if ((nibble & 0x02) != 0) diff += StepTable[channel.StepIndex] >> 1;
-            if ((nibble & 0x01) != 0) diff += StepTable[channel.StepIndex] >> 2;
+            int diff = IMAStepTable[channel.StepIndex] >> 3;
+            if ((nibble & 0x04) != 0) diff += IMAStepTable[channel.StepIndex];
+            if ((nibble & 0x02) != 0) diff += IMAStepTable[channel.StepIndex] >> 1;
+            if ((nibble & 0x01) != 0) diff += IMAStepTable[channel.StepIndex] >> 2;
             if ((nibble & 0x08) != 0)
                 channel.Predictor -= diff;
             else
@@ -447,7 +448,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             channel.Predictor = Clamp(channel.Predictor, short.MinValue, short.MaxValue);
 
             // Find new index value (for later)
-            channel.StepIndex += IndexTable[nibble];
+            channel.StepIndex += IMAIndexTable[nibble];
             channel.StepIndex = Clamp(channel.StepIndex, 0, 88);
 
             return (short)channel.Predictor;
@@ -509,15 +510,15 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[offset + i * 4 + 0] = AdpcmImaWavExpandNibbleOriginal(ref channel[0], buffer & 0x0f);
-                        sample[offset + i * 4 + 2] = AdpcmImaWavExpandNibbleOriginal(ref channel[0], buffer >> 4);
+                        sample[offset + i * 4 + 0] = AdpcmImaWavExpandNibble(ref channel[0], buffer & 0x0f);
+                        sample[offset + i * 4 + 2] = AdpcmImaWavExpandNibble(ref channel[0], buffer >> 4);
                     }
 
                     for (int i = 0; i < 4; i++)
                     {
                         byte buffer = reader.ReadByte();
-                        sample[offset + i * 4 + 1] = AdpcmImaWavExpandNibbleOriginal(ref channel[1], buffer & 0x0f);
-                        sample[offset + i * 4 + 3] = AdpcmImaWavExpandNibbleOriginal(ref channel[1], buffer >> 4);
+                        sample[offset + i * 4 + 1] = AdpcmImaWavExpandNibble(ref channel[1], buffer & 0x0f);
+                        sample[offset + i * 4 + 3] = AdpcmImaWavExpandNibble(ref channel[1], buffer >> 4);
                     }
 
                     offset += 16;
@@ -535,8 +536,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     nibbles -= 2)
                 {
                     byte buffer = reader.ReadByte();
-                    writer.Write(AdpcmImaWavExpandNibbleOriginal(ref channel[0], (buffer) & 0x0f));
-                    writer.Write(AdpcmImaWavExpandNibbleOriginal(ref channel[0], (buffer) >> 4));
+                    writer.Write(AdpcmImaWavExpandNibble(ref channel[0], (buffer) & 0x0f));
+                    writer.Write(AdpcmImaWavExpandNibble(ref channel[0], (buffer) >> 4));
                 }
             }
         }
@@ -546,36 +547,41 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
          */
         private static void DecodeAdpcmImaQT(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
-            AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
-            int nibbles;
+            // https://wiki.multimedia.cx/index.php/Apple_QuickTime_IMA_ADPCM
+            // In any given IMA-encoded QuickTime file, 
+            // the size of an individual block of IMA nibbles is stored in the bytes/packet field present 
+            // in the extended audio information portion in an audio stsd atom. 
+            // However, this size always seems to be 34 bytes/block. 
+            // Sometimes, IMA-encoded Quicktime files are missing the extended wave information header. 
+            // In this case, assume that each IMA block is 34 bytes.
 
-            byte[] buffer = new byte[1000];
-            short[] sample = new short[1000];
+            AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
 
             int channels = decoder.AudioFormat.Channels;
 
-            for (int iCh = 0; iCh < channels; iCh++)
+            for (int i = 0; i < channels; i++)
             {
-                /* load preamble */
-                channel[iCh].Predictor = (short)((((buffer[0] << 1) | (buffer[1] >> 7))) << 7);
-                channel[iCh].StepIndex = buffer[1] & 0x7f;
+                // The first 2 bytes of a block specify a preamble with the initial predictor and step index. 
+                // The 2 bytes are read from the stream as a big-endian 16-bit number which has the following bit structure:
+                // pppppppp piiiiiii 
+                // Bits 15-7 of the preamble are the top 9 bits of the initial signed predictor; 
+                // Bits 6-0 of the initial predictor are always 0. 
+                // Bits 6-0 of the preamble specify the initial step index. 
+                // Note that this gives a range of 0..127 which should be clamped to 0..88 for good measure.
+                byte buffer0 = reader.ReadByte();
+                byte buffer1 = reader.ReadByte();
+                channel[i].Predictor = (short)((((buffer0 << 1) | (buffer1 >> 7))) << 7);
+                channel[i].StepIndex = buffer1 & 0x7f;
+                channel[i].StepIndex = Clamp(channel[i].StepIndex, 0, 88);
 
-                channel[iCh].StepIndex = Clamp(channel[iCh].StepIndex, 0, 88);
-                // buffer += 2;
-
-                for (nibbles = 0; nibbles < 64; nibbles += 2)
+                // The remaining bytes in the IMA block (of which there are usually 32) are the ADPCM nibbles. 
+                // In Quicktime IMA data, the bottom nibble of a byte is decoded first, then the top nibble:
+                for (int nibbles = 0; nibbles < 64; nibbles += 2)
                 {
-                    // sample = AdpcmImaWavExpandNibble(channel[iCh], (buffer) & 0x0f);
-                    // sample += step;
-
-                    // sample = AdpcmImaWavExpandNibble(channel[iCh], (buffer >> 4) & 0x0f);
-                    // sample += step;
-
-                    reader.ReadByte();
+                    byte buffer = reader.ReadByte();
+                    writer.Write(AdpcmImaWavExpandNibble(ref channel[i], (buffer) & 0x0f));
+                    writer.Write(AdpcmImaWavExpandNibble(ref channel[i], (buffer >> 4) & 0x0f));
                 }
-
-                /* Next channel */
-                // sample += 1 - 64 * step;
             }
         }
 
@@ -584,11 +590,20 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
          */
         private static void DecodeAdpcmDk4(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
+            // https://wiki.multimedia.cx/index.php/Duck_DK4_IMA_ADPCM
+
             DecoderState state = decoder.State;
             AdpcmImaWavChannel[] channel = new AdpcmImaWavChannel[2];
-            int nibbles;
 
             bool isStereo = decoder.AudioFormat.Channels == 2 ? true : false;
+
+            // If the DK4 data is stereo, a chunk begins with two preambles, one for the left audio channel and one for the right audio channel:
+            // bytes 0-1:  initial predictor (in little-endian format) for left channel
+            // byte 2:     initial index for left channel
+            // byte 3:     unknown, usually 0 and is probably reserved
+            // bytes 4-5:  initial predictor (in little-endian format) for right channel
+            // byte 6:     initial index (for right channel)
+            // byte 7:     unknown, usually 0 and is probably reserved 
 
             channel[0].Predictor = reader.ReadInt16();
             channel[0].StepIndex = reader.ReadByte();
@@ -610,7 +625,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                 writer.Write(channel[1].Predictor);
             }
 
-            for (nibbles = 0;
+            for (int nibbles = 0;
                  nibbles < state.BlockAlign - 4 * (isStereo ? 2 : 1);
                  nibbles++)
             {
@@ -627,59 +642,74 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
          */
         private static void DecodeAdpcmDk3(Decoder decoder, BinaryReader reader, BinaryWriter writer)
         {
+            // https://wiki.multimedia.cx/index.php/Duck_DK3_IMA_ADPCM
+
             DecoderState state = decoder.State;
-            byte[] buffer = new byte[1000];
-            byte pEnd = buffer[state.BlockAlign];
             AdpcmImaWavChannel sum;
             AdpcmImaWavChannel diff;
-            int iDiffValue;
 
-            // buffer += 10;
+            // A block of DK3 has a 16-byte preamble with the following information:
+            // bytes 0-1     unknown
+            // bytes 2-3     sample rate
+            // bytes 4-9     unknown
+            // bytes 10-11   initial sum channel predictor
+            // bytes 12-13   initial diff channel predictor
+            // byte 14       initial sum channel index
+            // byte 15       initial diff channel index 
+
+            reader.ReadBytes(10); // skip
 
             sum.Predictor = reader.ReadInt16();
             diff.Predictor = reader.ReadInt16();
             sum.StepIndex = reader.ReadByte();
             diff.StepIndex = reader.ReadByte();
 
-            iDiffValue = diff.Predictor;
+            int diffValue = diff.Predictor;
+
+            // Each set of 3 nibbles decodes to 4 16-bit PCM samples using this process 
+            // (note that the diff value is initialized to the same value as the diff predictor)
             /* we process 6 nibbles at once */
-            for (int i = 0; i < pEnd; i++)
+            byte buff = 0;
+            for (int i = 16; i < state.BlockAlign; i++)
             {
-                byte buff = buffer[i];
+                // get next ADPCM nibble in stream
+                buff = reader.ReadByte();
+
                 /* first 3 nibbles */
                 AdpcmImaWavExpandNibble(ref sum, (buff) & 0x0f);
-
                 AdpcmImaWavExpandNibble(ref diff, (buff) >> 4);
 
-                iDiffValue = (iDiffValue + diff.Predictor) / 2;
+                diffValue = (diffValue + diff.Predictor) / 2;
 
-                writer.Write(sum.Predictor + iDiffValue);
-                writer.Write(sum.Predictor - iDiffValue);
+                writer.Write(sum.Predictor + diffValue);
+                writer.Write(sum.Predictor - diffValue);
 
-                reader.ReadByte();
+                buff = reader.ReadByte();
 
                 AdpcmImaWavExpandNibble(ref sum, (buff) & 0x0f);
 
-                writer.Write(sum.Predictor + iDiffValue);
-                writer.Write(sum.Predictor - iDiffValue);
+                writer.Write(sum.Predictor + diffValue);
+                writer.Write(sum.Predictor - diffValue);
 
                 /* now last 3 nibbles */
                 AdpcmImaWavExpandNibble(ref sum, (buff) >> 4);
-                reader.ReadByte();
-                if (i < pEnd)
+
+                buff = reader.ReadByte();
+                if (i < state.BlockAlign)
                 {
                     AdpcmImaWavExpandNibble(ref diff, (buff) & 0x0f);
 
-                    iDiffValue = (iDiffValue + diff.Predictor) / 2;
+                    diffValue = (diffValue + diff.Predictor) / 2;
 
-                    writer.Write(sum.Predictor + iDiffValue);
-                    writer.Write(sum.Predictor - iDiffValue);
+                    writer.Write(sum.Predictor + diffValue);
+                    writer.Write(sum.Predictor - diffValue);
 
                     AdpcmImaWavExpandNibble(ref sum, (buff) >> 4);
-                    reader.ReadByte();
 
-                    writer.Write(sum.Predictor + iDiffValue);
-                    writer.Write(sum.Predictor - iDiffValue);
+                    buff = reader.ReadByte();
+
+                    writer.Write(sum.Predictor + diffValue);
+                    writer.Write(sum.Predictor - diffValue);
                 }
             }
         }
@@ -704,7 +734,6 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
             };
 
             DecoderState state = decoder.State;
-            byte[] buffer = new byte[1000];
             int[] c1 = new int[2];
             int[] c2 = new int[2];
             int[] d = new int[2];
@@ -715,7 +744,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
             for (int c = 0; c < channels; c++)
             {
-                byte input = buffer[c];
+                byte input = reader.ReadByte();
 
                 c1[c] = EATable[input >> 4];
                 c2[c] = EATable[(input >> 4) + 4];
@@ -728,7 +757,8 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                 for (int c = 0; c < channels; c++)
                 {
-                    spl.u = (uint)((buffer[c] & 0xf0u) << 24);
+                    byte buffer = reader.ReadByte();
+                    spl.u = (uint)((buffer & 0xf0u) << 24);
                     spl.i >>= d[c];
                     spl.i = (spl.i + cur[c] * c1[c] + prev[c] * c2[c] + 0x80) >> 8;
 
@@ -738,12 +768,13 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     prev[c] = (short)cur[c];
                     cur[c] = spl.i;
 
-                    writer.Write(spl.i);
+                    writer.Write((short)spl.i);
                 }
 
                 for (int c = 0; c < channels; c++)
                 {
-                    spl.u = (uint)(buffer[c] & 0x0fu) << 28;
+                    byte buffer = reader.ReadByte();
+                    spl.u = (uint)(buffer & 0x0fu) << 28;
                     spl.i >>= d[c];
                     spl.i = (spl.i + cur[c] * c1[c] + prev[c] * c2[c] + 0x80) >> 8;
 
@@ -753,7 +784,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
                     prev[c] = (short)cur[c];
                     cur[c] = spl.i;
 
-                    writer.Write(spl.i);
+                    writer.Write((short)spl.i);
                 }
             }
         }

@@ -34,15 +34,17 @@ namespace CSCore.Codecs
                  res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.Extensible)
              {
-                 if (res.WaveFormat.WaveFormatTag == AudioEncoding.Adpcm
-                 || res.WaveFormat.WaveFormatTag == AudioEncoding.ImaAdpcm)
+                 switch ((short)res.WaveFormat.WaveFormatTag)
                  {
-                     res.Dispose();
-                     res = new AdpcmSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
-                 }
-                 else
-                 {
-                     throw new ArgumentException(string.Format("Non PCM, ADPCM, IEEE or Extensible wave-files not supported: ({0})", res.WaveFormat.WaveFormatTag));
+                     case 0x0002: // Microsoft ADPCM
+                     case 0x0011: // IMA ADPCM   
+                     case 0x0061: // Duck DK4 IMA ADPCM
+                     case 0x0062: // Duck DK3 IMA ADPCM 
+                         res.Dispose();
+                         res = new AdpcmSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
+                         break;
+                     default:
+                         throw new ArgumentException(string.Format("Non PCM, ADPCM, IEEE or Extensible wave-files not supported: ({0})", res.WaveFormat.WaveFormatTag));
                  }
              }
              return res;
