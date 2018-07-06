@@ -107,6 +107,8 @@ namespace FindSimilarServices.CSCore.Codecs.OGG
             waveFormat.WaveFormatTag = AudioEncoding.Pcm;
             _waveFormat = waveFormat;
 
+            // TODO: check with reference implementation
+            // https://github.com/xiph/vorbis
             _oggDecodeStream = new OggDecodeStream(stream, true);
             _stream = stream;
         }
