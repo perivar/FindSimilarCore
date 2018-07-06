@@ -118,6 +118,7 @@ namespace FindSimilarServices.CSCore.Codecs.ADPCM
 
                 // reset position
                 stream.Position = oldPosition;
+                reader = null;
             }
 
             var dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);

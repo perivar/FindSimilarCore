@@ -10,6 +10,7 @@ using CSCore.Codecs.WAV;
 using CSCore.Codecs.MP3;
 using CSCore.Codecs.OGG;
 using FindSimilarServices.CSCore.Codecs.ADPCM;
+using FindSimilarServices.CSCore.Codecs.OGG;
 
 namespace CSCore.Codecs
 {
@@ -43,8 +44,17 @@ namespace CSCore.Codecs
                          res.Dispose();
                          res = new AdpcmSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
                          break;
+                     case 0x674f: // OGG_VORBIS_MODE_1 "Og" Original stream compatible
+                     case 0x676f: // OGG_VORBIS_MODE_1_PLUS "og" Original stream compatible
+                     case 0x6750: // OGG_VORBIS_MODE_2 "Pg" Have independent header
+                     case 0x6770: // OGG_VORBIS_MODE_2_PLUS "pg" Have independent headere
+                     case 0x6751: // OGG_VORBIS_MODE_3 "Qg" Have no codebook header
+                     case 0x6771: // OGG_VORBIS_MODE_3_PLUS "qg" Have no codebook header
+                         res.Dispose();
+                         res = new CSVorbisSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
+                         break;
                      default:
-                         throw new ArgumentException(string.Format("Non PCM, ADPCM, IEEE or Extensible wave-files not supported: ({0})", res.WaveFormat.WaveFormatTag));
+                         throw new ArgumentException(string.Format("Non PCM, IEEE or Extensible wave-files, or format not supported: ({0})", res.WaveFormat.WaveFormatTag));
                  }
              }
              return res;
