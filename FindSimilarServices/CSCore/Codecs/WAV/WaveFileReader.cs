@@ -203,7 +203,6 @@ namespace CSCore.Codecs.WAV
                         _stream.Dispose();
                         _stream = null;
                     }
-                    Debug.WriteLine("WaveFile disposed.");
                 }
             }
             _disposed = true;

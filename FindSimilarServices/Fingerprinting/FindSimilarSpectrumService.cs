@@ -4,9 +4,10 @@
     using System.Collections.Generic;
     using System.Drawing;
     using System.Drawing.Imaging;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
-
+    using FindSimilarServices;
     using SoundFingerprinting.Audio;
     using SoundFingerprinting.Configuration;
     using SoundFingerprinting.Data;
@@ -14,13 +15,16 @@
 
     internal class FindSimilarSpectrumService : ISpectrumService
     {
-        private readonly IFFTServiceUnsafe fftServiceUnsafe;
+        private readonly IFFTService fftService;
         private readonly ILogUtility logUtility;
+        private readonly Lomont.LomontFFT lomonFFT;
 
-        internal FindSimilarSpectrumService(IFFTServiceUnsafe fftServiceUnsafe, ILogUtility logUtility)
+        internal FindSimilarSpectrumService(IFFTService fftService, ILogUtility logUtility)
         {
-            this.fftServiceUnsafe = fftServiceUnsafe;
+            this.fftService = fftService;
             this.logUtility = logUtility;
+
+            this.lomonFFT = new Lomont.LomontFFT();
         }
 
         public List<SpectralImage> CreateLogSpectrogram(AudioSamples audioSamples, SpectrogramConfig configuration)
@@ -32,40 +36,57 @@
                 return new List<SpectralImage>();
             }
 
-            float[] frames = new float[width * configuration.LogBins];
+            double[][] frames = new double[width][];
             ushort[] logFrequenciesIndexes = logUtility.GenerateLogFrequenciesRanges(audioSamples.SampleRate, configuration);
             float[] window = configuration.Window.GetWindow(wdftSize);
             float[] samples = audioSamples.Samples;
 
-            unsafe
+            for (int i = 0; i < width; i++)
             {
-                Parallel.For(0, width, index =>
+                double[] complexSignal = new double[2 * configuration.WdftSize]; /*even - Re, odd - Img, thats how Exocortex works*/
+
+                // take 371 ms each 11.6 ms (2048 samples each 64 samples, samplerate 5512)
+                // or 256 ms each 16 ms (8192 samples each 512 samples, samplerate 32000)
+                for (int j = 0; j < configuration.WdftSize; j++)
                 {
-                    float* fftArray = stackalloc float[wdftSize];
-                    CopyAndWindow(fftArray, samples, index * configuration.Overlap, window);
-                    fftServiceUnsafe.FFTForwardInPlace(fftArray, wdftSize);
-                    ExtractLogBins(fftArray, logFrequenciesIndexes, configuration.LogBins, wdftSize, frames, index);
-                });
+                    // Weight by Window
+                    complexSignal[2 * j] = window[j] * samples[(i * configuration.Overlap) + j];
+
+                    // need to clear out as fft modifies buffer (phase)
+                    complexSignal[(2 * j) + 1] = 0;
+                }
+
+                lomonFFT.TableFFT(complexSignal, true);
+
+                frames[i] = ExtractLogBins(complexSignal, logFrequenciesIndexes, configuration.LogBins);
             }
 
-            // PER IVAR
-            /*             var imageService = new ImageService();
-                        using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
-                        {
-                            image.Save(pathToAudioFile + "_spectrogram.png", ImageFormat.Png);
-                        }
-             */
+#if DEBUG
+            var imageService = new FindSimilarImageService();
+            using (Image image = imageService.GetSpectrogramImage(frames, width * 20, configuration.LogBins * 30))
+            {
+                var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram.png"));
+                if (fileName != null)
+                {
+                    image.Save(fileName, ImageFormat.Png);
+                }
+            }
+#endif
+
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
+
+            WriteOutputUtils.WriteCSV(images.FirstOrDefault().Image, @"images1-new.csv");
+
             ScaleFullSpectrum(images, configuration);
             return images;
         }
 
         private void ScaleFullSpectrum(IEnumerable<SpectralImage> spectralImages, SpectrogramConfig configuration)
         {
-            Parallel.ForEach(spectralImages, image =>
+            foreach (var image in spectralImages)
             {
                 ScaleSpectrum(image, configuration.ScalingFunction);
-            });
+            }
         }
 
         private void ScaleSpectrum(SpectralImage spectralImage, Func<float, float, float> scalingFunction)
@@ -78,43 +99,35 @@
             }
         }
 
-        public List<SpectralImage> CutLogarithmizedSpectrum(float[] logarithmizedSpectrum, int sampleRate, SpectrogramConfig configuration)
+        public List<SpectralImage> CutLogarithmizedSpectrum(double[][] spectrum, int sampleRate, SpectrogramConfig configuration)
         {
             var strideBetweenConsecutiveImages = configuration.Stride;
             int overlap = configuration.Overlap;
-            int index = GetFrequencyIndexLocationOfAudioSamples(strideBetweenConsecutiveImages.FirstStride, overlap);
             int numberOfLogBins = configuration.LogBins;
+            ushort fingerprintImageLength = configuration.ImageLength;
             var spectralImages = new List<SpectralImage>();
 
-            int width = logarithmizedSpectrum.Length / numberOfLogBins;
-            ushort fingerprintImageLength = configuration.ImageLength;
-            int fullLength = configuration.ImageLength * numberOfLogBins;
-            uint sequenceNumber = 0;
-            while (index + fingerprintImageLength <= width)
+            int rowCount = spectrum[0].Length;
+            int columnCount = spectrum.Length;
+            for (int column = 0; column < columnCount; column++)
             {
-                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
-                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage, 0, fullLength * sizeof(float));
-                float startsAt = index * ((float)overlap / sampleRate);
-                spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, startsAt, sequenceNumber));
-                index += fingerprintImageLength + GetFrequencyIndexLocationOfAudioSamples(strideBetweenConsecutiveImages.NextStride, overlap);
-                sequenceNumber++;
-            }
+                float[] spectralImage = new float[rowCount];
+                for (int row = 0; row < rowCount; row++)
+                {
+                    spectralImage[row] = (float)spectrum[column][row];
+                }
 
-            // ADDED BY PER IVAR NERSETH, 2018
-            // Make sure at least the input spectrum is a part of the output list
-            if (spectralImages.Count == 0)
-            {
-                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
-                Buffer.BlockCopy(logarithmizedSpectrum, 0, spectralImage, 0, logarithmizedSpectrum.Length);
-                spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, 0, 0));
+                float startsAt = column * ((float)overlap / sampleRate);
+                spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, startsAt, (uint)column));
             }
 
             return spectralImages;
         }
 
-        private unsafe void ExtractLogBins(float* spectrum, ushort[] logFrequenciesIndex, int logBins, int wdftSize, float[] targetArray, int targetIndex)
+        private double[] ExtractLogBins(double[] spectrum, ushort[] logFrequenciesIndex, int logBins)
         {
-            int width = wdftSize / 2; /* 1024 */
+            int width = spectrum.Length / 2;
+            double[] sumFreq = new double[logBins];
             for (int i = 0; i < logBins; i++)
             {
                 int lowBound = logFrequenciesIndex[i];
@@ -122,27 +135,16 @@
 
                 for (int k = lowBound; k < higherBound; k++)
                 {
-                    double re = spectrum[2 * k] / width;
-                    double img = spectrum[(2 * k) + 1] / width;
-                    targetArray[(targetIndex * logBins) + i] += (float)((re * re) + (img * img));
+                    double re = spectrum[2 * k];
+                    double img = spectrum[(2 * k) + 1];
+
+                    sumFreq[i] += Math.Sqrt(((re * re) + (img * img)) * width);
                 }
 
-                targetArray[(targetIndex * logBins) + i] /= (higherBound - lowBound);
+                sumFreq[i] /= higherBound - lowBound;
             }
-        }
 
-        private int GetFrequencyIndexLocationOfAudioSamples(int audioSamples, int overlap)
-        {
-            // There are 64 audio samples in 1 unit of spectrum due to FFT window overlap (which is 64)
-            return (int)((float)audioSamples / overlap);
-        }
-
-        private unsafe void CopyAndWindow(float* fftArray, float[] samples, int prefix, float[] window)
-        {
-            for (int j = 0; j < window.Length; ++j)
-            {
-                fftArray[j] = samples[prefix + j] * window[j];
-            }
+            return sumFreq;
         }
     }
 }

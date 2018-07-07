@@ -1,0 +1,4 @@
+Name,SourceDirectory,DestinationDirectory
+soundfingerpringing-audio,..\soundfingerprinting\src\SoundFingerprinting\Audio,.\FindSimilarServices\Soundfingerprinting\Audio
+soundfingerpringing-fft,..\soundfingerprinting\src\SoundFingerprinting\FFT,.\FindSimilarServices\Soundfingerprinting\FFT
+

@@ -102,9 +102,9 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
 
 		public Image GetSpectrogramImage(float[] spectrum, int width, int logBins, int drawWidth=2000, int drawHeight=400)
 		{
-            float[][] frames = new float[width][];
+            double[][] frames = new double[width][];
             for (int i = 0; i < width; i++) {
-                float[] band = new float[logBins];
+                double[] band = new double[logBins];
                 for (int j = 0; j < logBins; j++) {
                     band[j] = spectrum[logBins * i + j];
                 }
@@ -114,7 +114,7 @@ namespace SoundFingerprinting.SoundTools.DrawningTool
             return  GetSpectrogramImage(frames, drawWidth, drawHeight);
         }
 
-		public Image GetSpectrogramImage(float[][] spectrum, int width, int height)
+		public Image GetSpectrogramImage(double[][] spectrum, int width, int height)
 		{
 			// set some default values
 			bool usePowerSpectrum = false;

@@ -40,14 +40,14 @@ namespace FindSimilar
                         SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data5.wav", data5.Samples, sampleRate);
 
                         testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", @"C:\Users\pnerseth\My Projects\data5-original.wav");
+                        var data6 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data6.wav", data6.Samples, sampleRate);
+
+                        var data7 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data7.wav", data7.Samples, sampleRate);
+
+                        return 0;
              */
-            var data6 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data6.wav", data6.Samples, sampleRate);
-
-            var data7 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data7.wav", data7.Samples, sampleRate);
-
-            return 0;
 
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.File("findsimilar.log")

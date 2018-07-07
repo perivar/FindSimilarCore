@@ -27,12 +27,6 @@ namespace SoundFingerprinting
         private readonly IFingerprintDescriptor fingerprintDescriptor;
         private readonly ILocalitySensitiveHashingAlgorithm lshAlgorithm;
 
-        public static FindSimilarFingerprintService Instance { get; } = new FindSimilarFingerprintService(
-            new SpectrumService(new LomontFFT(), new LogUtility()),
-            new LocalitySensitiveHashingAlgorithm(new MinHashService(new MaxEntropyPermutations()), new HashConverter()),
-            new StandardHaarWaveletDecomposition(),
-            new FastFingerprintDescriptor());
-
         internal FindSimilarFingerprintService(
             ISpectrumService spectrumService,
             ILocalitySensitiveHashingAlgorithm lshAlgorithm,

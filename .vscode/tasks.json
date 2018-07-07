@@ -83,6 +83,24 @@
                 "focus": true
             },
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "robocopy",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "robocopy.ps1"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": []
         }
     ]
 }

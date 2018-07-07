@@ -98,14 +98,15 @@ namespace FindSimilarServices.Audio
             float duration = 0;
             try
             {
-                IWaveSource soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
-                var time = soundSource.GetLength();
-                soundSource.Dispose();
-                duration = (float)time.TotalSeconds;
+                using (IWaveSource soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile))
+                {
+                    var time = soundSource.GetLength();
+                    duration = (float)time.TotalSeconds;
+                }
             }
             catch (System.Exception e)
             {
-                //Console.Error.WriteLine("GetLengthInSeconds failed for {0}: {1}", pathToSourceFile, e.Message);
+                throw new ArgumentException(string.Format("GetLengthInSeconds failed for {0}: {1}", pathToSourceFile, e.Message));
             }
             return duration;
         }
@@ -147,7 +148,7 @@ namespace FindSimilarServices.Audio
             }
             catch (System.Exception e)
             {
-                Console.Error.WriteLine("ReadSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message);
+                throw new ArgumentException(string.Format("ReadSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message), e);
             }
 
             return new AudioSamples(samples, pathToSourceFile, srcSampleRate);
@@ -181,7 +182,7 @@ namespace FindSimilarServices.Audio
             }
             catch (System.Exception e)
             {
-                Console.Error.WriteLine("ReadMonoSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message);
+                throw new ArgumentException(string.Format("ReadSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message), e);
             }
 
             return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
@@ -241,7 +242,7 @@ namespace FindSimilarServices.Audio
             else
             {
                 // don't support multi channel audio files (more than 2 channels)
-                throw new ArgumentException("No support multi channel audio files (more than 2 channels)!");
+                throw new ArgumentException("No support for multi channel audio files (more than 2 channels)!");
             }
         }
 

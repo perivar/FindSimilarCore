@@ -24,6 +24,7 @@ using SoundFingerprinting.Wavelets;
 using SoundFingerprinting.Utils;
 using SoundFingerprinting.Math;
 using Serilog;
+using FindSimilarServices.FFT;
 
 namespace FindSimilarServices
 {
@@ -59,10 +60,12 @@ namespace FindSimilarServices
 
             this.audioService = new FindSimilarAudioService();
 
+            var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
             this.spectrumService = new FindSimilarSpectrumService(
-                new LomontFFT(),
+                new FindSimilarFFTService(fingerprintConfig.SpectrogramConfig.WdftSize),
                 new LogUtility()
             );
+            // this.spectrumService = new SpectrumService(new LomontFFT(), new LogUtility());
 
             this.fingerprintService = new FindSimilarFingerprintService(
                 spectrumService,
