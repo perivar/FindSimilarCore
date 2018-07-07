@@ -64,6 +64,7 @@
             );
 
 #if DEBUG
+/* 
             var imageService = new FindSimilarImageService();
             using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
             {
@@ -73,6 +74,7 @@
                     image.Save(fileName, ImageFormat.Png);
                 }
             }
+ */
             // WriteOutputUtils.WriteCSV(frames, @"frames-new.csv");
 #endif
 

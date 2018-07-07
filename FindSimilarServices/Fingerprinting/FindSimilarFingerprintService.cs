@@ -64,6 +64,7 @@ namespace SoundFingerprinting
             var spectrum = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
 
 #if DEBUG
+/* 
             var imageService = new FindSimilarImageService();
             if (spectrum.Count > 0)
             {
@@ -76,11 +77,13 @@ namespace SoundFingerprinting
                     }
                 }
             }
+ */
 #endif
 
             var fingerprints = CreateFingerprintsFromLogSpectrum(spectrum, configuration);
 
 #if DEBUG
+/* 
             if (fingerprints.Count > 0)
             {
                 using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, 5))
@@ -92,6 +95,7 @@ namespace SoundFingerprinting
                     }
                 }
             }
+ */
 #endif
 
             return HashFingerprints(fingerprints, configuration);
