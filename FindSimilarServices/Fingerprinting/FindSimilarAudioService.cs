@@ -8,7 +8,7 @@ using CommonUtils.Audio;
 using CSCore;
 using CSCore.Codecs;
 using SoundFingerprinting.Audio;
-using SoundFingerprinting.SoundTools.DrawningTool;
+using SoundFingerprinting.SoundTools.DrawingTool;
 using SoundFingerprinting.Wavelets;
 
 namespace FindSimilarServices.Audio

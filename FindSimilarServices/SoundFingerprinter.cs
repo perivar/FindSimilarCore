@@ -62,7 +62,7 @@ namespace FindSimilarServices
 
             var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
             this.spectrumService = new FindSimilarSpectrumService(
-                new FindSimilarFFTService(fingerprintConfig.SpectrogramConfig.WdftSize),
+                fingerprintConfig.SpectrogramConfig,
                 new LogUtility()
             );
             // this.spectrumService = new SpectrumService(new LomontFFT(), new LogUtility());
@@ -84,7 +84,8 @@ namespace FindSimilarServices
 
         public void FingerprintDirectory(string directoryPath, double skipDurationAboveSeconds)
         {
-            var stopWatch = Stopwatch.StartNew();
+            var stopWatch = new DebugTimer();
+            stopWatch.Start();
 
             IEnumerable<string> filesAll =
                 Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
@@ -143,7 +144,7 @@ namespace FindSimilarServices
                 }
             });
 
-            Console.WriteLine("Time used: {0}", stopWatch.Elapsed);
+            Console.WriteLine("Time used: {0}", stopWatch.Stop());
         }
 
         public bool StoreAudioFileFingerprintsInStorageForLaterRetrieval(string pathToAudioFile, TrackData track)

@@ -2,12 +2,16 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Drawing;
+    using System.Drawing.Imaging;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using FindSimilarServices;
     using SoundFingerprinting.Audio;
     using SoundFingerprinting.Configuration;
     using SoundFingerprinting.Data;
+    using SoundFingerprinting.SoundTools.DrawingTool;
 
     internal class SpectrumService : ISpectrumService
     {
@@ -45,14 +49,26 @@
                 });
             }
 
-            WriteOutputUtils.WriteCSV(frames, @"frames.csv");
+#if DEBUG
+            var imageService = new FindSimilarImageService();
+            using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
+            {
+                var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram-orig.png"));
+                if (fileName != null)
+                {
+                    image.Save(fileName, ImageFormat.Png);
+                }
+            }
+#endif
+
+            WriteOutputUtils.WriteCSV(frames, @"frames-orig.csv");
 
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
 
-            WriteOutputUtils.WriteCSV(images.FirstOrDefault().Image, @"images1.csv");
+            WriteOutputUtils.WriteCSV(images.FirstOrDefault().Image, @"images1-orig.csv");
 
             ScaleFullSpectrum(images, configuration);
-            
+
             return images;
         }
 
