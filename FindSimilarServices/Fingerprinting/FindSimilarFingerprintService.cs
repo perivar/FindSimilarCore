@@ -64,39 +64,35 @@ namespace SoundFingerprinting
             var spectrum = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
 
 #if DEBUG
-/* 
             var imageService = new FindSimilarImageService();
             if (spectrum.Count > 0)
             {
                 using (Image image = imageService.GetLogSpectralImages(spectrum, 5))
                 {
-                    var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects", (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectrums-new.png"));
+                    var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectrums-new.png"));
                     if (fileName != null)
                     {
                         image.Save(fileName, ImageFormat.Png);
                     }
                 }
             }
- */
 #endif
 
             var fingerprints = CreateFingerprintsFromLogSpectrum(spectrum, configuration);
 
 #if DEBUG
-/* 
             if (fingerprints.Count > 0)
             {
                 using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, 5))
                 {
-                    var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects", (Path.GetFileNameWithoutExtension(samples.Origin) + "_fingerprints-new.png"));
+                    var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(samples.Origin) + "_fingerprints-new.png"));
                     if (fileName != null)
                     {
                         image.Save(fileName, ImageFormat.Png);
                     }
                 }
             }
- */
- #endif
+#endif
 
             return HashFingerprints(fingerprints, configuration);
         }

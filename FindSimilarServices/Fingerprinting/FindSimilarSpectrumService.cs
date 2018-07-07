@@ -64,17 +64,15 @@
             );
 
 #if DEBUG
-            /* 
-                        var imageService = new FindSimilarImageService();
-                        using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
-                        {
-                            var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram-new.png"));
-                            if (fileName != null)
-                            {
-                                image.Save(fileName, ImageFormat.Png);
-                            }
-                        }
-             */
+            var imageService = new FindSimilarImageService();
+            using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
+            {
+                var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram-new.png"));
+                if (fileName != null)
+                {
+                    image.Save(fileName, ImageFormat.Png);
+                }
+            }
             // WriteOutputUtils.WriteCSV(frames, @"frames-new.csv");
 #endif
 
@@ -86,7 +84,7 @@
 
             ScaleFullSpectrum(images, configuration);
 
-            Console.WriteLine("CreateLogSpectrogram - Time used: {0}", stopWatch.Stop());
+            //Console.WriteLine("CreateLogSpectrogram - Time used: {0}", stopWatch.Stop());
 
             return images;
         }

@@ -53,7 +53,7 @@
             var imageService = new FindSimilarImageService();
             using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
             {
-                var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram-orig.png"));
+                var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram-orig.png"));
                 if (fileName != null)
                 {
                     image.Save(fileName, ImageFormat.Png);
