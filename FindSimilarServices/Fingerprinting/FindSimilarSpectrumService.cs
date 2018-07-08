@@ -146,12 +146,15 @@
                 sequenceNumber++;
             }
 
-            // PIN: Make sure at least the input spectrum is a part of the output list
-            if (spectralImages.Count == 0)
+            // PIN: Make sure the full input spectrum is a part of the output list
+            int remainingWidth = width - index;
+            int remainingLength = remainingWidth * numberOfLogBins;
+            if (remainingWidth > 0)
             {
                 float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
-                Buffer.BlockCopy(logarithmizedSpectrum, 0, spectralImage, 0, logarithmizedSpectrum.Length);
-                spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, 0, 0));
+                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage, 0, remainingLength * sizeof(float));
+                float startsAt = index * ((float)overlap / sampleRate);
+                spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, startsAt, sequenceNumber));
             }
 
             return spectralImages;

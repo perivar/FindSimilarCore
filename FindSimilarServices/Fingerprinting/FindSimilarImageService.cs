@@ -235,7 +235,9 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
 
         public Image GetLogSpectralImages(List<SpectralImage> spectralImages, int imagesPerRow)
         {
+            // some default values
             bool flipYscale = true;
+
             int width = spectralImages[0].Rows;
             int height = spectralImages[0].Cols;
             int fingersCount = spectralImages.Count;

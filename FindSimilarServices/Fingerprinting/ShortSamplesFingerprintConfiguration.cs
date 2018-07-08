@@ -12,8 +12,8 @@ namespace SoundFingerprinting.Configuration
             HashingConfig = new DefaultHashingConfig();
             TopWavelets = 200;
 
-			// Using 32000 (instead of 44100) gives us a max of 16 khz resolution, which is OK for normal adult human hearing
-			SampleRate = 32000; 	// Original: 5512
+            // Using 32000 (instead of 44100) gives us a max of 16 khz resolution, which is OK for normal adult human hearing
+            SampleRate = 32000; 	// Original: 5512
 
             HaarWaveletNorm = System.Math.Sqrt(2);
             Clusters = Enumerable.Empty<string>();
@@ -44,16 +44,17 @@ namespace SoundFingerprinting.Configuration
 
             LogBase = System.Math.E; // Original 2
             LogBins = 32;
-            ImageLength = 128;
+            ImageLength = 128; // Original 128
 
             // calculate samples per fingerprint
-            int samplesPerFingerprint = ImageLength * Overlap;
+            //int samplesPerFingerprint = ImageLength * Overlap;
 
             UseDynamicLogBase = false; // Original true            
 
             // 0,928 sec is	5115 / 5512 or 40924 / 44100	or	29695/32000
             //Stride = new IncrementalStaticStride(29695, 0, samplesPerFingerprint); // Original IncrementalStaticStride(512);
-            Stride = new IncrementalStaticStride(2048); // Original IncrementalStaticStride(512);
+            // a static stride of 0 means no gaps between consecutive images (fingerprints)
+            Stride = new StaticStride(0); // Original IncrementalStaticStride(512);            
 
             Window = new HanningWindow();
             ScalingFunction = (value, max) =>
