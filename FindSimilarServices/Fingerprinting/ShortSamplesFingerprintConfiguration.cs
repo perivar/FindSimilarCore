@@ -29,7 +29,7 @@ namespace SoundFingerprinting.Configuration
             // 1024 / 32000 = 32 ms
             // 512 	/ 32000 = 16 ms
             // 256 	/ 32000 = 8 ms
-            Overlap = 512; // Original 64
+            Overlap = 1024; // Original 64
 
             // 371 ms 	is	2048/5512	or 	16384/44100	or 11889/32000
             // The closest power of 2 in 2's complement format:
@@ -38,7 +38,7 @@ namespace SoundFingerprinting.Configuration
             // 2048 / 32000 = 64 ms
             // Due to using this on many small samples, we need to reduce the window and overlap sizes
             // A transient is around 50 ms
-            WdftSize = 1024;// 4096; // Original 2048
+            WdftSize = 2048;// 4096; // Original 2048
 
             FrequencyRange = new FrequencyRange(40, 16000); // Original FrequencyRange(318, 2000);
 
@@ -53,7 +53,7 @@ namespace SoundFingerprinting.Configuration
 
             // 0,928 sec is	5115 / 5512 or 40924 / 44100	or	29695/32000
             //Stride = new IncrementalStaticStride(29695, 0, samplesPerFingerprint); // Original IncrementalStaticStride(512);
-            Stride = new IncrementalStaticStride(8192); // Original IncrementalStaticStride(512);
+            Stride = new IncrementalStaticStride(2048); // Original IncrementalStaticStride(512);
 
             Window = new HanningWindow();
             ScalingFunction = (value, max) =>
