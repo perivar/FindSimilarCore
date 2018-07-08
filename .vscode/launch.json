@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "FindSimilar (scandirectory)",
+            "name": "FindSimilar (scan) DEBUG",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -15,6 +15,25 @@
                 "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
                 "-v", "3",
+                "-d", "30",
+                "-l", "C:\\Users\\pnerseth\\My Projects\\findsimilar.log"                
+            ],
+            "cwd": "${workspaceFolder}/FindSimilar",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "FindSimilar (scan)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "args": [
+                "scan",
+                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
                 "-d", "30",
                 "-l", "C:\\Users\\pnerseth\\My Projects\\findsimilar.log"                
             ],
