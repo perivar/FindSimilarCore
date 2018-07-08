@@ -66,7 +66,7 @@
             if (configuration.Verbosity == Verbosity.Debug)
             {
                 var imageService = new FindSimilarImageService();
-                using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
+                using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins, width, configuration.LogBins))
                 {
                     var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram.png"));
                     if (fileName != null)
@@ -78,21 +78,30 @@
                 WriteOutputUtils.WriteCSV(frames, Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_frames.csv")));
             }
 
-            var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
+            var spectralImages = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
 
             if (configuration.Verbosity == Verbosity.Debug)
             {
-                WriteOutputUtils.WriteCSV(images.FirstOrDefault().Image, Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_images_1.csv")));
+                if (spectralImages.Count > 0)
+                {
+                    var spectralImageList = new List<float[]>();
+                    foreach (var spectralImage in spectralImages)
+                    {
+                        spectralImageList.Add(spectralImage.Image);
+                    }
+                    var spectralImageArray = spectralImageList.ToArray();
+                    WriteOutputUtils.WriteCSV(spectralImageArray, Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectral_images.csv")), ";");
+                }
             }
 
-            ScaleFullSpectrum(images, configuration);
+            ScaleFullSpectrum(spectralImages, configuration);
 
             if (configuration.Verbosity == Verbosity.Debug)
             {
                 Console.WriteLine("CreateLogSpectrogram - Time used: {0}", stopWatch.Stop());
             }
 
-            return images;
+            return spectralImages;
         }
 
         private void ScaleFullSpectrum(IEnumerable<SpectralImage> spectralImages, SpectrogramConfig configuration)

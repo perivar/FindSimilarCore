@@ -125,8 +125,12 @@ namespace FindSimilarServices
             {
                 var fileInfo = new FileInfo(file);
 
-                // Try to check duration
-                double duration = audioService.GetLengthInSeconds(fileInfo.FullName);
+                double duration = 0;
+                lock (_lockObj)
+                {
+                    // Try to check duration
+                    duration = audioService.GetLengthInSeconds(fileInfo.FullName);
+                }
 
                 // check if we should skip files longer than x seconds
                 if ((skipDurationAboveSeconds > 0 && duration > 0 && duration < skipDurationAboveSeconds)
@@ -183,7 +187,7 @@ namespace FindSimilarServices
                     // store track metadata in the datasource
                     var trackReference = modelService.InsertTrack(track);
 
-                        // store hashes in the database for later retrieval
+                    // store hashes in the database for later retrieval
                     modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
                     return true;
                 }

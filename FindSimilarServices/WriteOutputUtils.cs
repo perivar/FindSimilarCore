@@ -171,15 +171,14 @@ namespace FindSimilarServices
         public static void WriteCSV(double[][] matrixData, string filename, string columnSeparator)
         {
             TextWriter pw = File.CreateText(filename);
-
             int rowCount = matrixData.Length;
             int columnCount = matrixData[0].Length;
-            for (int i = 0; i < rowCount; i++)
+            for (int i = 0; i < columnCount; i++)
             {
                 var columnElements = new List<string>();
-                for (int j = 0; j < columnCount; j++)
+                for (int j = 0; j < rowCount; j++)
                 {
-                    columnElements.Add(String.Format("\"{0:F6}\"", matrixData[i][j]));
+                    columnElements.Add(String.Format(CultureInfo.CurrentCulture, "\"{0:F6}\"", matrixData[j][i]));
                 }
                 pw.Write("{0}\r\n", string.Join(columnSeparator, columnElements));
             }
@@ -194,15 +193,14 @@ namespace FindSimilarServices
         public static void WriteCSV(float[][] matrixData, string filename, string columnSeparator)
         {
             TextWriter pw = File.CreateText(filename);
-
             int rowCount = matrixData.Length;
             int columnCount = matrixData[0].Length;
-            for (int i = 0; i < rowCount; i++)
+            for (int i = 0; i < columnCount; i++)
             {
                 var columnElements = new List<string>();
-                for (int j = 0; j < columnCount; j++)
+                for (int j = 0; j < rowCount; j++)
                 {
-                    columnElements.Add(String.Format("\"{0:F6}\"", matrixData[i][j]));
+                    columnElements.Add(String.Format(CultureInfo.CurrentCulture, "\"{0:F6}\"", matrixData[j][i]));
                 }
                 pw.Write("{0}\r\n", string.Join(columnSeparator, columnElements));
             }

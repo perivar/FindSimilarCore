@@ -62,26 +62,25 @@ namespace SoundFingerprinting
             samples.Samples = audiodata;
 
             // create log spectrogram
-            var spectrum = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
+            var spectralImages = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
 
             if (configuration.SpectrogramConfig.Verbosity == Verbosity.Debug)
             {
-                if (spectrum.Count > 0)
+                if (spectralImages.Count > 0)
                 {
                     var imageService = new FindSimilarImageService();
-                    using (Image image = imageService.GetLogSpectralImages(spectrum, spectrum.Count > 5 ? 5 : spectrum.Count))
+                    using (Image image = imageService.GetLogSpectralImages(spectralImages, spectralImages.Count > 5 ? 5 : spectralImages.Count))
                     {
-                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectrums.png"));
+                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectral_images.png"));
                         if (fileName != null)
                         {
                             image.Save(fileName, ImageFormat.Png);
                         }
                     }
                 }
-
             }
 
-            var fingerprints = CreateFingerprintsFromLogSpectrum(spectrum, configuration);
+            var fingerprints = CreateFingerprintsFromLogSpectrum(spectralImages, configuration);
 
             if (configuration.SpectrogramConfig.Verbosity == Verbosity.Debug)
             {

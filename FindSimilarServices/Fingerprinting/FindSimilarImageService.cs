@@ -122,8 +122,6 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
             bool usePowerSpectrum = false;
             bool colorize = true;
             bool flipYscale = true;
-            int forceWidth = width;
-            int forceHeight = height;
 
             // amplitude (or magnitude) is the square root of the power spectrum
             // the magnitude spectrum is abs(fft), i.e. Math.Sqrt(re*re + img*img)
@@ -183,6 +181,8 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
             }
 
             // Should we resize?
+            int forceWidth = width != columnCount ? width : 0;
+            int forceHeight = height != rowCount ? height : 0;
             if (forceHeight > 0 && forceWidth > 0)
             {
                 img = (Bitmap)ImageUtils.Resize(img, forceWidth, forceHeight, false);
@@ -235,6 +235,7 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
 
         public Image GetLogSpectralImages(List<SpectralImage> spectralImages, int imagesPerRow)
         {
+            bool flipYscale = true;
             int width = spectralImages[0].Rows;
             int height = spectralImages[0].Cols;
             int fingersCount = spectralImages.Count;
@@ -255,7 +256,15 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
                     for (int j = 0; j < height /*32*/; j++)
                     {
                         Color color = ValueToBlackWhiteColor(spectralImage[i][j]);
-                        image.SetPixel(i + horizontalOffset, j + verticalOffset, color);
+
+                        if (flipYscale)
+                        {
+                            image.SetPixel(i + horizontalOffset, (height - j - 1) + verticalOffset, color);
+                        }
+                        else
+                        {
+                            image.SetPixel(i + horizontalOffset, j + verticalOffset, color);
+                        }
                     }
                 }
 
