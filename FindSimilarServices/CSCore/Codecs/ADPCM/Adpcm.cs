@@ -3,8 +3,9 @@ using System.IO;
 using System.Text;
 using CSCore;
 using CommonUtils.Audio;
+using System.Diagnostics;
 
-namespace FindSimilarServices.CSCore.Codecs.ADPCM
+namespace CSCore.Codecs.ADPCM
 {
     // Based on VLC ADPCM class
     // GNU Lesser General Public License

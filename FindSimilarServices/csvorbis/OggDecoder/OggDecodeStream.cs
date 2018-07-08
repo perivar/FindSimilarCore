@@ -31,6 +31,10 @@ namespace OggDecoder
         private Stream decodedStream;
         private const int HEADER_SIZE = 36;
 
+        public int Channels { set; get; }
+
+        public int SampleRate { set; get; }
+
         public OggDecodeStream(Stream input, bool skipWavHeader)
         {
             if (input == null)
@@ -203,8 +207,12 @@ namespace OggDecoder
                         if (ptr[j] == null) break;
                         s_err.WriteLine(vc.getComment(j));
                     }
-                    s_err.WriteLine("\nBitstream is " + vi.channels + " channel, " + vi.rate + "Hz");
+                    s_err.WriteLine("\nOgg Vorbis bitstream is " + vi.channels + " channel, " + vi.rate + " Hz");
                     s_err.WriteLine("Encoded by: " + vc.getVendor() + "\n");
+
+                    // set properties
+                    Channels = vi.channels;
+                    SampleRate = vi.rate;
                 }
 
                 convsize = 4096 / vi.channels;
@@ -344,7 +352,7 @@ namespace OggDecoder
 
             // OK, clean up the framer
             oy.clear();
-            s_err.WriteLine(" Done.");
+            s_err.WriteLine("\nOgg Vorbis Stream Done.\n");
 
             output.Seek(0, SeekOrigin.Begin);
             if (!skipWavHeader)

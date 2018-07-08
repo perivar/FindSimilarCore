@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using FindSimilarServices.Audio;
 using CommonUtils.Audio;
-using FindSimilarServices.CSCore.Codecs.ADPCM;
 
 namespace FindSimilar
 {
@@ -18,7 +17,7 @@ namespace FindSimilar
     {
         const string DEFAULT_LOG_PATH = "findsimilar.log";
         const string DATABASE_PATH = @"C:\Users\pnerseth\My Projects\fingerprint.db";
-        
+
         static Verbosity GetVerbosity(CommandOption verboseOption)
         {
             Verbosity verbosity = Verbosity.Normal;
@@ -61,34 +60,45 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
+/* 
             var testAudioService = new FindSimilarAudioService();
             int sampleRate = 32000;
 
-            /*             var data1 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
-                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data1.wav", data1.Samples, sampleRate);
+            // OGG test files
+            var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data00.wav", data00.Samples, sampleRate);
 
-                        var data2 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav", sampleRate, 0, 0);
-                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data2.wav", data2.Samples, sampleRate);
+            var data01 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Crash 2.ogg", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data01.wav", data01.Samples, sampleRate);
 
-                        var data3 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Documents\Audacity\bass afrpck 8 - fix.wav", sampleRate, 0, 0);
-                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data3.wav", data3.Samples, sampleRate);
+            var data02 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data02.wav", data02.Samples, sampleRate);
 
-                        var data4 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ms-adpcm.wav", sampleRate, 0, 0);
-                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data4.wav", data4.Samples, sampleRate);
+            // ADPCM test files
+            var data03 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data03.wav", data03.Samples, sampleRate);
 
-                        var data5 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
-                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data5.wav", data5.Samples, sampleRate);
+            var data04 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data04.wav", data04.Samples, sampleRate);
 
-                        testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", @"C:\Users\pnerseth\My Projects\data5-original.wav");
-                        var data6 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
-                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data6.wav", data6.Samples, sampleRate);
+            var data05 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Documents\Audacity\bass afrpck 8 - fix.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data05.wav", data05.Samples, sampleRate);
 
-                        var data7 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
-                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data7.wav", data7.Samples, sampleRate);
+            var data06 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ms-adpcm.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data06.wav", data06.Samples, sampleRate);
 
-                        return 0;
-             */
+            var data07 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07.wav", data07.Samples, sampleRate);
 
+            // OGG within wav container fest files
+            var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08.wav", data08.Samples, sampleRate);
+
+            var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09.wav", data09.Samples, sampleRate);
+
+            return 0;
+ */
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";

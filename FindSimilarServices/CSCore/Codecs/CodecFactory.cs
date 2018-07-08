@@ -9,8 +9,7 @@ using CSCore.Codecs.FLAC;
 using CSCore.Codecs.WAV;
 using CSCore.Codecs.MP3;
 using CSCore.Codecs.OGG;
-using FindSimilarServices.CSCore.Codecs.ADPCM;
-using FindSimilarServices.CSCore.Codecs.OGG;
+using CSCore.Codecs.ADPCM;
 
 namespace CSCore.Codecs
 {
@@ -66,7 +65,7 @@ namespace CSCore.Codecs
                 "aiff", "aif", "aifc"));
 
             // ADDED BY PER IVAR
-            Register("ogg-vorbis", new CodecFactoryEntry(s => new NVorbisSource(s).ToWaveSource(), "ogg"));
+            Register("ogg-vorbis", new CodecFactoryEntry(s => new CSVorbisSource(s), "ogg"));
             Register("mpeg", new CodecFactoryEntry(s => new NLayerSource(s).ToWaveSource(),
             "mp1", "m1a", "mp2", "m2a", "mp3", "mpg", "mpeg", "mpeg3"));
         }

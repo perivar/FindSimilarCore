@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CommonUtils.Audio;
 using CSCore;
 using CSCore.Codecs.WAV;
 
-namespace FindSimilarServices.CSCore.Codecs.ADPCM
+namespace CSCore.Codecs.ADPCM
 {
     public class AdpcmSource : IWaveSource
     {

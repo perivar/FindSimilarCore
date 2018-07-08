@@ -4,21 +4,6 @@ using System.Diagnostics;
 
 namespace FindSimilarServices
 {
-    public class Debug
-    {
-        [Conditional("DEBUG")]
-        public static void WriteLine(String l, params object[] args)
-        {
-            Console.WriteLine(l, args);
-        }
-
-        [Conditional("DEBUG")]
-        public static void Write(String l)
-        {
-            Console.Write(l);
-        }
-    }
-
     public class DebugTimer
     {
         Stopwatch stopWatch;
