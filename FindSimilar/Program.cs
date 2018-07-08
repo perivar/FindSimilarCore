@@ -16,8 +16,48 @@ namespace FindSimilar
 {
     class Program
     {
-
+        const string DEFAULT_LOG_PATH = "findsimilar.log";
         const string DATABASE_PATH = @"C:\Users\pnerseth\My Projects\fingerprint.db";
+        
+        static Verbosity GetVerbosity(CommandOption verboseOption)
+        {
+            Verbosity verbosity = Verbosity.Normal;
+            if (verboseOption.HasValue())
+            {
+                Enum.TryParse(verboseOption.Value(), out verbosity);
+                if ((int)verbosity > 3) verbosity = Verbosity.Debug;
+                if ((int)verbosity < 0) verbosity = Verbosity.Normal;
+            }
+            return verbosity;
+        }
+
+        static double GetSkipDuration(CommandOption skipDurationOption)
+        {
+            double skipDurationAboveSeconds = 0;
+            var skipDurationAboveSecondsString = skipDurationOption.Value();
+            if (!string.IsNullOrEmpty(skipDurationAboveSecondsString))
+            {
+                skipDurationAboveSeconds = double.Parse(skipDurationAboveSecondsString);
+            }
+            return skipDurationAboveSeconds;
+        }
+
+        static void DefineLogger(CommandOption optionLogFilePath)
+        {
+            string logFilePath = DEFAULT_LOG_PATH;
+            if (optionLogFilePath.HasValue())
+            {
+                var logFilePathValue = optionLogFilePath.Value();
+                if (Directory.Exists(Path.GetDirectoryName(logFilePathValue)))
+                {
+                    logFilePath = logFilePathValue;
+                }
+            }
+
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File(logFilePath)
+                .CreateLogger();
+        }
 
         public static int Main(string[] args)
         {
@@ -49,13 +89,6 @@ namespace FindSimilar
                         return 0;
              */
 
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.File("findsimilar.log")
-                .CreateLogger();
-
-            // https://natemcmaster.github.io/CommandLineUtils/
-            // https://gist.github.com/iamarcel/8047384bfbe9941e52817cf14a79dc34
-            // https://gist.github.com/TerribleDev/06abb67350745a58f9fab080bee74be1#file-program-cs
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";
@@ -71,13 +104,18 @@ namespace FindSimilar
 
                     // options
                     var optionSkipDuration = command.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
-                    var argumentSilent = command.Option("-s|--silent", "Do not output so much info", CommandOptionType.NoValue);
+                    var optionVerbose = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for no output, 1 for normal output, 2 for more verbose output and 3 for debug.", CommandOptionType.SingleValue);
+                    var optionLogDir = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
 
                     command.OnExecute(() =>
                         {
                             if (!string.IsNullOrEmpty(scanArgument.Value))
                             {
-                                ProcessDir(scanArgument.Value, optionSkipDuration.Value());
+                                DefineLogger(optionLogDir);
+                                var verbosity = GetVerbosity(optionVerbose);
+                                var skipDurationAboveSeconds = GetSkipDuration(optionSkipDuration);
+
+                                ProcessDir(scanArgument.Value, skipDurationAboveSeconds, verbosity);
                                 return 0;
                             }
                             else
@@ -135,25 +173,19 @@ namespace FindSimilar
             return app.Execute(args);
         }
 
-        private static void ProcessDir(string directoryPath, string skipDurationAboveSecondsString)
+        private static void ProcessDir(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)
         {
-            double skipDurationAboveSeconds = 0;
-            if (!string.IsNullOrEmpty(skipDurationAboveSecondsString))
-            {
-                skipDurationAboveSeconds = double.Parse(skipDurationAboveSecondsString);
-            }
-
             if (Directory.Exists(directoryPath))
             {
                 // https://github.com/AddictedCS/soundfingerprinting.duplicatesdetector/blob/master/src/SoundFingerprinting.DuplicatesDetector/DuplicatesDetectorService.cs
                 // https://github.com/protyposis/Aurio/tree/master/Aurio/Aurio     
                 var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
-                fingerprinter.FingerprintDirectory(Path.GetFullPath(directoryPath), skipDurationAboveSeconds);
+                fingerprinter.FingerprintDirectory(Path.GetFullPath(directoryPath), skipDurationAboveSeconds, verbosity);
                 fingerprinter.Snapshot(DATABASE_PATH);
             }
             else
             {
-                Console.Error.WriteLine("The directory '{0}' cannot be found.", directoryPath);
+                if (verbosity > 0) Console.Error.WriteLine("The directory '{0}' cannot be found.", directoryPath);
             }
         }
         private static void MatchFile(string filePath, int thresholdVotes, int maxTracksToReturn)

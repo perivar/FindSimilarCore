@@ -20,6 +20,7 @@ namespace SoundFingerprinting
     using CommonUtils;
     using System;
     using System.IO;
+    using FindSimilarServices;
 
     internal class FindSimilarFingerprintService : IFingerprintService
     {
@@ -63,40 +64,40 @@ namespace SoundFingerprinting
             // create log spectrogram
             var spectrum = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
 
-#if DEBUG
-/* 
-            var imageService = new FindSimilarImageService();
-            if (spectrum.Count > 0)
+            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Debug)
             {
-                using (Image image = imageService.GetLogSpectralImages(spectrum, 5))
+                if (spectrum.Count > 0)
                 {
-                    var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectrums-new.png"));
-                    if (fileName != null)
+                    var imageService = new FindSimilarImageService();
+                    using (Image image = imageService.GetLogSpectralImages(spectrum, spectrum.Count > 5 ? 5 : spectrum.Count))
                     {
-                        image.Save(fileName, ImageFormat.Png);
+                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectrums.png"));
+                        if (fileName != null)
+                        {
+                            image.Save(fileName, ImageFormat.Png);
+                        }
                     }
                 }
+
             }
- */
-#endif
 
             var fingerprints = CreateFingerprintsFromLogSpectrum(spectrum, configuration);
 
-#if DEBUG
-/* 
-            if (fingerprints.Count > 0)
+            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Debug)
             {
-                using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, 5))
+                if (fingerprints.Count > 0)
                 {
-                    var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(samples.Origin) + "_fingerprints-new.png"));
-                    if (fileName != null)
+                    var imageService = new FindSimilarImageService();
+                    using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, fingerprints.Count > 5 ? 5 : fingerprints.Count))
                     {
-                        image.Save(fileName, ImageFormat.Png);
+                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_fingerprints.png"));
+                        if (fileName != null)
+                        {
+                            image.Save(fileName, ImageFormat.Png);
+                        }
                     }
                 }
             }
- */
-#endif
 
             return HashFingerprints(fingerprints, configuration);
         }

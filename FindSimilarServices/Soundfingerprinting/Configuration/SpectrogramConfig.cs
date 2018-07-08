@@ -1,12 +1,13 @@
 namespace SoundFingerprinting.Configuration
 {
     using System;
-
+    using FindSimilarServices;
     using SoundFingerprinting.Strides;
     using SoundFingerprinting.Windows;
 
     internal abstract class SpectrogramConfig
     {
+        public Verbosity Verbosity { get; set; }
         private FrequencyRange frequencyRange;
         private double logBase;
 

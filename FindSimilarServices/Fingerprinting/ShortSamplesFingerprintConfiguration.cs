@@ -52,7 +52,8 @@ namespace SoundFingerprinting.Configuration
             UseDynamicLogBase = false; // Original true            
 
             // 0,928 sec is	5115 / 5512 or 40924 / 44100	or	29695/32000
-            Stride = new IncrementalStaticStride(29695, 0, samplesPerFingerprint); // Original IncrementalStaticStride(512);
+            //Stride = new IncrementalStaticStride(29695, 0, samplesPerFingerprint); // Original IncrementalStaticStride(512);
+            Stride = new IncrementalStaticStride(16384); // Original IncrementalStaticStride(512);
 
             Window = new HanningWindow();
             ScalingFunction = (value, max) =>

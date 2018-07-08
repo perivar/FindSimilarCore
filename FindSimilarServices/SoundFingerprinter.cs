@@ -28,8 +28,18 @@ using FindSimilarServices.FFT;
 
 namespace FindSimilarServices
 {
+    public enum Verbosity : int
+    {
+        Silent = 0,
+        Normal = 1,
+        Verbose = 2,
+        Debug = 3
+    }
+
     public class SoundFingerprinter
     {
+        public const string DEBUG_PATH = @"C:\Users\pnerseth\My Projects\tmp-images";
+
         // Supported audio files
         private static string[] extensions = { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg", ".mp1", ".m1a", ".mp2", ".m2a", ".mp3", ".mpg", ".mpeg", ".mpeg3" };
 
@@ -82,7 +92,7 @@ namespace FindSimilarServices
             ((InMemoryModelService)modelService).Snapshot(saveToPath);
         }
 
-        public void FingerprintDirectory(string directoryPath, double skipDurationAboveSeconds)
+        public void FingerprintDirectory(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)
         {
             var stopWatch = new DebugTimer();
             stopWatch.Start();
@@ -90,16 +100,17 @@ namespace FindSimilarServices
             IEnumerable<string> filesAll =
                 Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()));
-            Console.Out.WriteLine("Found {0} files in scan directory.", filesAll.Count());
+
+            if (verbosity > 0) Console.Out.WriteLine("Found {0} files in scan directory.", filesAll.Count());
 
             // Get all already processed files stored in the database and store in memory
             // It seems to work well with huge volumes of files (200k)
             IEnumerable<string> filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.ISRC);
-            Console.Out.WriteLine("Database contains {0} already processed files.", filesAlreadyProcessed.Count());
+            if (verbosity > 0) Console.Out.WriteLine("Database contains {0} already processed files.", filesAlreadyProcessed.Count());
 
             // find the files that has not already been added to the database
             List<string> filesRemaining = filesAll.Except(filesAlreadyProcessed).ToList();
-            Console.Out.WriteLine("Found {0} files remaining in scan directory to be processed.", filesRemaining.Count);
+            if (verbosity > 0) Console.Out.WriteLine("Found {0} files remaining in scan directory to be processed.", filesRemaining.Count);
 
             int filesCounter = 0;
             int filesAllCounter = filesAlreadyProcessed.Count();
@@ -123,9 +134,9 @@ namespace FindSimilarServices
                     || duration < 0)
                 {
                     var track = new TrackData(fileInfo.FullName, null, fileInfo.Name, null, 0, duration);
-                    if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track))
+                    if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track, verbosity))
                     {
-                        Console.Error.WriteLine("Failed! Could not generate audio fingerprint for {0}!", file);
+                        if (verbosity > 0) Console.Error.WriteLine("Failed! Could not generate audio fingerprint for {0}!", file);
                         Log.Warning("Failed! Could not generate audio fingerprint for {0}!", file);
                     }
                     else
@@ -134,26 +145,29 @@ namespace FindSimilarServices
                         // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
                         var filesCounterNow = Interlocked.Increment(ref filesCounter);
                         var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
-                        Console.Out.WriteLine("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
+                        if (verbosity > 0) Console.Out.WriteLine("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
                     }
                 }
                 else
                 {
-                    Console.Out.WriteLine("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
+                    if (verbosity > 0) Console.Out.WriteLine("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                     Log.Information("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                 }
             });
 
-            Console.WriteLine("Time used: {0}", stopWatch.Stop());
+            if (verbosity > 0) Console.WriteLine("Time used: {0}", stopWatch.Stop());
         }
 
-        public bool StoreAudioFileFingerprintsInStorageForLaterRetrieval(string pathToAudioFile, TrackData track)
+        public bool StoreAudioFileFingerprintsInStorageForLaterRetrieval(string pathToAudioFile, TrackData track, Verbosity verbosity)
         {
             if (track == null) return false;
 
             lock (_lockObj)
             {
                 var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
+
+                // set verbosity
+                fingerprintConfig.SpectrogramConfig.Verbosity = verbosity;
 
                 // create hashed fingerprints
                 var hashedFingerprints = fingerprintCommandBuilder
@@ -169,7 +183,7 @@ namespace FindSimilarServices
                     // store track metadata in the datasource
                     var trackReference = modelService.InsertTrack(track);
 
-                    // store hashes in the database for later retrieval
+                        // store hashes in the database for later retrieval
                     modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
                     return true;
                 }

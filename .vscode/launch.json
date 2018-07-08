@@ -13,7 +13,10 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
             "args": [
                 "scan",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR"
+                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
+                "-v", "3",
+                "-d", "30",
+                "-l", "C:\\Users\\pnerseth\\My Projects\\findsimilar.log"                
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window

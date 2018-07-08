@@ -19,7 +19,7 @@ namespace SoundFingerprinting.Configuration
                 // 1486 / 32000 = 46 ms
                 // 1024 / 32000 = 32 ms
                 // use a 128 ms random stride instead = 4096, since every 46 ms gives way too many fingerprints to query efficiently
-                Stride = new IncrementalRandomStride(2048, 4096) 
+                Stride = new IncrementalRandomStride(8192, 16384) // Original IncrementalRandomStride(256, 512);
             };
 
         }

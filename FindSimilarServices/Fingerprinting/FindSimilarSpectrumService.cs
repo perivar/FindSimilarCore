@@ -63,30 +63,34 @@
             }
             );
 
-#if DEBUG
-/* 
-            var imageService = new FindSimilarImageService();
-            using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
+            if (configuration.Verbosity == Verbosity.Debug)
             {
-                var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram-new.png"));
-                if (fileName != null)
+                var imageService = new FindSimilarImageService();
+                using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
                 {
-                    image.Save(fileName, ImageFormat.Png);
+                    var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram.png"));
+                    if (fileName != null)
+                    {
+                        image.Save(fileName, ImageFormat.Png);
+                    }
                 }
+
+                WriteOutputUtils.WriteCSV(frames, Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_frames.csv")));
             }
- */
-            // WriteOutputUtils.WriteCSV(frames, @"frames-new.csv");
-#endif
 
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
 
-#if DEBUG
-            // WriteOutputUtils.WriteCSV(images.FirstOrDefault().Image, @"images1-new.csv");
-#endif
+            if (configuration.Verbosity == Verbosity.Debug)
+            {
+                WriteOutputUtils.WriteCSV(images.FirstOrDefault().Image, Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_images_1.csv")));
+            }
 
             ScaleFullSpectrum(images, configuration);
 
-            //Console.WriteLine("CreateLogSpectrogram - Time used: {0}", stopWatch.Stop());
+            if (configuration.Verbosity == Verbosity.Debug)
+            {
+                Console.WriteLine("CreateLogSpectrogram - Time used: {0}", stopWatch.Stop());
+            }
 
             return images;
         }

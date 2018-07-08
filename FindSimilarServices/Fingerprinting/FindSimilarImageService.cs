@@ -97,7 +97,6 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
                 graphics.DrawLine(pen, 0, center, width, center);
             }
 
-            DrawCopyrightInfo(graphics, 10, 10);
             return image;
         }
 
@@ -231,7 +230,6 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
                 prevX = (int)x;
             }
 
-            DrawCopyrightInfo(graphics, 10, 10);
             return image;
         }
 
@@ -390,15 +388,6 @@ namespace SoundFingerprinting.SoundTools.DrawingTool
             {
                 graphics.FillRectangle(brush, new Rectangle(0, 0, width, height));
             }
-        }
-
-        private void DrawCopyrightInfo(Graphics graphics, int x, int y)
-        {
-            FontFamily fontFamily = new FontFamily("Courier New");
-            Font font = new Font(fontFamily, 10);
-            Brush textbrush = Brushes.White;
-            Point coordinate = new Point(x, y);
-            graphics.DrawString("https://github.com/AddictedCS/soundfingerprinting", font, textbrush, coordinate);
         }
 
         private void DrawGridlines(int width, int height, Graphics graphics)
