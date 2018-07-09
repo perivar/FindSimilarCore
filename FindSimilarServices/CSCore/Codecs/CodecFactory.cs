@@ -51,6 +51,7 @@ namespace CSCore.Codecs
                      case 0x6771: // OGG_VORBIS_MODE_3_PLUS "qg" Have no codebook header
                          res.Dispose();
                          res = new CSVorbisSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
+                         //res = new NVorbisSource(s).ToWaveSource();
                          break;
                      default:
                          throw new ArgumentException(string.Format("Non PCM, IEEE or Extensible wave-files, or format not supported: ({0})", res.WaveFormat.WaveFormatTag));
@@ -65,7 +66,8 @@ namespace CSCore.Codecs
                 "aiff", "aif", "aifc"));
 
             // ADDED BY PER IVAR
-            Register("ogg-vorbis", new CodecFactoryEntry(s => new CSVorbisSource(s), "ogg"));
+            //Register("ogg-vorbis", new CodecFactoryEntry(s => new CSVorbisSource(s), "ogg"));
+            Register("ogg-vorbis", new CodecFactoryEntry(s => new NVorbisSource(s).ToWaveSource(), ".ogg"));
             Register("mpeg", new CodecFactoryEntry(s => new NLayerSource(s).ToWaveSource(),
             "mp1", "m1a", "mp2", "m2a", "mp3", "mpg", "mpeg", "mpeg3"));
         }

@@ -2,16 +2,12 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
-    using System.Drawing.Imaging;
-    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
-    using FindSimilarServices;
+
     using SoundFingerprinting.Audio;
     using SoundFingerprinting.Configuration;
     using SoundFingerprinting.Data;
-    using SoundFingerprinting.SoundTools.DrawingTool;
 
     internal class SpectrumService : ISpectrumService
     {
@@ -49,26 +45,8 @@
                 });
             }
 
-#if DEBUG
-            var imageService = new FindSimilarImageService();
-            using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins))
-            {
-                var fileName = Path.Combine(@"C:\Users\pnerseth\My Projects\tmp-images", (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram-orig.png"));
-                if (fileName != null)
-                {
-                    image.Save(fileName, ImageFormat.Png);
-                }
-            }
-#endif
-
-            WriteOutputUtils.WriteCSV(frames, @"frames-orig.csv");
-
             var images = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
-
-            WriteOutputUtils.WriteCSV(images.FirstOrDefault().Image, @"images1-orig.csv");
-
             ScaleFullSpectrum(images, configuration);
-
             return images;
         }
 
@@ -104,8 +82,8 @@
             uint sequenceNumber = 0;
             while (index + fingerprintImageLength <= width)
             {
-                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins];
-                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage, 0, fullLength * sizeof(float));
+                float[] spectralImage = new float[fingerprintImageLength * numberOfLogBins]; 
+                Buffer.BlockCopy(logarithmizedSpectrum, sizeof(float) * index * numberOfLogBins, spectralImage,  0, fullLength * sizeof(float));
                 float startsAt = index * ((float)overlap / sampleRate);
                 spectralImages.Add(new SpectralImage(spectralImage, fingerprintImageLength, (ushort)numberOfLogBins, startsAt, sequenceNumber));
                 index += fingerprintImageLength + GetFrequencyIndexLocationOfAudioSamples(strideBetweenConsecutiveImages.NextStride, overlap);

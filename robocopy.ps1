@@ -49,11 +49,18 @@ if ($security){
 
 $copylocations = Import-Csv .\robocopylocations.csv
 ForEach ($copylocation in $copylocations) {
-   $roboswitches = @("/mir", "/R:0", "/W:0", "/V", "/Z", "/NP")
+   # only include csharp files 
+   $roboswitches = @("*.cs", "/mir", "/R:0", "/W:0", "/V", "/Z", "/NP")
    
    # only include same files
    $roboswitches += "/IS"
+   
+   # exclude folders
+   # $roboswitches += "/XD exclude-fold*"
 
+   # exclude files and prevent copying empty directories
+   $roboswitches += @("/s", "/XF", "AssemblyInfo.cs")
+   
    # debug /L - List only
    #$roboswitches += "/L"
     

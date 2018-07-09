@@ -60,9 +60,18 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
-/* 
+ 
             var testAudioService = new FindSimilarAudioService();
             int sampleRate = 32000;
+
+            // OGG within wav container fest files
+            var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08.wav", data08.Samples, sampleRate);
+
+            var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09.wav", data09.Samples, sampleRate);
+
+            return 0;
 
             // OGG test files
             var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
@@ -90,15 +99,8 @@ namespace FindSimilar
             var data07 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07.wav", data07.Samples, sampleRate);
 
-            // OGG within wav container fest files
-            var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08.wav", data08.Samples, sampleRate);
-
-            var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09.wav", data09.Samples, sampleRate);
-
             return 0;
- */
+ 
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";
