@@ -10,25 +10,25 @@ using OggSharp;
 
 namespace CSCore.Codecs.OGG
 {
-    public class CSVorbisSource : IWaveSource
+    public class OggSharpSource : IWaveSource
     {
         private readonly object _lockObj = new object();
         private readonly WaveFormat _waveFormat;
-        private readonly OggDecodeStream _oggDecodeStream;
+        private readonly Stream _oggDecodedStream;
         private bool _disposed;
-        private Stream _stream;
         private readonly bool _closeStream;
 
-        public CSVorbisSource(Stream stream) : this(stream, null, null)
+        public OggSharpSource(Stream stream) : this(stream, null, null)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CSVorbisSource" /> class.
+        ///     Initializes a new instance of the <see cref="OggSharpSource" /> class.
         /// </summary>
         /// <param name="stream"><see cref="Stream" /> which contains raw waveform-audio data.</param>
         /// <param name="waveFormat">The format of the waveform-audio data within the <paramref name="stream" />.</param>
-        public CSVorbisSource(Stream stream, WaveFormat waveFormat, ReadOnlyCollection<WaveFileChunk> chunks)
+        /// <param name="chunks">the wave chunks read using the wavefile reader</param>
+        public OggSharpSource(Stream stream, WaveFormat waveFormat, ReadOnlyCollection<WaveFileChunk> chunks)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
@@ -107,13 +107,41 @@ namespace CSCore.Codecs.OGG
 
             // TODO: check with reference implementation
             // https://github.com/xiph/vorbis
-            _oggDecodeStream = new OggDecodeStream(stream);
-            _waveFormat = new WaveFormat(_oggDecodeStream.SampleRate, 16, _oggDecodeStream.Channels, AudioEncoding.Pcm);
-            _stream = stream;
+            OggDecoder decoder = new OggDecoder();
+
+            // if the ogg content is embedded in a wave file, copy whole stream into memory                        
+            if (waveFormat != null)
+            {
+                MemoryStream memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+                memoryStream.Position = 0;
+                decoder.Initialize(memoryStream);
+            }
+            else
+            {
+                decoder.Initialize(stream);
+            }
+
+            int channels = (decoder.Stereo ? 2 : 1);
+            Debug.WriteLine(string.Format("\nOgg Vorbis bitstream is {0} channel, {1} Hz", channels, decoder.SampleRate));
+            Debug.WriteLine(string.Format("Encoded by: {0}", decoder.Vendor));
+
+            _oggDecodedStream = DecodeStream(decoder);
+            _waveFormat = new WaveFormat(decoder.SampleRate, 16, channels, AudioEncoding.Pcm);
+        }
+        private Stream DecodeStream(OggDecoder decoder)
+        {
+            Stream output = new MemoryStream(4096);
+            foreach (PCMChunk chunk in decoder)
+            {
+                output.Write(chunk.Bytes, 0, chunk.Length);
+            }
+            output.Seek(0, SeekOrigin.Begin);
+            return output;
         }
 
         /// <summary>
-        ///     Reads a sequence of bytes from the <see cref="CSVorbisSource" /> and advances the position within the stream by the
+        ///     Reads a sequence of bytes from the <see cref="OggSharpSource" /> and advances the position within the stream by the
         ///     number of bytes read.
         /// </summary>
         /// <param name="buffer">
@@ -133,7 +161,7 @@ namespace CSCore.Codecs.OGG
             {
                 CheckForDisposed();
 
-                return _oggDecodeStream.Read(buffer, offset, count);
+                return _oggDecodedStream.Read(buffer, offset, count);
             }
         }
 
@@ -142,7 +170,7 @@ namespace CSCore.Codecs.OGG
         /// </summary>
         public bool CanSeek
         {
-            get { return _oggDecodeStream.CanSeek; }
+            get { return _oggDecodedStream.CanSeek; }
         }
 
         /// <summary>
@@ -155,18 +183,18 @@ namespace CSCore.Codecs.OGG
 
         public long Length
         {
-            get { return _oggDecodeStream.Length; }
+            get { return _oggDecodedStream.Length; }
         }
 
         public long Position
         {
             get
             {
-                return _oggDecodeStream.Position;
+                return _oggDecodedStream.Position;
             }
             set
             {
-                _oggDecodeStream.Position = value;
+                _oggDecodedStream.Position = value;
             }
         }
 
@@ -177,7 +205,7 @@ namespace CSCore.Codecs.OGG
         }
 
         /// <summary>
-        ///     Disposes the <see cref="CSVorbisSource" /> and the underlying <see cref="Stream" />.
+        ///     Disposes the <see cref="OggSharpSource" /> and the underlying <see cref="Stream" />.
         /// </summary>
         public void Dispose()
         {
@@ -191,7 +219,7 @@ namespace CSCore.Codecs.OGG
         }
 
         /// <summary>
-        ///     Disposes the <see cref="CSVorbisSource" /> and the underlying <see cref="Stream" />.
+        ///     Disposes the <see cref="OggSharpSource" /> and the underlying <see cref="Stream" />.
         /// </summary>
         /// <param name="disposing">
         ///     True to release both managed and unmanaged resources; false to release only unmanaged
@@ -199,16 +227,16 @@ namespace CSCore.Codecs.OGG
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-            if (_oggDecodeStream != null)
+            if (_oggDecodedStream != null)
             {
-                _oggDecodeStream.Dispose();
+                _oggDecodedStream.Dispose();
             }
         }
 
         /// <summary>
         /// Destructor which calls the <see cref="Dispose(bool)"/> method.
         /// </summary>
-        ~CSVorbisSource()
+        ~OggSharpSource()
         {
             Dispose(false);
         }

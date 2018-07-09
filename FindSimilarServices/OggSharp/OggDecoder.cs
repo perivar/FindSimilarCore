@@ -1244,6 +1244,39 @@ namespace OggSharp
             private set;
         }
 
+        /// <summary>
+        /// Gets the comments stored in the vorbis file
+        /// </summary>
+        public string Comment {
+            get {
+                if (initialized) {
+                    byte[][] ptr = vc.user_comments;
+                    StringWriter writer = new StringWriter();
+                    for (int j = 0; j < vc.user_comments.Length; j++)
+                    {
+                        if (ptr[j] == null) break;                    
+                        writer.WriteLine(vc.getComment(j));
+                    }
+                    return writer.ToString();
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the vendor stored in the vorbis file
+        /// </summary>
+        public string Vendor {
+            get {
+                if (initialized) {
+                    return vc.getVendor();
+                } else {
+                    return null;
+                }
+            }
+        }
+
         #endregion Public properties
     }
 }
