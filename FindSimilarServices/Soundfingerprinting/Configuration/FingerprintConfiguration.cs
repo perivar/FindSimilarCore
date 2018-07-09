@@ -2,10 +2,11 @@ namespace SoundFingerprinting.Configuration
 {
     using System;
     using System.Collections.Generic;
+
     using SoundFingerprinting.Strides;
 
     public abstract class FingerprintConfiguration
-    {        
+    {
         /// <summary>
         ///  Gets or sets stride between 2 consecutive fingerprints
         /// </summary>

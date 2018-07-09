@@ -60,7 +60,7 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
- 
+/*  
             var testAudioService = new FindSimilarAudioService();
             int sampleRate = 32000;
 
@@ -81,8 +81,6 @@ namespace FindSimilar
             var data02 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data02.wav", data02.Samples, sampleRate);
 
-            return 0;
-
             // ADPCM test files
             var data03 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data03.wav", data03.Samples, sampleRate);
@@ -100,7 +98,7 @@ namespace FindSimilar
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07.wav", data07.Samples, sampleRate);
 
             return 0;
- 
+ */            
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";

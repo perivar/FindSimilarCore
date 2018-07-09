@@ -1,4 +1,3 @@
 Name,SourceDirectory,DestinationDirectory,ExcludeFiles
-soundfingerpringing-audio,..\soundfingerprinting\src\SoundFingerprinting\Audio,.\FindSimilarServices\Soundfingerprinting\Audio
-soundfingerpringing-fft,..\soundfingerprinting\src\SoundFingerprinting\FFT,.\FindSimilarServices\Soundfingerprinting\FFT
+soundfingerpringing,..\soundfingerprinting\src\SoundFingerprinting,.\FindSimilarServices\SoundFingerprinting
 oggsharp,..\OggSharp\OggSharp\CsVorbis,.\FindSimilarServices\OggSharp
