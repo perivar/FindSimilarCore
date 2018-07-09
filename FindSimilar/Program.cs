@@ -71,8 +71,6 @@ namespace FindSimilar
             var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09.wav", data09.Samples, sampleRate);
 
-            return 0;
-
             // OGG test files
             var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data00.wav", data00.Samples, sampleRate);
@@ -82,6 +80,8 @@ namespace FindSimilar
 
             var data02 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data02.wav", data02.Samples, sampleRate);
+
+            return 0;
 
             // ADPCM test files
             var data03 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
