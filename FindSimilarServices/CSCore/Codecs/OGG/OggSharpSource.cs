@@ -14,9 +14,10 @@ namespace CSCore.Codecs.OGG
     {
         private readonly object _lockObj = new object();
         private readonly WaveFormat _waveFormat;
-        private readonly Stream _oggDecodedStream;
+        private readonly OggDecoder _oggDecoder;
+        private Stream _oggDecodedStream;
+        private readonly long _length;
         private bool _disposed;
-        private readonly bool _closeStream;
 
         public OggSharpSource(Stream stream) : this(stream, null, null)
         {
@@ -102,12 +103,12 @@ namespace CSCore.Codecs.OGG
                     throw new ArgumentException("The specified stream does not contain any data chunks.");
                 }
 
-                Debug.WriteLine(audioFormat.ToString());
+                // Debug.WriteLine(audioFormat.ToString());
             }
 
             // TODO: check with reference implementation
             // https://github.com/xiph/vorbis
-            OggDecoder decoder = new OggDecoder();
+            _oggDecoder = new OggDecoder();
 
             // if the ogg content is embedded in a wave file, copy whole stream into memory                        
             if (waveFormat != null)
@@ -115,19 +116,24 @@ namespace CSCore.Codecs.OGG
                 MemoryStream memoryStream = new MemoryStream();
                 stream.CopyTo(memoryStream);
                 memoryStream.Position = 0;
-                decoder.Initialize(memoryStream);
+                _oggDecoder.Initialize(memoryStream);
             }
             else
             {
-                decoder.Initialize(stream);
+                _oggDecoder.Initialize(stream);
             }
 
-            int channels = (decoder.Stereo ? 2 : 1);
-            Debug.WriteLine(string.Format("\nOgg Vorbis bitstream is {0} channel, {1} Hz", channels, decoder.SampleRate));
-            Debug.WriteLine(string.Format("Encoded by: {0}", decoder.Vendor));
+            int channels = (_oggDecoder.Stereo ? 2 : 1);
+            int sampleRate = _oggDecoder.SampleRate;
+            _length = (long)(_oggDecoder.Length * sampleRate * channels * 2); // 2 bytes per sample
 
-            _oggDecodedStream = DecodeStream(decoder);
-            _waveFormat = new WaveFormat(decoder.SampleRate, 16, channels, AudioEncoding.Pcm);
+/* 
+            Debug.WriteLine(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
+            Debug.WriteLine(string.Format("Comment: {0}", _oggDecoder.Comment));
+            Debug.WriteLine(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
+ */
+
+            _waveFormat = new WaveFormat(sampleRate, 16, channels, AudioEncoding.Pcm);
         }
         private Stream DecodeStream(OggDecoder decoder)
         {
@@ -159,8 +165,10 @@ namespace CSCore.Codecs.OGG
         {
             lock (_lockObj)
             {
-                CheckForDisposed();
-
+                if (_oggDecodedStream == null)
+                {
+                    _oggDecodedStream = DecodeStream(_oggDecoder);
+                }
                 return _oggDecodedStream.Read(buffer, offset, count);
             }
         }
@@ -170,7 +178,7 @@ namespace CSCore.Codecs.OGG
         /// </summary>
         public bool CanSeek
         {
-            get { return _oggDecodedStream.CanSeek; }
+            get { return true; }
         }
 
         /// <summary>
@@ -183,7 +191,7 @@ namespace CSCore.Codecs.OGG
 
         public long Length
         {
-            get { return _oggDecodedStream.Length; }
+            get { return _length; }
         }
 
         public long Position
@@ -198,47 +206,19 @@ namespace CSCore.Codecs.OGG
             }
         }
 
-        private void CheckForDisposed()
-        {
-            if (_disposed)
-                throw new ObjectDisposedException(GetType().FullName);
-        }
-
-        /// <summary>
-        ///     Disposes the <see cref="OggSharpSource" /> and the underlying <see cref="Stream" />.
-        /// </summary>
         public void Dispose()
         {
             if (!_disposed)
             {
-                _disposed = true;
-
-                Dispose(true);
-                GC.SuppressFinalize(this);
+                if (_oggDecodedStream != null) _oggDecodedStream.Dispose();
+                if (_oggDecoder != null) _oggDecoder.Dispose();
             }
-        }
-
-        /// <summary>
-        ///     Disposes the <see cref="OggSharpSource" /> and the underlying <see cref="Stream" />.
-        /// </summary>
-        /// <param name="disposing">
-        ///     True to release both managed and unmanaged resources; false to release only unmanaged
-        ///     resources.
-        /// </param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_oggDecodedStream != null)
+            else
             {
-                _oggDecodedStream.Dispose();
+                // TODO: Why does this happen?
+                //throw new ObjectDisposedException("OggSharpSource");
             }
-        }
-
-        /// <summary>
-        /// Destructor which calls the <see cref="Dispose(bool)"/> method.
-        /// </summary>
-        ~OggSharpSource()
-        {
-            Dispose(false);
+            _disposed = true;
         }
     }
 }

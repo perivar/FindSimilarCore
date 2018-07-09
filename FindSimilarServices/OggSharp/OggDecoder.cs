@@ -1255,7 +1255,7 @@ namespace OggSharp
                     for (int j = 0; j < vc.user_comments.Length; j++)
                     {
                         if (ptr[j] == null) break;                    
-                        writer.WriteLine(vc.getComment(j));
+                        writer.WriteLine(vc.getComment(j).TrimEnd('\0'));
                     }
                     return writer.ToString();
                 } else {
@@ -1270,7 +1270,7 @@ namespace OggSharp
         public string Vendor {
             get {
                 if (initialized) {
-                    return vc.getVendor();
+                    return vc.getVendor().TrimEnd('\0');
                 } else {
                     return null;
                 }
