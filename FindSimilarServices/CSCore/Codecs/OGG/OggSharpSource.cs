@@ -16,6 +16,7 @@ namespace CSCore.Codecs.OGG
         private readonly WaveFormat _waveFormat;
         private readonly OggDecoder _oggDecoder;
         private Stream _oggDecodedStream;
+        private readonly Stream _stream;
         private readonly long _length;
         private bool _disposed;
 
@@ -106,6 +107,9 @@ namespace CSCore.Codecs.OGG
                 // Debug.WriteLine(audioFormat.ToString());
             }
 
+            // set stream
+            _stream = stream;
+
             // TODO: check with reference implementation
             // https://github.com/xiph/vorbis
             _oggDecoder = new OggDecoder();
@@ -127,11 +131,11 @@ namespace CSCore.Codecs.OGG
             int sampleRate = _oggDecoder.SampleRate;
             _length = (long)(_oggDecoder.Length * sampleRate * channels * 2); // 2 bytes per sample
 
-/* 
-            Debug.WriteLine(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
-            Debug.WriteLine(string.Format("Comment: {0}", _oggDecoder.Comment));
-            Debug.WriteLine(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
- */
+            /* 
+                        Debug.WriteLine(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
+                        Debug.WriteLine(string.Format("Comment: {0}", _oggDecoder.Comment));
+                        Debug.WriteLine(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
+             */
 
             _waveFormat = new WaveFormat(sampleRate, 16, channels, AudioEncoding.Pcm);
         }
@@ -178,7 +182,7 @@ namespace CSCore.Codecs.OGG
         /// </summary>
         public bool CanSeek
         {
-            get { return true; }
+            get { return _stream.CanSeek; }
         }
 
         /// <summary>
