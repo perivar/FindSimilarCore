@@ -58,7 +58,7 @@ ForEach ($copylocation in $copylocations) {
 	# /V		Produces verbose output, and shows all skipped files.
 	# /Z		Copies files in restartable mode.
 	# /NP		Specifies that the progress of the copying operation will not be displayed.
-	# /S		Copies subdirectories. Note that this option excludes empty directories.
+    # /S		Copies subdirectories. Note that this option excludes empty directories.
 
     $roboswitches = @("*.cs", "/MIR", "/R:0", "/W:0", "/V", "/Z", "/NP", "/S")
    
@@ -82,13 +82,12 @@ ForEach ($copylocation in $copylocations) {
 	# /XC      	eXclude Changed files.
 	# /XN      	eXclude Newer files.
 	# /XO      	eXclude Older files.
-	
-	# Use the following switch to suppress the reporting and processing of Extra files:  
-	# /XX      	eXclude eXtra files
-	# $roboswitches += ""
+    # /XX      	eXclude eXtra files
+
+    $roboswitches += "/XO"   
 
     # /XD		Excludes directories that match the specified names and paths, e.g .XD exclude-fold*
-    # $roboswitches += "/XD exclude-fold*"
+    # $roboswitches += @("/XD", "exclude-fold*")   
 
     # /L		Specifies that files are to be listed only (and not copied, deleted, or time stamped).
     #$roboswitches += "/L"
@@ -103,9 +102,9 @@ ForEach ($copylocation in $copylocations) {
     if ($security) {
         $roboswitches += "/SEC"
     }
-    $logfile = $logPath + "\" + $copylocation.name + "-Final.txt"
+    $logfile = $logPath + "\" + $copylocation.Name + "-Final.txt"
     if (test-path "$logfile") {
-        write-output "Refusing final sync for $copylocation.name since logfile already exists. Rename log first to override"
+        write-output "Refusing final sync for $copylocation.Name since logfile already exists. Rename log first to override"
         continue
     }
     if ($final) {
@@ -116,10 +115,10 @@ ForEach ($copylocation in $copylocations) {
         Robocopy "$($copylocation.SourceDirectory)" "$($copylocation.DestinationDirectory)" $roboswitches
     }
     else {
-        $logfile = $logPath + "\" + $copylocation.name + "-FirstRun.txt"
+        $logfile = $logPath + "\" + $copylocation.Name + "-FirstRun.txt"
         if (test-path "$logfile") {
             #Firstrun logfile already exist so must be sync run
-            $logfile = $logPath + "\" + $copylocation.name + "-Sync.txt"
+            $logfile = $logPath + "\" + $copylocation.Name + "-Sync.txt"
             $roboswitches += "/LOG+:$logfile"
             write-verbose "Logfile is set to $logfile and roboswitches is $roboswitches. Security: $security"
             write-verbose "Robocopying (Sync), Source: $($copylocation.SourceDirectory) and Destination: $($copylocation.DestinationDirectory)"
