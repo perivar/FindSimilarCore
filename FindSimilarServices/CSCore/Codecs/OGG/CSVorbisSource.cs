@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using CommonUtils.Audio;
 using CSCore.Codecs.WAV;
-using OggDecoder;
+using OggSharp;
 
 namespace CSCore.Codecs.OGG
 {
@@ -107,7 +107,7 @@ namespace CSCore.Codecs.OGG
 
             // TODO: check with reference implementation
             // https://github.com/xiph/vorbis
-            _oggDecodeStream = new OggDecodeStream(stream, true);
+            _oggDecodeStream = new OggDecodeStream(stream);
             _waveFormat = new WaveFormat(_oggDecodeStream.SampleRate, 16, _oggDecodeStream.Channels, AudioEncoding.Pcm);
             _stream = stream;
         }
@@ -142,7 +142,7 @@ namespace CSCore.Codecs.OGG
         /// </summary>
         public bool CanSeek
         {
-            get { return _stream.CanSeek; }
+            get { return _oggDecodeStream.CanSeek; }
         }
 
         /// <summary>
@@ -153,9 +153,22 @@ namespace CSCore.Codecs.OGG
             get { return _waveFormat; }
         }
 
-        public long Length => throw new NotImplementedException();
+        public long Length
+        {
+            get { return _oggDecodeStream.Length; }
+        }
 
-        long IAudioSource.Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public long Position
+        {
+            get
+            {
+                return _oggDecodeStream.Position;
+            }
+            set
+            {
+                _oggDecodeStream.Position = value;
+            }
+        }
 
         private void CheckForDisposed()
         {
@@ -186,10 +199,9 @@ namespace CSCore.Codecs.OGG
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-            if (_stream != null)
+            if (_oggDecodeStream != null)
             {
-                _stream.Dispose();
-                _stream = null;
+                _oggDecodeStream.Dispose();
             }
         }
 

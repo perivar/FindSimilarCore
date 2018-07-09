@@ -66,8 +66,8 @@ namespace CSCore.Codecs
                 "aiff", "aif", "aifc"));
 
             // ADDED BY PER IVAR
-            //Register("ogg-vorbis", new CodecFactoryEntry(s => new CSVorbisSource(s), "ogg"));
-            Register("ogg-vorbis", new CodecFactoryEntry(s => new NVorbisSource(s).ToWaveSource(), ".ogg"));
+            Register("ogg-vorbis", new CodecFactoryEntry(s => new CSVorbisSource(s), "ogg"));
+            //Register("ogg-vorbis", new CodecFactoryEntry(s => new NVorbisSource(s).ToWaveSource(), ".ogg"));
             Register("mpeg", new CodecFactoryEntry(s => new NLayerSource(s).ToWaveSource(),
             "mp1", "m1a", "mp2", "m2a", "mp3", "mpg", "mpeg", "mpeg3"));
         }
