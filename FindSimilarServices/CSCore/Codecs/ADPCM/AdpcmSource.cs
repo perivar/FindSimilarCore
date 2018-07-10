@@ -144,7 +144,7 @@ namespace CSCore.Codecs.ADPCM
                 throw new ArgumentException("The specified stream does not contain any data chunks.");
             }
 
-            Debug.WriteLine(audioFormat.ToString());
+            // Debug.WriteLine(audioFormat.ToString());
 
             var decoder = new Adpcm.Decoder();
             decoder.AudioFormat = audioFormat;

@@ -212,7 +212,7 @@ namespace CSCore.Codecs.ADPCM
                     break;
             }
 
-            Debug.WriteLine("Adpcm: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockAlign: {3}, samplesPerBlock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
+            // Debug.WriteLine("Adpcm: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockAlign: {3}, samplesPerBlock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
 
             if (state.SamplesPerBlock == 0)
             {
