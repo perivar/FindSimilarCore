@@ -64,7 +64,7 @@ namespace SoundFingerprinting
             // create log spectrogram
             var spectralImages = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
 
-            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Debug)
+            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Verbose)
             {
                 if (spectralImages.Count > 0)
                 {
@@ -82,7 +82,7 @@ namespace SoundFingerprinting
 
             var fingerprints = CreateFingerprintsFromLogSpectrum(spectralImages, configuration);
 
-            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Debug)
+            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Verbose)
             {
                 if (fingerprints.Count > 0)
                 {

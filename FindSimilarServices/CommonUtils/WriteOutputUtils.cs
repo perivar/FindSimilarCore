@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 
-namespace FindSimilarServices
+namespace CommonUtils
 {
     public static class WriteOutputUtils
     {

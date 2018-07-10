@@ -24,16 +24,37 @@ using SoundFingerprinting.Wavelets;
 using SoundFingerprinting.Utils;
 using SoundFingerprinting.Math;
 using Serilog;
-using FindSimilarServices.FFT;
+using CommonUtils.FFT;
 
 namespace FindSimilarServices
 {
+    // These Verbosity levels roughtly maps to Serilog levels
     public enum Verbosity : int
     {
+        /// <summary>
+        /// Serilog: Fatal, The most critical level, Fatal events demand immediate attention.
+        /// </summary>
         Silent = 0,
-        Normal = 1,
-        Verbose = 2,
-        Debug = 3
+        /// <summary>
+        /// Serilog: Error, When functionality is unavailable or expectations broken, an Error event is used.
+        /// </summary>
+        Error = 1,
+        /// <summary>
+        /// // Serilog: Warning, When service is degraded, endangered, or may be behaving outside of its expected parameters, Warning level events are used.
+        /// </summary>
+        Warning = 2,
+        /// <summary>
+        /// Serilog: Information events describe things happening in the system that correspond to its responsibilities and functions. Generally these are the observable actions the system can perform.
+        /// </summary>
+        Normal = 3,
+        /// <summary>
+        /// Serilog: Debug is used for internal system events that are not necessarily observable from the outside, but useful when determining how something happened.
+        /// </summary>
+        Debug = 4,
+        /// <summary>
+        /// Serilog: Verbose is the noisiest level, rarely (if ever) enabled for a production app.
+        /// </summary>
+        Verbose = 5
     }
 
     public class SoundFingerprinter
@@ -119,7 +140,7 @@ namespace FindSimilarServices
 #if DEBUG
             // Trick for debugging parallel code as single threaded
             options.MaxDegreeOfParallelism = 1;
-            Console.Out.WriteLine("Running in single-threaded mode!");
+            Log.Debug("Running in single-threaded mode!");
 #endif
             Parallel.ForEach(filesRemaining, options, file =>
             {
@@ -136,7 +157,7 @@ namespace FindSimilarServices
                     catch (System.Exception e)
                     {
                         // Log
-                        Log.Information(e.Message);
+                        Log.Warning(e.Message);
                     }
                 }
 
@@ -148,7 +169,7 @@ namespace FindSimilarServices
                     var track = new TrackData(fileInfo.FullName, null, fileInfo.Name, null, 0, duration);
                     if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track, verbosity))
                     {
-                        Log.Warning("Failed! Could not generate audio fingerprint for {0}!", file);
+                        Log.Fatal("Failed! Could not generate audio fingerprint for: {0}", file);
                     }
                     else
                     {
@@ -161,11 +182,11 @@ namespace FindSimilarServices
                 }
                 else
                 {
-                    Log.Information("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
+                    Log.Warning("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                 }
             });
 
-            Log.Debug("Time used: {0}", stopWatch.Stop());
+            Log.Information("Time used: {0}", stopWatch.Stop());
         }
 
         public bool StoreAudioFileFingerprintsInStorageForLaterRetrieval(string pathToAudioFile, TrackData track, Verbosity verbosity)

@@ -12,6 +12,7 @@
     using SoundFingerprinting.Configuration;
     using SoundFingerprinting.Data;
     using SoundFingerprinting.SoundTools.DrawingTool;
+    using CommonUtils;
 
     internal class FindSimilarSpectrumService : ISpectrumService
     {
@@ -63,7 +64,7 @@
             }
             );
 
-            if (configuration.Verbosity == Verbosity.Debug)
+            if (configuration.Verbosity == Verbosity.Verbose)
             {
                 var imageService = new FindSimilarImageService();
                 using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins, width, configuration.LogBins))
@@ -80,7 +81,7 @@
 
             var spectralImages = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
 
-            if (configuration.Verbosity == Verbosity.Debug)
+            if (configuration.Verbosity == Verbosity.Verbose)
             {
                 if (spectralImages.Count > 0)
                 {
@@ -96,7 +97,7 @@
 
             ScaleFullSpectrum(spectralImages, configuration);
 
-            if (configuration.Verbosity == Verbosity.Debug)
+            if (configuration.Verbosity == Verbosity.Verbose)
             {
                 Console.WriteLine("CreateLogSpectrogram - Time used: {0}", stopWatch.Stop());
             }

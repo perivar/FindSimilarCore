@@ -1,10 +1,11 @@
 using System;
 using System.IO;
 
-namespace FindSimilarServices
+namespace CommonUtils
 {
-    public static class MemoryStreamExtensions
+    public static class ExtensionsMethods
     {
+        #region memory stream extensions
         public static void Clear(this MemoryStream stream)
         {
             stream.SetLength(0);
@@ -14,10 +15,8 @@ namespace FindSimilarServices
         {
             return stream.Length - stream.Position;
         }
-    }
+        #endregion
 
-    public static class ExtensionsMethods
-    {
         public static T Clamp<T>(this T val, T min, T max) where T : IComparable<T>
         {
             if (val.CompareTo(min) < 0) return min;

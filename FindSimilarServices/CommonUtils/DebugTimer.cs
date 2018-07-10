@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Diagnostics;
 
-namespace FindSimilarServices
+namespace CommonUtils
 {
     public class DebugTimer
     {

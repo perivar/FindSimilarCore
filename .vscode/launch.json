@@ -14,7 +14,7 @@
             "args": [
                 "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
-                "-v", "3",
+                "-v", "5",
                 "-d", "30",
                 "-l", "C:\\Users\\pnerseth\\My Projects\\findsimilar.log"                
             ],

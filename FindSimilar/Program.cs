@@ -24,7 +24,7 @@ namespace FindSimilar
             if (verboseOption.HasValue())
             {
                 Enum.TryParse(verboseOption.Value(), out verbosity);
-                if ((int)verbosity > 3) verbosity = Verbosity.Debug;
+                if ((int)verbosity > 5) verbosity = Verbosity.Verbose;
                 if ((int)verbosity < 0) verbosity = Verbosity.Normal;
             }
             return verbosity;
@@ -68,6 +68,12 @@ namespace FindSimilar
                     break;
                 case Verbosity.Normal:
                     logConfig.MinimumLevel.Information();
+                    break;
+                case Verbosity.Warning:
+                    logConfig.MinimumLevel.Error();
+                    break;
+                case Verbosity.Error:
+                    logConfig.MinimumLevel.Error();
                     break;
                 case Verbosity.Silent:
                     logConfig.MinimumLevel.Fatal();
@@ -136,7 +142,7 @@ namespace FindSimilar
 
                     // options
                     var skipDurationOption = command.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
-                    var verboseOption = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for no output, 1 for normal output, 2 for more verbose output and 3 for debug.", CommandOptionType.SingleValue);
+                    var verboseOption = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for silent mode, 3 for normal output, 4 for debug and 5 for the most verbose setting", CommandOptionType.SingleValue);
                     var logDirOption = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
 
                     command.OnExecute(() =>

@@ -1,6 +1,6 @@
 using System;
 
-namespace FindSimilarServices.FFT
+namespace CommonUtils.FFT
 {
     public interface IWindowFunction
     {
