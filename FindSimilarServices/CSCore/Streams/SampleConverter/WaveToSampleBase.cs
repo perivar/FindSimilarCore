@@ -158,7 +158,8 @@ namespace CSCore.Streams.SampleConverter
             }
             if (source.WaveFormat.IsIeeeFloat() && bitsPerSample == 32)
                 return new IeeeFloatToSample(source);
-            throw new NotSupportedException("Waveformat is not supported. Invalid WaveformatTag.");
+
+            throw new NotSupportedException(string.Format("Waveformat not supported: {0}", source.WaveFormat));
         }
     }
 }

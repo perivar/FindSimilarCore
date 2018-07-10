@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Serilog;
 
 namespace CSCore.Codecs.WAV
 {
@@ -81,7 +82,7 @@ namespace CSCore.Codecs.WAV
             _writer = new BinaryWriter(stream);
             for (int i = 0; i < 44; i++)
             {
-                _writer.Write((byte) 0);
+                _writer.Write((byte)0);
             }
             _waveFormat = waveFormat;
 
@@ -147,17 +148,17 @@ namespace CSCore.Codecs.WAV
                 switch (_waveFormat.BitsPerSample)
                 {
                     case 8:
-                        Write((byte) (byte.MaxValue * sample));
+                        Write((byte)(byte.MaxValue * sample));
                         break;
                     case 16:
-                        Write((short) (short.MaxValue * sample));
+                        Write((short)(short.MaxValue * sample));
                         break;
                     case 24:
                         byte[] buffer = BitConverter.GetBytes((int)(0x7fffff * sample));
-                        Write(new[] {buffer[0], buffer[1], buffer[2]}, 0, 3);
+                        Write(new[] { buffer[0], buffer[1], buffer[2] }, 0, 3);
                         break;
                     case 32:
-                        Write((int) (int.MaxValue * sample));
+                        Write((int)(int.MaxValue * sample));
                         break;
 
                     default:
@@ -273,7 +274,7 @@ namespace CSCore.Codecs.WAV
         private void WriteRiffHeader()
         {
             _writer.Write(Encoding.UTF8.GetBytes("RIFF"));
-            _writer.Write((int) (_stream.Length - 8));
+            _writer.Write((int)(_stream.Length - 8));
             _writer.Write(Encoding.UTF8.GetBytes("WAVE"));
         }
 
@@ -285,11 +286,11 @@ namespace CSCore.Codecs.WAV
 
             _writer.Write(Encoding.UTF8.GetBytes("fmt "));
             _writer.Write((int)16);
-            _writer.Write((short) tag);
+            _writer.Write((short)tag);
             _writer.Write((short)_waveFormat.Channels);
             _writer.Write((int)_waveFormat.SampleRate);
             _writer.Write((int)_waveFormat.BytesPerSecond);
-            _writer.Write((short) _waveFormat.BlockAlign);
+            _writer.Write((short)_waveFormat.BlockAlign);
             _writer.Write((short)_waveFormat.BitsPerSample);
         }
 
@@ -317,7 +318,7 @@ namespace CSCore.Codecs.WAV
             if (_isDisposed) return;
 
             if (!disposing) return;
-            
+
             try
             {
                 _isDisposing = true;
@@ -325,7 +326,7 @@ namespace CSCore.Codecs.WAV
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("WaveWriter::Dispose: " + ex);
+                Log.Verbose("WaveWriter::Dispose: " + ex);
             }
             finally
             {
@@ -346,8 +347,8 @@ namespace CSCore.Codecs.WAV
 
                 _isDisposing = false;
             }
-            
-            
+
+
             _isDisposed = true;
         }
 

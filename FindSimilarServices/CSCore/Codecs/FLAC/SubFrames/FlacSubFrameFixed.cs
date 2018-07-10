@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Serilog;
 
 // ReSharper disable once CheckNamespace
 namespace CSCore.Codecs.FLAC
@@ -61,8 +62,8 @@ namespace CSCore.Codecs.FLAC
                     for (int t = 0; t < length; t++)
                     {
                         //3s(t-1) - 3s(t-2) + s(t-3)
-                        destBuffer[t] = residual[t] + 
-                            3 * (destBuffer[t - 1]) - 3 * (destBuffer[t - 2]) + destBuffer[t - 3]; 
+                        destBuffer[t] = residual[t] +
+                            3 * (destBuffer[t - 1]) - 3 * (destBuffer[t - 2]) + destBuffer[t - 3];
                     }
                     break;
 
@@ -76,7 +77,7 @@ namespace CSCore.Codecs.FLAC
                     break;
 
                 default:
-                    Debug.WriteLine("Invalid FlacFixedSubFrame predictororder.");
+                    Log.Verbose("Invalid FlacFixedSubFrame predictororder.");
                     return;
             }
         }

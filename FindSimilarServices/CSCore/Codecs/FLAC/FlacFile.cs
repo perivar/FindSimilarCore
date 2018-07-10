@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CSCore.Tags.ID3;
+using Serilog;
 
 namespace CSCore.Codecs.FLAC
 {
@@ -137,8 +138,8 @@ namespace CSCore.Codecs.FLAC
 
                 _streamInfo = streamInfo;
                 _waveFormat = CreateWaveFormat(streamInfo);
-                Debug.WriteLine("Flac StreamInfo found -> WaveFormat: " + _waveFormat);
-                Debug.WriteLine("Flac-File-Metadata read.");
+                Log.Verbose("Flac StreamInfo found -> WaveFormat: " + _waveFormat);
+                Log.Verbose("Flac-File-Metadata read.");
             }
             else
                 throw new FlacException("Invalid Flac-File. \"fLaC\" Sync not found.", FlacLayer.OutSideOfFrame);
@@ -337,7 +338,7 @@ namespace CSCore.Codecs.FLAC
                             _overflowCount = 0;
                             _overflowOffset = 0;
 
-                            int diff = (int) (value - Position);
+                            int diff = (int)(value - Position);
                             diff -= (diff % WaveFormat.BlockAlign);
                             if (diff > 0)
                             {

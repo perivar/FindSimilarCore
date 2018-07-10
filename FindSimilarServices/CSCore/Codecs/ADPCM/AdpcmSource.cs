@@ -7,6 +7,7 @@ using System.Linq;
 using CommonUtils.Audio;
 using CSCore;
 using CSCore.Codecs.WAV;
+using Serilog;
 
 namespace CSCore.Codecs.ADPCM
 {
@@ -144,7 +145,7 @@ namespace CSCore.Codecs.ADPCM
                 throw new ArgumentException("The specified stream does not contain any data chunks.");
             }
 
-            // Debug.WriteLine(audioFormat.ToString());
+            Log.Verbose(audioFormat.ToString());
 
             var decoder = new Adpcm.Decoder();
             decoder.AudioFormat = audioFormat;

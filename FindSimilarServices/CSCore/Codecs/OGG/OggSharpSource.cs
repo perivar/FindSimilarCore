@@ -7,6 +7,7 @@ using System.Linq;
 using CommonUtils.Audio;
 using CSCore.Codecs.WAV;
 using OggSharp;
+using Serilog;
 
 namespace CSCore.Codecs.OGG
 {
@@ -104,7 +105,7 @@ namespace CSCore.Codecs.OGG
                     throw new ArgumentException("The specified stream does not contain any data chunks.");
                 }
 
-                // Debug.WriteLine(audioFormat.ToString());
+                Log.Verbose(audioFormat.ToString());
             }
 
             // set stream
@@ -131,11 +132,9 @@ namespace CSCore.Codecs.OGG
             int sampleRate = _oggDecoder.SampleRate;
             _length = (long)(_oggDecoder.Length * sampleRate * channels * 2); // 2 bytes per sample
 
-            /* 
-                        Debug.WriteLine(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
-                        Debug.WriteLine(string.Format("Comment: {0}", _oggDecoder.Comment));
-                        Debug.WriteLine(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
-             */
+            Log.Verbose(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
+            Log.Verbose(string.Format("Comment: {0}", _oggDecoder.Comment));
+            Log.Verbose(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
 
             _waveFormat = new WaveFormat(sampleRate, 16, channels, AudioEncoding.Pcm);
         }
@@ -214,7 +213,8 @@ namespace CSCore.Codecs.OGG
         {
             if (!_disposed)
             {
-                if (_oggDecodedStream != null) { 
+                if (_oggDecodedStream != null)
+                {
                     _oggDecodedStream.Dispose();
                     _oggDecodedStream = null;
                 }

@@ -41,64 +41,86 @@ namespace FindSimilar
             return skipDurationAboveSeconds;
         }
 
-        static void DefineLogger(CommandOption optionLogFilePath)
+        static void DefineLogger(CommandOption logFilePathOption, Verbosity verbosity)
         {
             string logFilePath = DEFAULT_LOG_PATH;
-            if (optionLogFilePath.HasValue())
+            if (logFilePathOption.HasValue())
             {
-                var logFilePathValue = optionLogFilePath.Value();
+                var logFilePathValue = logFilePathOption.Value();
                 if (Directory.Exists(Path.GetDirectoryName(logFilePathValue)))
                 {
                     logFilePath = logFilePathValue;
                 }
             }
 
-            Log.Logger = new LoggerConfiguration()
+            // https://github.com/serilog/serilog/wiki/Configuration-Basics
+            var logConfig = new LoggerConfiguration()
                 .WriteTo.File(logFilePath)
-                .CreateLogger();
+                .WriteTo.Console(); // .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+
+            switch (verbosity)
+            {
+                case Verbosity.Verbose:
+                    logConfig.MinimumLevel.Verbose();
+                    break;
+                case Verbosity.Debug:
+                    logConfig.MinimumLevel.Debug();
+                    break;
+                case Verbosity.Normal:
+                    logConfig.MinimumLevel.Information();
+                    break;
+                case Verbosity.Silent:
+                    logConfig.MinimumLevel.Fatal();
+                    break;
+            }
+            Log.Logger = logConfig.CreateLogger();
         }
 
         public static int Main(string[] args)
         {
-/*  
+            /*  
             var testAudioService = new FindSimilarAudioService();
             int sampleRate = 32000;
 
-            // OGG within wav container fest files
-            var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08.wav", data08.Samples, sampleRate);
-
-            var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09.wav", data09.Samples, sampleRate);
-
-            // OGG test files
-            var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data00.wav", data00.Samples, sampleRate);
-
-            var data01 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Crash 2.ogg", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data01.wav", data01.Samples, sampleRate);
-
-            var data02 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data02.wav", data02.Samples, sampleRate);
-
-            // ADPCM test files
-            var data03 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data03.wav", data03.Samples, sampleRate);
-
-            var data04 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data04.wav", data04.Samples, sampleRate);
-
-            var data05 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Documents\Audacity\bass afrpck 8 - fix.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data05.wav", data05.Samples, sampleRate);
-
-            var data06 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ms-adpcm.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data06.wav", data06.Samples, sampleRate);
-
-            var data07 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07.wav", data07.Samples, sampleRate);
+            var data10 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\HTMEM-Another-Walkthrough-To-An-EDM-Beat\mhak kick 209 G#.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data10.wav", data10.Samples, sampleRate);
 
             return 0;
- */            
+                        // OGG within wav container fest files
+                        var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08.wav", data08.Samples, sampleRate);
+
+                        var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09.wav", data09.Samples, sampleRate);
+
+                        // OGG test files
+                        var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data00.wav", data00.Samples, sampleRate);
+
+                        var data01 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Crash 2.ogg", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data01.wav", data01.Samples, sampleRate);
+
+                        var data02 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data02.wav", data02.Samples, sampleRate);
+
+                        // ADPCM test files
+                        var data03 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data03.wav", data03.Samples, sampleRate);
+
+                        var data04 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data04.wav", data04.Samples, sampleRate);
+
+                        var data05 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Documents\Audacity\bass afrpck 8 - fix.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data05.wav", data05.Samples, sampleRate);
+
+                        var data06 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ms-adpcm.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data06.wav", data06.Samples, sampleRate);
+
+                        var data07 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
+                        SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07.wav", data07.Samples, sampleRate);
+
+                        return 0;
+             */
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";
@@ -113,17 +135,17 @@ namespace FindSimilar
                     var scanArgument = command.Argument("[directory]", "Directory to scan and create audio fingerprints from");
 
                     // options
-                    var optionSkipDuration = command.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
-                    var optionVerbose = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for no output, 1 for normal output, 2 for more verbose output and 3 for debug.", CommandOptionType.SingleValue);
-                    var optionLogDir = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
+                    var skipDurationOption = command.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
+                    var verboseOption = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for no output, 1 for normal output, 2 for more verbose output and 3 for debug.", CommandOptionType.SingleValue);
+                    var logDirOption = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
 
                     command.OnExecute(() =>
                         {
                             if (!string.IsNullOrEmpty(scanArgument.Value))
                             {
-                                DefineLogger(optionLogDir);
-                                var verbosity = GetVerbosity(optionVerbose);
-                                var skipDurationAboveSeconds = GetSkipDuration(optionSkipDuration);
+                                var skipDurationAboveSeconds = GetSkipDuration(skipDurationOption);
+                                var verbosity = GetVerbosity(verboseOption);
+                                DefineLogger(logDirOption, verbosity);
 
                                 ProcessDir(scanArgument.Value, skipDurationAboveSeconds, verbosity);
                                 return 0;

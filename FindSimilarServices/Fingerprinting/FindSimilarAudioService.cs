@@ -28,6 +28,7 @@ namespace FindSimilarServices.Audio
 
         private readonly IAudioSamplesNormalizer audioSamplesNormalizer;
         private readonly WdlResampler resampler;
+        private readonly object _lockObj = new object();
 
         public override IReadOnlyCollection<string> SupportedFormats
         {
@@ -59,10 +60,10 @@ namespace FindSimilarServices.Audio
 
         private float[] Resample(float[] audioSamples, int readerChannels, int writerChannels, int sourceSampleRate, int newSampleRate)
         {
-            // make thread safe
             float[] resampledBuffer;
 
-            lock (resampler)
+            // make thread safe
+            lock (_lockObj)
             {
                 // Use WDL Resampler
                 // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
@@ -96,18 +97,23 @@ namespace FindSimilarServices.Audio
         public override float GetLengthInSeconds(string pathToSourceFile)
         {
             float duration = 0;
-            try
+            
+            lock (_lockObj)
             {
-                using (IWaveSource soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile))
+                try
                 {
-                    var time = soundSource.GetLength();
-                    duration = (float)time.TotalSeconds;
+                    using (IWaveSource soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile))
+                    {
+                        var time = soundSource.GetLength();
+                        duration = (float)time.TotalSeconds;
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    throw new ArgumentException(string.Format("GetLengthInSeconds failed for {0}: {1}", pathToSourceFile, e.Message));
                 }
             }
-            catch (System.Exception e)
-            {
-                throw new ArgumentException(string.Format("GetLengthInSeconds failed for {0}: {1}", pathToSourceFile, e.Message));
-            }
+
             return duration;
         }
 

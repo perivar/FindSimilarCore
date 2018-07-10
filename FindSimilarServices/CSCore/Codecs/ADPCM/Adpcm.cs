@@ -4,6 +4,7 @@ using System.Text;
 using CSCore;
 using CommonUtils.Audio;
 using System.Diagnostics;
+using Serilog;
 
 namespace CSCore.Codecs.ADPCM
 {
@@ -162,7 +163,7 @@ namespace CSCore.Codecs.ADPCM
             if (format.BlockAlign <= 0)
             {
                 state.BlockAlign = (state.Codec == AdpcmCodecType.ADPCM_IMA_QT) ? 34 * channels : 1024;
-                Debug.WriteLine("Warning: block size undefined, using {0}", state.BlockAlign);
+                Log.Verbose("Warning: block size undefined, using {0}", state.BlockAlign);
             }
             else
             {
@@ -212,7 +213,7 @@ namespace CSCore.Codecs.ADPCM
                     break;
             }
 
-            // Debug.WriteLine("Adpcm: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockAlign: {3}, samplesPerBlock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
+            Log.Verbose("Adpcm: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockAlign: {3}, samplesPerBlock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
 
             if (state.SamplesPerBlock == 0)
             {

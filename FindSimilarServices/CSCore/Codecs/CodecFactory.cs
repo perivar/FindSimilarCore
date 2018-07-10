@@ -10,6 +10,7 @@ using CSCore.Codecs.WAV;
 using CSCore.Codecs.MP3;
 using CSCore.Codecs.OGG;
 using CSCore.Codecs.ADPCM;
+using Serilog;
 
 namespace CSCore.Codecs
 {
@@ -112,7 +113,7 @@ namespace CSCore.Codecs
         /// <param name="filename">Filename of the specified file.</param>
         /// <returns>Fully initialized <see cref="IWaveSource" /> instance which is able to decode the specified file.</returns>
         /// <exception cref="NotSupportedException">The codec of the specified file is not supported.</exception>
-        public IWaveSource GetCodec(string filename)
+        public IWaveSource  GetCodec(string filename)
         {
             if (String.IsNullOrEmpty(filename))
                 throw new ArgumentNullException("filename");
@@ -143,7 +144,7 @@ namespace CSCore.Codecs
                         }
                         catch (Exception ex)
                         {
-                            Debug.WriteLine(ex.Message);
+                            Log.Verbose(ex.Message);
                         }
                     }
                 }
@@ -216,7 +217,7 @@ namespace CSCore.Codecs
                 }
                 catch (Exception)
                 {
-                    Debug.WriteLine("No mp3 webstream.");
+                    Log.Verbose("No mp3 webstream.");
                 }
                 throw; //better throw the exception of the MediaFoundationDecoder. We just try to use the Mp3WebStream class since a few mp3 streams are not supported by the mediafoundation.
             }
@@ -273,7 +274,7 @@ namespace CSCore.Codecs
             }
             catch (Exception)
             {
-                Debug.WriteLine(String.Format("{0} not found.", uri.LocalPath));
+                Log.Verbose(String.Format("{0} not found.", uri.LocalPath));
             }
 
             try
@@ -284,7 +285,7 @@ namespace CSCore.Codecs
             }
             catch (Exception)
             {
-                Debug.WriteLine(String.Format("{0} not found.", uri.OriginalString));
+                Log.Verbose(String.Format("{0} not found.", uri.OriginalString));
             }
 
             /*             var path = Win32.NativeMethods.PathCreateFromUrl(uri.OriginalString);
@@ -321,7 +322,7 @@ namespace CSCore.Codecs
                     }
                     catch (Exception)
                     {
-                        Debug.WriteLine("Stream was already disposed.");
+                        Log.Verbose("Stream was already disposed.");
                     }
                     finally
                     {

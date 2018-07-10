@@ -101,16 +101,16 @@ namespace FindSimilarServices
                 Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()));
 
-            if (verbosity > 0) Console.Out.WriteLine("Found {0} files in scan directory.", filesAll.Count());
+            Log.Information("Found {0} files in scan directory.", filesAll.Count());
 
             // Get all already processed files stored in the database and store in memory
             // It seems to work well with huge volumes of files (200k)
             IEnumerable<string> filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.ISRC);
-            if (verbosity > 0) Console.Out.WriteLine("Database contains {0} already processed files.", filesAlreadyProcessed.Count());
+            Log.Information("Database contains {0} already processed files.", filesAlreadyProcessed.Count());
 
             // find the files that has not already been added to the database
             List<string> filesRemaining = filesAll.Except(filesAlreadyProcessed).ToList();
-            if (verbosity > 0) Console.Out.WriteLine("Found {0} files remaining in scan directory to be processed.", filesRemaining.Count);
+            Log.Information("Found {0} files remaining in scan directory to be processed.", filesRemaining.Count);
 
             int filesCounter = 0;
             int filesAllCounter = filesAlreadyProcessed.Count();
@@ -129,7 +129,15 @@ namespace FindSimilarServices
                 lock (_lockObj)
                 {
                     // Try to check duration
-                    duration = audioService.GetLengthInSeconds(fileInfo.FullName);
+                    try
+                    {
+                        duration = audioService.GetLengthInSeconds(fileInfo.FullName);
+                    }
+                    catch (System.Exception e)
+                    {
+                        // Log
+                        Log.Information(e.Message);
+                    }
                 }
 
                 // check if we should skip files longer than x seconds
@@ -140,7 +148,6 @@ namespace FindSimilarServices
                     var track = new TrackData(fileInfo.FullName, null, fileInfo.Name, null, 0, duration);
                     if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track, verbosity))
                     {
-                        if (verbosity > 0) Console.Error.WriteLine("Failed! Could not generate audio fingerprint for {0}!", file);
                         Log.Warning("Failed! Could not generate audio fingerprint for {0}!", file);
                     }
                     else
@@ -149,17 +156,16 @@ namespace FindSimilarServices
                         // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
                         var filesCounterNow = Interlocked.Increment(ref filesCounter);
                         var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
-                        if (verbosity > 0) Console.Out.WriteLine("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
+                        Log.Information("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
                     }
                 }
                 else
                 {
-                    if (verbosity > 0) Console.Out.WriteLine("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                     Log.Information("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
                 }
             });
 
-            if (verbosity > 0) Console.WriteLine("Time used: {0}", stopWatch.Stop());
+            Log.Debug("Time used: {0}", stopWatch.Stop());
         }
 
         public bool StoreAudioFileFingerprintsInStorageForLaterRetrieval(string pathToAudioFile, TrackData track, Verbosity verbosity)
@@ -173,26 +179,35 @@ namespace FindSimilarServices
                 // set verbosity
                 fingerprintConfig.SpectrogramConfig.Verbosity = verbosity;
 
-                // create hashed fingerprints
-                var hashedFingerprints = fingerprintCommandBuilder
-                                            .BuildFingerprintCommand()
-                                            .From(pathToAudioFile)
-                                            .WithFingerprintConfig(fingerprintConfig)
-                                            .UsingServices(audioService)
-                                            .Hash()
-                                            .Result;
-
-                if (hashedFingerprints.Count > 0)
+                try
                 {
-                    // store track metadata in the datasource
-                    var trackReference = modelService.InsertTrack(track);
+                    // create hashed fingerprints
+                    var hashedFingerprints = fingerprintCommandBuilder
+                                                .BuildFingerprintCommand()
+                                                .From(pathToAudioFile)
+                                                .WithFingerprintConfig(fingerprintConfig)
+                                                .UsingServices(audioService)
+                                                .Hash()
+                                                .Result;
 
-                    // store hashes in the database for later retrieval
-                    modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
-                    return true;
+                    if (hashedFingerprints.Count > 0)
+                    {
+                        // store track metadata in the datasource
+                        var trackReference = modelService.InsertTrack(track);
+
+                        // store hashes in the database for later retrieval
+                        modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
-                else
+                catch (System.Exception e)
                 {
+                    // Log
+                    Log.Information(e.Message);
                     return false;
                 }
             }

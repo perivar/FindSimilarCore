@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using Serilog;
 
 namespace CSCore.Codecs.FLAC
 {
@@ -415,7 +416,7 @@ namespace CSCore.Codecs.FLAC
         internal void Error(string msg, string location)
         {
             if (PrintErrors)
-                Debug.WriteLine(location + msg);
+                Log.Verbose(location + msg);
         }
 
         /// <summary>

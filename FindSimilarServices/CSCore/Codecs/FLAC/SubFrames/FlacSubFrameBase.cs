@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using Serilog;
+
 // ReSharper disable once CheckNamespace
 namespace CSCore.Codecs.FLAC
 {
@@ -13,7 +15,7 @@ namespace CSCore.Codecs.FLAC
 
             if ((firstByte & 0x80) != 0) //Zero bit padding, to prevent sync-fooling string of 1s
             {
-                Debug.WriteLine("Flacdecoder subframe-header got no zero-bit padding.");
+                Log.Verbose("Flacdecoder subframe-header got no zero-bit padding.");
                 return null;
             }
 
@@ -49,7 +51,7 @@ namespace CSCore.Codecs.FLAC
             }
             else
             {
-                Debug.WriteLine(String.Format("Invalid Flac-SubframeType. SubframeType: 0x{0:x}.", subframeType));
+                Log.Verbose(String.Format("Invalid Flac-SubframeType. SubframeType: 0x{0:x}.", subframeType));
                 return null;
             }
 

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Serilog;
 
 namespace CSCore.Tags.ID3
 {
@@ -145,7 +146,7 @@ namespace CSCore.Tags.ID3
             }
             else
             {
-                Debug.WriteLine("ID3v2::ReadData: No ID3v2 Header found.");
+                Log.Verbose("ID3v2::ReadData: No ID3v2 Header found.");
                 return false;
             }
         }
