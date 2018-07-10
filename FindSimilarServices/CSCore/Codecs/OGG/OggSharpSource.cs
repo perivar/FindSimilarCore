@@ -214,8 +214,12 @@ namespace CSCore.Codecs.OGG
         {
             if (!_disposed)
             {
-                if (_oggDecodedStream != null) _oggDecodedStream.Dispose();
+                if (_oggDecodedStream != null) { 
+                    _oggDecodedStream.Dispose();
+                    _oggDecodedStream = null;
+                }
                 if (_oggDecoder != null) _oggDecoder.Dispose();
+                if (_stream != null) _stream.Dispose();
             }
             else
             {
