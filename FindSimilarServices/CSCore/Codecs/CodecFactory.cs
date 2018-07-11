@@ -34,7 +34,7 @@ namespace CSCore.Codecs
              if (res.WaveFormat.WaveFormatTag == AudioEncoding.Extensible)
              {
                  res.Dispose();
-                 res = new WavExtendedSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
+                 res = new WavExtensibleSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
              }
              else if (res.WaveFormat.WaveFormatTag != AudioEncoding.Pcm &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
@@ -131,6 +131,8 @@ namespace CSCore.Codecs
             IWaveSource source = null;
             if (File.Exists(filename))
             {
+                Log.Verbose("Processing {0}", filename);
+
                 Stream stream = File.OpenRead(filename);
                 try
                 {

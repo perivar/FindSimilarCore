@@ -4,14 +4,13 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using CommonUtils.Audio;
 using CSCore;
 using Serilog;
 
 namespace CSCore.Codecs.WAV
 {
-    public class WavExtendedSource : IWaveSource
+    public class WavExtensibleSource : IWaveSource
     {
         [Flags]
         public enum Channels : uint
@@ -51,7 +50,7 @@ namespace CSCore.Codecs.WAV
         /// </summary>
         /// <param name="stream"><see cref="Stream" /> which contains raw waveform-audio data.</param>
         /// <param name="waveFormat">The format of the waveform-audio data within the <paramref name="stream" />.</param>
-        public WavExtendedSource(Stream stream, WaveFormat waveFormat, ReadOnlyCollection<WaveFileChunk> chunks)
+        public WavExtensibleSource(Stream stream, WaveFormat waveFormat, ReadOnlyCollection<WaveFileChunk> chunks)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
@@ -62,11 +61,11 @@ namespace CSCore.Codecs.WAV
 
             if (waveFormat.WaveFormatTag != AudioEncoding.Extensible)
             {
-                throw new ArgumentException(string.Format("Not supported encoding: {0}", waveFormat.WaveFormatTag));
+                throw new ArgumentException(string.Format("Not a wav extensible source! Encoding: {0}", waveFormat.WaveFormatTag));
             }
 
-            this._chunks = chunks;
-            Log.Verbose(GetWaveFileChunkInformation(chunks));
+            _stream = stream;
+            _chunks = chunks;
 
             // check format
             var audioFormat = new AudioFormat();
@@ -141,55 +140,7 @@ namespace CSCore.Codecs.WAV
                 // set the format identifiers to what this class returns
                 waveFormat.WaveFormatTag = audioFormat.SubEncoding;
                 _waveFormat = waveFormat;
-
-                _stream = stream;
             }
-        }
-
-        private static string IntToFourCC(int fourCCInt)
-        {
-            byte[] bytes = BitConverter.GetBytes(fourCCInt);
-            return Encoding.Default.GetString(bytes);
-        }
-
-        private static int FourCCToInt(string fourCCString)
-        {
-            byte[] bytes = Encoding.Default.GetBytes(fourCCString);
-            return BitConverter.ToInt32(bytes, 0);
-        }
-        private static string GetWaveFileChunkInformation(ReadOnlyCollection<WaveFileChunk> chunks)
-        {
-
-            var writer = new StringWriter();
-            foreach (var chunk in chunks)
-            {
-                if (chunk is FmtChunk)
-                {
-                    writer.Write(" FormatChunk ");
-                    writer.Write(" ID: \"{0}\"", IntToFourCC(chunk.ChunkID));
-                    writer.Write(", Format: {0}", ((FmtChunk)chunk).WaveFormat);
-                    writer.Write(", DataSize: {0}", ((FmtChunk)chunk).ChunkDataSize);
-                    writer.Write(", StartPos: {0}", ((FmtChunk)chunk).StartPosition);
-                    writer.Write(", EndPos: {0}", ((FmtChunk)chunk).EndPosition);
-                }
-                else if (chunk is DataChunk)
-                {
-                    writer.Write(" DataChunk ");
-                    writer.Write(" ID: \"{0}\"", IntToFourCC(chunk.ChunkID));
-                    writer.Write(", DataSize: {0}", ((DataChunk)chunk).ChunkDataSize);
-                    writer.Write(", DataStartPos: {0}", ((DataChunk)chunk).DataStartPosition);
-                    writer.Write(", DataEndPos: {0}", ((DataChunk)chunk).DataEndPosition);
-                }
-                else
-                {
-                    writer.Write(" UnknownChunk ");
-                    writer.Write(" ID: \"{0}\"", IntToFourCC(chunk.ChunkID));
-                    writer.Write(" DataSize: {0}", chunk.ChunkDataSize);
-                    writer.Write(", StartPos: {0}", chunk.StartPosition);
-                    writer.Write(", EndPos: {0}", chunk.EndPosition);
-                }
-            }
-            return writer.ToString();
         }
 
         private static string GetSpeakerPositionInformation(uint speakerPositionMask)

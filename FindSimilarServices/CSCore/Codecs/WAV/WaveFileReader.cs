@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using CommonUtils.Audio;
+using Serilog;
 
 namespace CSCore.Codecs.WAV
 {
@@ -58,6 +60,8 @@ namespace CSCore.Codecs.WAV
             }
 
             _chunks = ReadChunks(stream);
+            Log.Verbose(GetWaveFileChunkInformation(_chunks));
+
             _dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
             if (_dataChunk == null)
                 throw new ArgumentException("The specified stream does not contain any data chunks.", "stream");
@@ -215,5 +219,42 @@ namespace CSCore.Codecs.WAV
         {
             Dispose(false);
         }
+
+        /// <summary>
+        /// Return a string describing the chunks found in the file
+        /// </summary>
+        /// <param name="chunks"></param>
+        /// <returns></returns>
+        public static string GetWaveFileChunkInformation(List<WaveFileChunk> chunks)
+        {
+            var writer = new StringWriter();
+            foreach (var chunk in chunks)
+            {
+                if (chunk is FmtChunk)
+                {
+                    writer.Write("Format chunk: \"{0}\": ", FourCC.FromFourCC(chunk.ChunkID));
+                    writer.Write(" Format: {0}", ((FmtChunk)chunk).WaveFormat);
+                    writer.Write(", Data size: {0}", ((FmtChunk)chunk).ChunkDataSize);
+                    writer.Write(", Start pos: {0}", ((FmtChunk)chunk).StartPosition);
+                    writer.Write(", End pos: {0}\n", ((FmtChunk)chunk).EndPosition);
+                }
+                else if (chunk is DataChunk)
+                {
+                    writer.Write("Data chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID));
+                    writer.Write(", Data size: {0}", ((DataChunk)chunk).ChunkDataSize);
+                    writer.Write(", Data start pos: {0}", ((DataChunk)chunk).DataStartPosition);
+                    writer.Write(", Data end pos: {0}\n", ((DataChunk)chunk).DataEndPosition);
+                }
+                else
+                {
+                    writer.Write("Unknown chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID));
+                    writer.Write(", Data size: {0}", chunk.ChunkDataSize);
+                    writer.Write(", Start pos: {0}", chunk.StartPosition);
+                    writer.Write(", End pos: {0}\n", chunk.EndPosition);
+                }
+            }
+            return writer.ToString();
+        }
+
     }
 }
