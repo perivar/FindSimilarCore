@@ -84,6 +84,7 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
+            /*  
             // sox command to test failed audio files
             // sox --i -V6 "FILE"
             var testAudioService = new FindSimilarAudioService();
@@ -93,7 +94,6 @@ namespace FindSimilar
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data10.wav", data10.Samples, sampleRate);
 
             return 0;
-            /*  
                         // OGG within wav container fest files
                         var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
                         SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08.wav", data08.Samples, sampleRate);
