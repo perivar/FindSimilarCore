@@ -22,6 +22,7 @@ namespace CSCore.Codecs.ADPCM
 
         private bool _disposed;
         private Stream _stream;
+        private readonly long _length;
         private readonly bool _closeStream;
 
         /// <summary>
@@ -153,11 +154,19 @@ namespace CSCore.Codecs.ADPCM
             {
                 _decoder = decoder;
             }
+            else
+            {
+                throw new ArgumentException("Could not start Adpcm decoder!");
+            }
 
             // set the format identifiers to what this class returns
             waveFormat.BitsPerSample = 16; // originally 4
             waveFormat.WaveFormatTag = AudioEncoding.Pcm; // originally adpcm
             _waveFormat = waveFormat;
+
+            // calculate byte length when 16 bits per sample
+            double duration = ((double)audioFormat.SamplesPerChannel / (double)audioFormat.SampleRate);
+            _length = (long)(duration * audioFormat.SampleRate * audioFormat.Channels * 2); // 2 bytes per sample
 
             _stream = stream;
         }
@@ -241,7 +250,7 @@ namespace CSCore.Codecs.ADPCM
         /// </summary>
         public long Length
         {
-            get { return 0; }
+            get { return _length; }
         }
 
         /// <summary>

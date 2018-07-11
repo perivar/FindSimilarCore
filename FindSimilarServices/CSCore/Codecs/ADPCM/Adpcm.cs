@@ -213,13 +213,13 @@ namespace CSCore.Codecs.ADPCM
                     break;
             }
 
-            Log.Verbose("Adpcm: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockAlign: {3}, samplesPerBlock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
-
             if (state.SamplesPerBlock == 0)
             {
                 Console.Error.WriteLine("Error computing number of samples per block");
                 return false;
             }
+
+            Log.Verbose("Adpcm OpenDecoder: samplerate: {0}Hz, channels: {1}, bits/sample: {2}, blockAlign: {3}, samplesPerBlock: {4}", format.SampleRate, format.Channels, format.BitsPerSample, state.BlockAlign, state.SamplesPerBlock);
 
             decoder.State = state;
             return true;

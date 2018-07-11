@@ -251,9 +251,7 @@ namespace CSCore
         /// </summary>
         internal protected virtual void UpdateProperties()
         {
-            // PIN: Added to ensure this doesn't return 0 when BitsPerSample is less than 8 (e.g. for adpcm)
-            double d = (double)BitsPerSample / (double)8;
-            BlockAlign = (int)(d * Channels);
+            BlockAlign = (BitsPerSample / 8) * Channels;
             BytesPerSecond = BlockAlign * SampleRate;
         }
 

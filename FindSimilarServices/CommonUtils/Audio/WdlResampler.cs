@@ -81,7 +81,7 @@ namespace CommonUtils.Audio
             m_filtercnt = (m_sincsize != 0) ? 0 : (filtercnt <= 0 ? 0 : filtercnt >= WDL_RESAMPLE_MAX_FILTERS ? WDL_RESAMPLE_MAX_FILTERS : filtercnt);
             m_interp = interp && (m_sincsize == 0);
 
-            Log.Verbose(String.Format("setting interp={0}, filtercnt={1}, sinc={2},{3}\n", m_interp, m_filtercnt, m_sincsize, m_sincoversize));
+            Log.Verbose(String.Format("WdlResampler SetMode: setting interp={0}, filtercnt={1}, sinc={2},{3}\n", m_interp, m_filtercnt, m_sincsize, m_sincoversize));
 
             if (m_sincsize == 0)
             {

@@ -60,7 +60,7 @@ namespace CSCore.Codecs.WAV
             }
 
             _chunks = ReadChunks(stream);
-            Log.Verbose(GetWaveFileChunkInformation(_chunks));
+            Log.Verbose(GetWaveFileChunkInformation(Chunks));
 
             _dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
             if (_dataChunk == null)
@@ -129,7 +129,8 @@ namespace CSCore.Codecs.WAV
 
                     if (value > Length || value < 0)
                         throw new ArgumentOutOfRangeException("value", "The position must not be bigger than the length or less than zero.");
-                    value -= (value % WaveFormat.BlockAlign);
+
+                    if (WaveFormat.BlockAlign > 0) value -= (value % WaveFormat.BlockAlign);
                     _stream.Position = value + _dataChunk.DataStartPosition;
                 }
             }
@@ -225,7 +226,7 @@ namespace CSCore.Codecs.WAV
         /// </summary>
         /// <param name="chunks"></param>
         /// <returns></returns>
-        public static string GetWaveFileChunkInformation(List<WaveFileChunk> chunks)
+        public static string GetWaveFileChunkInformation(ReadOnlyCollection<WaveFileChunk> chunks)
         {
             var writer = new StringWriter();
             foreach (var chunk in chunks)
