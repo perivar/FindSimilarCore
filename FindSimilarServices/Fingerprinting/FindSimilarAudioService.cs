@@ -97,15 +97,22 @@ namespace FindSimilarServices.Audio
         public override float GetLengthInSeconds(string pathToSourceFile)
         {
             float duration = 0;
-            
+
             lock (_lockObj)
             {
                 try
                 {
                     using (IWaveSource soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile))
                     {
-                        var time = soundSource.GetLength();
-                        duration = (float)time.TotalSeconds;
+                        if (soundSource != null)
+                        {
+                            var time = soundSource.GetLength();
+                            duration = (float)time.TotalSeconds;
+                        }
+                        else
+                        {
+                            throw new NotSupportedException("No working codecs found!");
+                        }
                     }
                 }
                 catch (System.Exception e)

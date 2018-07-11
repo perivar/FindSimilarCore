@@ -151,7 +151,7 @@ namespace CSCore.Codecs
                         }
                         catch (Exception ex)
                         {
-                            Log.Verbose(ex.Message);
+                            Log.Warning(ex.Message);
                         }
                     }
                 }
