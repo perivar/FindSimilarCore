@@ -4,17 +4,17 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using CommonUtils.Audio;
 using CSCore;
-using CSCore.Codecs.WAV;
 using Serilog;
 
-namespace CSCore.Codecs.ADPCM
+namespace CSCore.Codecs.WAV
 {
-    public class WavExtensibleSource : IWaveSource
+    public class WavExtendedSource : IWaveSource
     {
         [Flags]
-        public enum ChannelPositions : uint
+        public enum Channels : uint
         {
             FrontLeft = 0x1,
             FrontRight = 0x2,
@@ -41,16 +41,17 @@ namespace CSCore.Codecs.ADPCM
         private readonly WaveFormat _waveFormat;
         private readonly AudioFormat _audioFormat;
         private readonly ReadOnlyCollection<WaveFileChunk> _chunks;
+        private readonly DataChunk _dataChunk;
 
         private bool _disposed;
         private Stream _stream;
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="WavExtensibleSource" /> class.
+        ///     Initializes a new instance of the <see cref="FourCCToInt" /> class.
         /// </summary>
         /// <param name="stream"><see cref="Stream" /> which contains raw waveform-audio data.</param>
         /// <param name="waveFormat">The format of the waveform-audio data within the <paramref name="stream" />.</param>
-        public WavExtensibleSource(Stream stream, WaveFormat waveFormat, ReadOnlyCollection<WaveFileChunk> chunks)
+        public WavExtendedSource(Stream stream, WaveFormat waveFormat, ReadOnlyCollection<WaveFileChunk> chunks)
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
@@ -65,6 +66,7 @@ namespace CSCore.Codecs.ADPCM
             }
 
             this._chunks = chunks;
+            Log.Verbose(GetWaveFileChunkInformation(chunks));
 
             // check format
             var audioFormat = new AudioFormat();
@@ -102,6 +104,13 @@ namespace CSCore.Codecs.ADPCM
                         }
 
                         audioFormat.SpeakerPositionMask = reader.ReadUInt32();
+                        if (audioFormat.SpeakerPositionMask == 0)
+                        {
+                            // no mask given
+                            audioFormat.SpeakerPositionMask = GetSpeakerMask(audioFormat.Channels);
+                        }
+
+                        Log.Verbose(GetSpeakerPositionInformation(audioFormat.SpeakerPositionMask));
 
                         // read GUID, including the data format code 
                         // The first two bytes of the GUID form the sub-code specifying the data format code, e.g. WAVE_FORMAT_PCM. 
@@ -120,6 +129,7 @@ namespace CSCore.Codecs.ADPCM
                 if (dataChunk != null)
                 {
                     audioFormat.BytesDataSize = dataChunk.ChunkDataSize;
+                    _dataChunk = dataChunk;
                 }
                 else
                 {
@@ -136,8 +146,91 @@ namespace CSCore.Codecs.ADPCM
             }
         }
 
+        private static string IntToFourCC(int fourCCInt)
+        {
+            byte[] bytes = BitConverter.GetBytes(fourCCInt);
+            return Encoding.Default.GetString(bytes);
+        }
+
+        private static int FourCCToInt(string fourCCString)
+        {
+            byte[] bytes = Encoding.Default.GetBytes(fourCCString);
+            return BitConverter.ToInt32(bytes, 0);
+        }
+        private static string GetWaveFileChunkInformation(ReadOnlyCollection<WaveFileChunk> chunks)
+        {
+
+            var writer = new StringWriter();
+            foreach (var chunk in chunks)
+            {
+                if (chunk is FmtChunk)
+                {
+                    writer.Write(" FormatChunk ");
+                    writer.Write(" ID: \"{0}\"", IntToFourCC(chunk.ChunkID));
+                    writer.Write(", Format: {0}", ((FmtChunk)chunk).WaveFormat);
+                    writer.Write(", DataSize: {0}", ((FmtChunk)chunk).ChunkDataSize);
+                    writer.Write(", StartPos: {0}", ((FmtChunk)chunk).StartPosition);
+                    writer.Write(", EndPos: {0}", ((FmtChunk)chunk).EndPosition);
+                }
+                else if (chunk is DataChunk)
+                {
+                    writer.Write(" DataChunk ");
+                    writer.Write(" ID: \"{0}\"", IntToFourCC(chunk.ChunkID));
+                    writer.Write(", DataSize: {0}", ((DataChunk)chunk).ChunkDataSize);
+                    writer.Write(", DataStartPos: {0}", ((DataChunk)chunk).DataStartPosition);
+                    writer.Write(", DataEndPos: {0}", ((DataChunk)chunk).DataEndPosition);
+                }
+                else
+                {
+                    writer.Write(" UnknownChunk ");
+                    writer.Write(" ID: \"{0}\"", IntToFourCC(chunk.ChunkID));
+                    writer.Write(" DataSize: {0}", chunk.ChunkDataSize);
+                    writer.Write(", StartPos: {0}", chunk.StartPosition);
+                    writer.Write(", EndPos: {0}", chunk.EndPosition);
+                }
+            }
+            return writer.ToString();
+        }
+
+        private static string GetSpeakerPositionInformation(uint speakerPositionMask)
+        {
+            var writer = new StringWriter();
+            writer.Write("SpeakerPositions: ");
+            foreach (var ch in Enum.GetValues(typeof(Channels)))
+            {
+                if ((speakerPositionMask & (uint)ch) == (uint)ch)
+                {
+                    writer.Write((Channels)ch);
+                    writer.Write(",");
+                }
+            }
+            return writer.ToString();
+        }
+
+        private static uint GetSpeakerMask(int channelCount)
+        {
+            // Assume a setup of: FL, FR, FC, LFE, BL, BR, SL & SR. 
+            // Otherwise, MCL will use: FL, FR, FC, LFE, BL, BR, FLoC & FRoC.
+            if (channelCount == 8)
+            {
+                return 0x63F;
+            }
+
+            // Otherwise follow MCL.
+            uint mask = 0;
+            var channels = new Channels[18];
+            Enum.GetValues(typeof(Channels)).CopyTo(channels, 0);
+
+            for (var i = 0; i < channelCount; i++)
+            {
+                mask += (uint)channels[i];
+            }
+
+            return mask;
+        }
+
         /// <summary>
-        ///     Reads a sequence of bytes from the <see cref="WavExtensibleSource" /> and advances the position within the stream by the
+        ///     Reads a sequence of bytes from the <see cref="FourCCToInt" /> and advances the position within the stream by the
         ///     number of bytes read.
         /// </summary>
         /// <param name="buffer">
@@ -155,12 +248,12 @@ namespace CSCore.Codecs.ADPCM
         {
             lock (_lockObj)
             {
-                var inBuffer = new byte[count];
-                int readCount = _stream.Read(inBuffer, 0, count);
-                if (readCount > 0)
-                {
-                }
-                return readCount;
+                count = (int)Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
+                count -= count % WaveFormat.BlockAlign;
+                if (count <= 0)
+                    return 0;
+
+                return _stream.Read(buffer, offset, count);
             }
         }
 
@@ -185,24 +278,26 @@ namespace CSCore.Codecs.ADPCM
         /// </summary>
         public long Position
         {
-            get { return _stream.Position; }
+            get { return _stream != null ? _stream.Position - _dataChunk.DataStartPosition : 0; }
             set
             {
                 lock (_lockObj)
                 {
                     if (value > Length || value < 0)
                         throw new ArgumentOutOfRangeException("value", "The position must not be bigger than the length or less than zero.");
-                    _stream.Position = value;
+
+                    value -= (value % WaveFormat.BlockAlign);
+                    _stream.Position = value + _dataChunk.DataStartPosition;
                 }
             }
         }
 
         /// <summary>
-        ///     Gets the length of the <see cref="WavExtensibleSource" /> in bytes.
+        ///     Gets the length of the <see cref="FourCCToInt" /> in bytes.
         /// </summary>
         public long Length
         {
-            get { return 0; }
+            get { return _dataChunk != null ? _dataChunk.ChunkDataSize : 0; }
         }
 
         public void Dispose()

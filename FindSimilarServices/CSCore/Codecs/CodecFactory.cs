@@ -34,7 +34,7 @@ namespace CSCore.Codecs
              if (res.WaveFormat.WaveFormatTag == AudioEncoding.Extensible)
              {
                  res.Dispose();
-                 res = new WavExtensibleSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
+                 res = new WavExtendedSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
              }
              else if (res.WaveFormat.WaveFormatTag != AudioEncoding.Pcm &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
