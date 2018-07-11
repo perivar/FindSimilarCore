@@ -299,7 +299,7 @@ namespace CSCore.Codecs.ADPCM
          *  samplesPerBlock which would go into a block of size blockAlign
          *  Yes, it is confusing usage.
          */
-        private int MSSamplesLength(
+        private static int MSSamplesLength(
                 int dataLen,
                 int chans,
                 int blockAlign,
@@ -318,17 +318,17 @@ namespace CSCore.Codecs.ADPCM
                 n = 0;
                 m = blockAlign;
             }
-            if (m >= (int)(7 * chans))
+            if (m >= (7 * chans))
             {
-                m -= 7 * chans;          /* bytes beyond block-header */
-                m = (2 * m) / chans + 2;   /* nibbles/chans + 2 in header */
+                m -= 7 * chans;             /* bytes beyond block-header */
+                m = (2 * m) / chans + 2;    /* nibbles/chans + 2 in header */
                 if (samplesPerBlock > 0 && m > samplesPerBlock) m = samplesPerBlock;
                 n += m;
             }
             return n;
         }
 
-        private int MSBytesPerBlock(
+        private static int MSBytesPerBlock(
             int channels,
             int samplesPerBlock)
         {
@@ -348,7 +348,7 @@ namespace CSCore.Codecs.ADPCM
          *  samplesPerBlock which would go into a block of size blockAlign
          *  Yes, it is confusing.
          */
-        private int ImaSamplesLength(
+        private static int ImaSamplesLength(
           int dataLen,
           int chans,
           int blockAlign,
@@ -384,7 +384,7 @@ namespace CSCore.Codecs.ADPCM
          * return minimum blocksize which would be required
          * to encode number of chans with given samplesPerBlock
          */
-        private int ImaBytesPerBlock(
+        private static int ImaBytesPerBlock(
           int chans,
           int samplesPerBlock
         )

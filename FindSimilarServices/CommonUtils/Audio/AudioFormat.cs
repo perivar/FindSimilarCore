@@ -12,13 +12,13 @@ namespace CommonUtils.Audio
         private int _sampleRate;
         private int _bytesPerSecond;
 
-        private short _blockAlign;
+        private int _blockAlign;
         private short _bitsPerSample;
         private short _extraSize;
-        private short _samplesPerBlock;
-        private short _bytesPerBlock;
+        private int _samplesPerBlock;
+        private int _bytesPerBlock;
         private short _coefficients;
-        private short _samplesPerChannel;
+        private int _samplesPerChannel;
         private long _bytesDataSize;
         private int _numberOfValidBits;
         private uint _speakerPositionMask;
@@ -109,7 +109,7 @@ namespace CommonUtils.Audio
             get { return _samplesPerBlock; }
             protected internal set
             {
-                _samplesPerBlock = (short)value;
+                _samplesPerBlock = value;
             }
         }
 
@@ -121,7 +121,7 @@ namespace CommonUtils.Audio
             get { return _bytesPerBlock; }
             protected internal set
             {
-                _bytesPerBlock = (short)value;
+                _bytesPerBlock = value;
             }
         }
 
@@ -145,7 +145,7 @@ namespace CommonUtils.Audio
             get { return _samplesPerChannel; }
             protected internal set
             {
-                _samplesPerChannel = (short)value;
+                _samplesPerChannel = value;
             }
         }
 
@@ -164,7 +164,10 @@ namespace CommonUtils.Audio
         public virtual int NumberOfValidBits
         {
             get { return _numberOfValidBits; }
-            protected internal set { _numberOfValidBits = value; }
+            protected internal set
+            {
+                _numberOfValidBits = value;
+            }
         }
 
 
@@ -196,7 +199,10 @@ namespace CommonUtils.Audio
         public virtual uint SpeakerPositionMask
         {
             get { return _speakerPositionMask; }
-            protected internal set { _speakerPositionMask = value; }
+            protected internal set
+            {
+                _speakerPositionMask = value;
+            }
         }
 
         /// <summary>
@@ -205,7 +211,10 @@ namespace CommonUtils.Audio
         public virtual AudioEncoding Encoding
         {
             get { return _encoding; }
-            protected internal set { _encoding = value; }
+            protected internal set
+            {
+                _encoding = value;
+            }
         }
 
         /// <summary>
@@ -214,7 +223,10 @@ namespace CommonUtils.Audio
         public virtual AudioEncoding SubEncoding
         {
             get { return _subEncoding; }
-            protected internal set { _subEncoding = value; }
+            protected internal set
+            {
+                _subEncoding = value;
+            }
         }
 
         /// <summary>
