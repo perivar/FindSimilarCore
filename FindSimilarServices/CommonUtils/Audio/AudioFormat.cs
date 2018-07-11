@@ -4,6 +4,7 @@ using CSCore;
 
 namespace CommonUtils.Audio
 {
+    // http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
     public class AudioFormat : ICloneable, IEquatable<AudioFormat>
     {
         private AudioEncoding _encoding;
@@ -19,6 +20,9 @@ namespace CommonUtils.Audio
         private short _coefficients;
         private short _samplesPerChannel;
         private long _bytesDataSize;
+        private int _numberOfValidBits;
+        private uint _speakerPositionMask;
+        private AudioEncoding _subEncoding;
 
         /// <summary>
         /// Gets the number of channels in the waveform-audio data. Mono data uses one channel and stereo data uses two
@@ -157,6 +161,44 @@ namespace CommonUtils.Audio
             }
         }
 
+        public virtual int NumberOfValidBits
+        {
+            get { return _numberOfValidBits; }
+            protected internal set { _numberOfValidBits = value; }
+        }
+
+
+        /// <summary>
+        /// The loudspeaker position mask uses 18 bits, each bit corresponding to a speaker position 
+        /// (e.g. Front Left or Top Back Right), to indicate the channel to speaker mapping. 
+        /// An all-zero field indicates that channels are mapped to outputs in order: 
+        /// first channel to first output, second channel to second output, etc.
+        /// Order |  Bit  | Channel
+        /// 1.        0x1 Front Left
+        /// 2.        0x2 Front Right
+        /// 3.        0x4 Front Center
+        /// 4.        0x8 Low Frequency (LFE)
+        /// 5.       0x10 Back Left (Surround Back Left)
+        /// 6.       0x20 Back Right (Surround Back Right)
+        /// 7.       0x40 Front Left of Center
+        /// 8.       0x80 Front Right of Center
+        /// 9.      0x100 Back Center
+        /// 10.      0x200 Side Left (Surround Left)
+        /// 11.      0x400 Side Right (Surround Right)
+        /// 12.      0x800 Top Center
+        /// 13.     0x1000 Top Front Left
+        /// 14.     0x2000 Top Front Center
+        /// 15.     0x4000 Top Front Right
+        /// 16.     0x8000 Top Back Left
+        /// 17.    0x10000 Top Back Center
+        /// 18.    0x20000 Top Back Right
+        ///</summary>
+        public virtual uint SpeakerPositionMask
+        {
+            get { return _speakerPositionMask; }
+            protected internal set { _speakerPositionMask = value; }
+        }
+
         /// <summary>
         /// Gets the waveform-audio format type.
         /// </summary>
@@ -164,6 +206,15 @@ namespace CommonUtils.Audio
         {
             get { return _encoding; }
             protected internal set { _encoding = value; }
+        }
+
+        /// <summary>
+        /// Gets the waveform-audio sub-format type.
+        /// </summary>
+        public virtual AudioEncoding SubEncoding
+        {
+            get { return _subEncoding; }
+            protected internal set { _subEncoding = value; }
         }
 
         /// <summary>

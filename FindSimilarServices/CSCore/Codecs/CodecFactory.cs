@@ -31,7 +31,12 @@ namespace CSCore.Codecs
             Register("wave", new CodecFactoryEntry(s =>
          {
              IWaveSource res = new WaveFileReader(s);
-             if (res.WaveFormat.WaveFormatTag != AudioEncoding.Pcm &&
+             if (res.WaveFormat.WaveFormatTag == AudioEncoding.Extensible)
+             {
+                 res.Dispose();
+                 res = new WavExtensibleSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
+             }
+             else if (res.WaveFormat.WaveFormatTag != AudioEncoding.Pcm &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
                  res.WaveFormat.WaveFormatTag != AudioEncoding.Extensible)
              {
@@ -113,7 +118,7 @@ namespace CSCore.Codecs
         /// <param name="filename">Filename of the specified file.</param>
         /// <returns>Fully initialized <see cref="IWaveSource" /> instance which is able to decode the specified file.</returns>
         /// <exception cref="NotSupportedException">The codec of the specified file is not supported.</exception>
-        public IWaveSource  GetCodec(string filename)
+        public IWaveSource GetCodec(string filename)
         {
             if (String.IsNullOrEmpty(filename))
                 throw new ArgumentNullException("filename");
