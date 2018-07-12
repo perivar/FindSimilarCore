@@ -248,7 +248,7 @@ namespace CSCore.Codecs.WAV
                 }
                 else
                 {
-                    writer.Write("Unknown chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID));
+                    writer.Write("Unknown chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID).Replace("\0", string.Empty));
                     writer.Write(", Data size: {0}", chunk.ChunkDataSize);
                     writer.Write(", Start pos: {0}", chunk.StartPosition);
                     writer.Write(", End pos: {0}\n", chunk.EndPosition);

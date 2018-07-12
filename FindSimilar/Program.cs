@@ -217,7 +217,15 @@ namespace FindSimilar
                 return 1;
             });
 
-            return app.Execute(args);
+            try
+            {
+                return app.Execute(args);
+            }
+            catch (System.Exception)
+            {
+                Console.WriteLine("Command not recognized {0}.", args);
+                return 1;
+            }
         }
 
         private static void ProcessDir(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)
