@@ -192,10 +192,9 @@ namespace CSCore.Codecs.ADPCM
             {
                 CheckForDisposed();
 
-                // The output buffer, our PCM file, after encoding has to be allocated to buffer.length / 4 
-                // (16 bits per sample to 4 bits per sample)
-                var inBuffer = new byte[count / 4];
-                int readCount = _stream.Read(inBuffer, 0, count / 4);
+                // use block align as buffer length
+                var inBuffer = new byte[_audioFormat.BlockAlign];
+                int readCount = _stream.Read(inBuffer, 0, _audioFormat.BlockAlign);
                 if (readCount > 0)
                 {
                     var outBuffer = Adpcm.DecodeAudio(_decoder, inBuffer, readCount);
