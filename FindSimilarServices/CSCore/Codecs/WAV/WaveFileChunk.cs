@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using CommonUtils.Audio;
+using Serilog;
 
 namespace CSCore.Codecs.WAV
 {
@@ -62,10 +64,14 @@ namespace CSCore.Codecs.WAV
             int id = reader.ReadInt32();
             stream.Position -= 4;
 
+            Log.Verbose("Processing chunk: {0}", FourCC.FromFourCC(id));
+
             if (id == FmtChunk.FmtChunkID)
                 return new FmtChunk(reader);
             if (id == DataChunk.DataChunkID)
                 return new DataChunk(reader);
+            if (id == ListChunk.ListChunkID)
+                return new ListChunk(reader);
             return new WaveFileChunk(reader);
         }
 

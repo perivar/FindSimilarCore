@@ -246,6 +246,17 @@ namespace CSCore.Codecs.WAV
                     writer.Write(", Data start pos: {0}", ((DataChunk)chunk).DataStartPosition);
                     writer.Write(", Data end pos: {0}\n", ((DataChunk)chunk).DataEndPosition);
                 }
+                else if (chunk is ListChunk)
+                {
+                    writer.Write("List chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID));
+                    if (((ListChunk)chunk).InfoTags != null)
+                    {
+                        foreach (var infoTag in ((ListChunk)chunk).InfoTags)
+                        {
+                            writer.Write(", {0} = {1}", infoTag.Key, infoTag.Value);
+                        }
+                    }
+                }
                 else
                 {
                     writer.Write("Unknown chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID).Replace("\0", string.Empty));

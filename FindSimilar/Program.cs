@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using FindSimilarServices.Audio;
 using CommonUtils.Audio;
+using Serilog.Events;
 
 namespace FindSimilar
 {
@@ -84,12 +85,17 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
-
             /*  
+
             // sox command to test failed audio files
             // sox --i -V6 "FILE"
+
             var testAudioService = new FindSimilarAudioService();
             int sampleRate = 32000;
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console()
+                .CreateLogger();
 
             // long adpcm file
             var data11 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Timbaland ft One republic - Apologize\STR_3c_Long.wav", sampleRate, 0, 0);
