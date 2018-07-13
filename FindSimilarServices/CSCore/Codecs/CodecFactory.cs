@@ -11,6 +11,7 @@ using CSCore.Codecs.MP3;
 using CSCore.Codecs.OGG;
 using CSCore.Codecs.ADPCM;
 using Serilog;
+using CSCore.Codecs.LAW;
 
 namespace CSCore.Codecs
 {
@@ -48,6 +49,11 @@ namespace CSCore.Codecs
                      case 0x0062: // Duck DK3 IMA ADPCM 
                          res.Dispose();
                          res = new AdpcmSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
+                         break;
+                     case 0x0006: // Alaw
+                     case 0x0007: // MuLaw
+                         res.Dispose();
+                         res = new LawSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
                          break;
                      case 0x674f: // OGG_VORBIS_MODE_1 "Og" Original stream compatible
                      case 0x676f: // OGG_VORBIS_MODE_1_PLUS "og" Original stream compatible

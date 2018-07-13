@@ -48,9 +48,17 @@ namespace FindSimilarServices.Audio
             resampler.SetFilterParms();
 
             // feed mode
+            // there are two approaches to resampling:
+            //  - input driven and output driven. 
+            // With input driven, every time you get new audio you give it to the resampler, 
+            // and then read out what it got converted to. 
+            // With output driven, you assume that the input is fully available (e.g. a file) 
+            // and keep reading from the output until you get to the end.
+
             // if true, that means the first parameter to ResamplePrepare 
             // will specify however much input you have, not how much you want
-            resampler.SetFeedMode(true); // input driven            
+            resampler.SetFeedMode(true); // input driven       
+            //resampler.SetFeedMode(false); // output driven     
         }
 
         private float[] ToTargetSampleRate(float[] monoSamples, int sourceSampleRate, int newSampleRate)
@@ -67,6 +75,7 @@ namespace FindSimilarServices.Audio
             {
                 // Use WDL Resampler
                 // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
+                // https://github.com/naudio/NAudio/blob/master/NAudio/Wave/SampleProviders/WdlResamplingSampleProvider.cs
                 resampler.SetRates(sourceSampleRate, newSampleRate);
 
                 float[] buffer = audioSamples;

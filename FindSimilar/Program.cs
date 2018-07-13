@@ -85,7 +85,6 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
-            /*  
 
             // sox command to test failed audio files
             // sox --i -V6 "FILE"
@@ -97,11 +96,19 @@ namespace FindSimilar
                 .WriteTo.Console()
                 .CreateLogger();
 
-            // long adpcm file
-            var data11 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Timbaland ft One republic - Apologize\STR_3c_Long.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data11.wav", data11.Samples, sampleRate);
+            // MuLaw files
+            // var data12 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Ed Sheeran - Shape Of You\Snare (2).wav", sampleRate, 0, 0);
+            // SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data12.wav", data12.Samples, sampleRate);
+
+            // testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", @"C:\Users\pnerseth\My Projects\data13-original.wav");
+            var data13 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data13.wav", data13.Samples, sampleRate);
+
+            // var data14 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Rihanna - We Found Love ft. Calvin Harris by www.aronize.tk\DNC_Hat_4.wav", sampleRate, 0, 0);
+            // SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data14.wav", data14.Samples, sampleRate);
 
             return 0;
+            /*  
 
             // OGG within wav container fest files
             var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
@@ -135,6 +142,10 @@ namespace FindSimilar
 
             var data07 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07.wav", data07.Samples, sampleRate);
+
+            // long adpcm file
+            var data11 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Timbaland ft One republic - Apologize\STR_3c_Long.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data11.wav", data11.Samples, sampleRate);
 
             // Wav 24 bit extensible format
             var data10 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\HTMEM-Another-Walkthrough-To-An-EDM-Beat\mhak kick 209 G#.wav", sampleRate, 0, 0);
