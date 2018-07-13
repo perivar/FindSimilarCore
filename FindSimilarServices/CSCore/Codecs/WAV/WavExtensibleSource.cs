@@ -127,7 +127,7 @@ namespace CSCore.Codecs.WAV
                 var dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
                 if (dataChunk != null)
                 {
-                    audioFormat.BytesDataSize = dataChunk.ChunkDataSize;
+                    audioFormat.DataChunkSize = dataChunk.ChunkDataSize;
                     _dataChunk = dataChunk;
                 }
                 else
@@ -199,6 +199,7 @@ namespace CSCore.Codecs.WAV
         {
             lock (_lockObj)
             {
+                // check that we are reading the maximum amount of bytes left that is a multiple of the blockalign count
                 count = (int)Math.Min(count, _dataChunk.DataEndPosition - _stream.Position);
                 count -= count % WaveFormat.BlockAlign;
                 if (count <= 0)

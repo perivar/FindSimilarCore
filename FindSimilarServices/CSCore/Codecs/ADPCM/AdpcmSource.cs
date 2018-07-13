@@ -127,7 +127,9 @@ namespace CSCore.Codecs.ADPCM
             var dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
             if (dataChunk != null)
             {
-                audioFormat.BytesDataSize = dataChunk.ChunkDataSize;
+                audioFormat.DataChunkSize = dataChunk.ChunkDataSize;
+                audioFormat.DataStartPosition = dataChunk.DataStartPosition;
+                audioFormat.DataEndPosition = dataChunk.DataEndPosition;
 
                 switch (waveFormat.WaveFormatTag)
                 {
@@ -192,9 +194,21 @@ namespace CSCore.Codecs.ADPCM
             {
                 CheckForDisposed();
 
-                // use block align as buffer length
-                var inBuffer = new byte[_audioFormat.BlockAlign];
-                int readCount = _stream.Read(inBuffer, 0, _audioFormat.BlockAlign);
+                // check that we are reading the maximum amount of bytes left 
+                // which is a multiple of the blockalign count 
+                count = (int)Math.Min(count, _audioFormat.DataEndPosition - _stream.Position);
+                // however the returned buffer need to fit within the passed buffer length
+                // since adpcm returns approx. 4 times the length of the original stream
+                if (count * 4 > buffer.Length)
+                {
+                    count /= 4;
+                }
+                count -= count % _audioFormat.BlockAlign;
+                if (count <= 0)
+                    return 0;
+
+                var inBuffer = new byte[count];
+                int readCount = _stream.Read(inBuffer, 0, count);
                 if (readCount > 0)
                 {
                     var outBuffer = Adpcm.DecodeAudio(_decoder, inBuffer, readCount);

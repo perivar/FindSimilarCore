@@ -11,7 +11,6 @@ namespace CommonUtils.Audio
         private short _channels;
         private int _sampleRate;
         private int _bytesPerSecond;
-
         private int _blockAlign;
         private short _bitsPerSample;
         private short _extraSize;
@@ -19,7 +18,9 @@ namespace CommonUtils.Audio
         private int _bytesPerBlock;
         private short _coefficients;
         private int _samplesPerChannel;
-        private long _bytesDataSize;
+        private long _dataChunkSize;
+        private long _dataStartPosition;
+        private long _dataEndPosition;
         private int _numberOfValidBits;
         private uint _speakerPositionMask;
         private AudioEncoding _subEncoding;
@@ -103,6 +104,7 @@ namespace CommonUtils.Audio
 
         /// <summary>
         /// Get number of samples per block
+        /// Used by ADPCM formats
         /// </summary>
         public virtual int SamplesPerBlock
         {
@@ -115,6 +117,7 @@ namespace CommonUtils.Audio
 
         /// <summary>
         /// Get number of bytes per block
+        /// Used by ADPCM formats
         /// </summary>
         public virtual int BytesPerBlock
         {
@@ -127,6 +130,7 @@ namespace CommonUtils.Audio
 
         /// <summary>
         /// Get number of coefficients
+        /// Used by ADPCM formats
         /// </summary>
         public virtual int Coefficients
         {
@@ -139,6 +143,7 @@ namespace CommonUtils.Audio
 
         /// <summary>
         /// Get number of samples per channel
+        /// Used by ADPCM formats
         /// </summary>
         public virtual int SamplesPerChannel
         {
@@ -152,15 +157,45 @@ namespace CommonUtils.Audio
         /// <summary>
         /// Gets the number of data bytes
         /// </summary>
-        public virtual long BytesDataSize
+        public virtual long DataChunkSize
         {
-            get { return _bytesDataSize; }
+            get { return _dataChunkSize; }
             protected internal set
             {
-                _bytesDataSize = value;
+                _dataChunkSize = value;
             }
         }
 
+        /// <summary>
+        /// Gets the data chunk start position
+        /// </summary>
+        public virtual long DataStartPosition
+        {
+            get { return _dataStartPosition; }
+            protected internal set
+            {
+                _dataStartPosition = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the data chunk end position
+        /// </summary>
+        public virtual long DataEndPosition
+        {
+            get { return _dataEndPosition; }
+            protected internal set
+            {
+                _dataEndPosition = value;
+            }
+        }
+
+
+        /// <summary>
+        /// Return the number of valid bits, used for the 
+        /// Used by the Wav Extensible format
+        /// </summary>
+        /// <value></value>
         public virtual int NumberOfValidBits
         {
             get { return _numberOfValidBits; }
@@ -195,6 +230,7 @@ namespace CommonUtils.Audio
         /// 16.     0x8000 Top Back Left
         /// 17.    0x10000 Top Back Center
         /// 18.    0x20000 Top Back Right
+        /// Used by the Wav Extensible format
         ///</summary>
         public virtual uint SpeakerPositionMask
         {
@@ -219,6 +255,7 @@ namespace CommonUtils.Audio
 
         /// <summary>
         /// Gets the waveform-audio sub-format type.
+        /// Used by the Wav Extensible format
         /// </summary>
         public virtual AudioEncoding SubEncoding
         {
@@ -268,7 +305,7 @@ namespace CommonUtils.Audio
             var builder = new StringBuilder();
             builder.AppendFormat("Reading Wave file: {0} format, {1} channels, {2} samp/sec", _encoding, _channels, _sampleRate);
             builder.AppendLine();
-            builder.AppendFormat("{0} byte/sec, {1} block align, {2} bits/samp, {3} data bytes", _bytesPerSecond, _blockAlign, _bitsPerSample, _bytesDataSize);
+            builder.AppendFormat("{0} byte/sec, {1} block align, {2} bits/samp, {3} data bytes", _bytesPerSecond, _blockAlign, _bitsPerSample, _dataChunkSize);
             builder.AppendLine();
             builder.AppendFormat("{0} Extsize", _extraSize);
             builder.AppendFormat(", {0} Samps/block", _samplesPerBlock);

@@ -98,7 +98,7 @@ namespace CSCore.Codecs.OGG
                 var dataChunk = (DataChunk)chunks.FirstOrDefault(x => x is DataChunk);
                 if (dataChunk != null)
                 {
-                    audioFormat.BytesDataSize = dataChunk.ChunkDataSize;
+                    audioFormat.DataChunkSize = dataChunk.ChunkDataSize;
                 }
                 else
                 {
