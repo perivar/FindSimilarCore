@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using CommonUtils;
 using CommonUtils.Audio;
 using Serilog;
 
@@ -57,6 +58,8 @@ namespace CSCore.Codecs.WAV
 
                 // read form-type (WAVE etc)
                 var field = new string(reader.ReadChars(4));
+
+                Log.Verbose("Processing RIFF. Data size: {0}, field: {1}", chunkSize, field);
             }
 
             _chunks = ReadChunks(stream);
@@ -249,6 +252,9 @@ namespace CSCore.Codecs.WAV
                 else if (chunk is ListChunk)
                 {
                     writer.Write("List chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID));
+                    writer.Write(", Data size: {0}", ((ListChunk)chunk).ChunkDataSize);
+                    writer.Write(", Start pos: {0}", ((ListChunk)chunk).StartPosition);
+                    writer.Write(", End pos: {0} ", ((ListChunk)chunk).EndPosition);
                     if (((ListChunk)chunk).InfoTags != null)
                     {
                         foreach (var infoTag in ((ListChunk)chunk).InfoTags)
@@ -256,10 +262,12 @@ namespace CSCore.Codecs.WAV
                             writer.Write(", {0} = {1}", infoTag.Key, infoTag.Value);
                         }
                     }
+                    writer.Write("\n");
                 }
                 else
                 {
-                    writer.Write("Unknown chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID).Replace("\0", string.Empty));
+                    int id = chunk.ChunkID;
+                    writer.Write("Unknown chunk \"{0}\"", StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id)) ? FourCC.FromFourCC(id) : string.Format("int {0} is not FourCC", id));
                     writer.Write(", Data size: {0}", chunk.ChunkDataSize);
                     writer.Write(", Start pos: {0}", chunk.StartPosition);
                     writer.Write(", End pos: {0}\n", chunk.EndPosition);

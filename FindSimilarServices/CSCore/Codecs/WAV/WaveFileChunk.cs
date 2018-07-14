@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using CommonUtils;
 using CommonUtils.Audio;
 using Serilog;
 
@@ -64,7 +65,7 @@ namespace CSCore.Codecs.WAV
             int id = reader.ReadInt32();
             stream.Position -= 4;
 
-            Log.Verbose("Processing chunk: {0}", FourCC.FromFourCC(id));
+            Log.Verbose("Processing chunk: {0}", StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id)) ? FourCC.FromFourCC(id) : string.Format("int {0} is not FourCC", id));
 
             if (id == FmtChunk.FmtChunkID)
                 return new FmtChunk(reader);

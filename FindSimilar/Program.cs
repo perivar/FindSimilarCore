@@ -85,8 +85,7 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
-            /*  
-
+/* 
             // sox command to test failed audio files
             // sox --i -V6 "FILE"
 
@@ -97,62 +96,64 @@ namespace FindSimilar
                 .WriteTo.Console()
                 .CreateLogger();
 
-            // MuLaw files
-            var data12 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Ed Sheeran - Shape Of You\Snare (2).wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data12.wav", data12.Samples, sampleRate);
-
-            testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", @"C:\Users\pnerseth\My Projects\data13-original.wav");
-            var data13 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data13.wav", data13.Samples, sampleRate);
-
-            var data14 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Rihanna - We Found Love ft. Calvin Harris by www.aronize.tk\DNC_Hat_4.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data14.wav", data14.Samples, sampleRate);
-
-            return 0;
-
-            // OGG within wav container fest files
-            var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08.wav", data08.Samples, sampleRate);
-
-            var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09.wav", data09.Samples, sampleRate);
-
             // OGG test files
             var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data00.wav", data00.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data00-ogg.wav", data00.Samples, sampleRate);
 
             var data01 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Crash 2.ogg", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data01.wav", data01.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data01-ogg.wav", data01.Samples, sampleRate);
 
             var data02 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data02.wav", data02.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data02-ogg.wav", data02.Samples, sampleRate);
 
             // ADPCM test files
             var data03 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data03.wav", data03.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data03-adpcm.wav", data03.Samples, sampleRate);
 
             var data04 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data04.wav", data04.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data04-adpcm.wav", data04.Samples, sampleRate);
 
             var data05 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Documents\Audacity\bass afrpck 8 - fix.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data05.wav", data05.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data05-adpcm.wav", data05.Samples, sampleRate);
 
             var data06 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ms-adpcm.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data06.wav", data06.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data06-adpcm.wav", data06.Samples, sampleRate);
 
             var data07 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\My Projects\snare-ima-adpcm.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07.wav", data07.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data07-adpcm.wav", data07.Samples, sampleRate);
 
-            // long adpcm file
-            var data11 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Timbaland ft One republic - Apologize\STR_3c_Long.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data11.wav", data11.Samples, sampleRate);
+            // OGG within wav container fest files
+            var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data08-oggwav.wav", data08.Samples, sampleRate);
+
+            var data09 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Tutorials\Electro Dance tutorial by Phil Doon\DNC_Kick.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data09-oggwav.wav", data09.Samples, sampleRate);
 
             // Wav 24 bit extensible format
             var data10 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\HTMEM-Another-Walkthrough-To-An-EDM-Beat\mhak kick 209 G#.wav", sampleRate, 0, 0);
-            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data10.wav", data10.Samples, sampleRate);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data10-24bit-extensible.wav", data10.Samples, sampleRate);
 
-                        return 0;
-             */
+            // long adpcm file
+            var data11 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Timbaland ft One republic - Apologize\STR_3c_Long.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data11-adpcm-long.wav", data11.Samples, sampleRate);
+
+            // MuLaw files
+            var data12 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Ed Sheeran - Shape Of You\Snare (2).wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data12-mulaw.wav", data12.Samples, sampleRate);
+
+            testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", @"C:\Users\pnerseth\My Projects\data13-original-mulaw.wav");
+            var data13 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data13-mulaw.wav", data13.Samples, sampleRate);
+
+            var data14 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Rihanna - We Found Love ft. Calvin Harris by www.aronize.tk\DNC_Hat_4.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data14-mulaw.wav", data14.Samples, sampleRate);
+
+            // 24 bit PCM files
+            var data15 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data15-24bit.wav", data15.Samples, sampleRate);
+
+            return 0;
+ */
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";
