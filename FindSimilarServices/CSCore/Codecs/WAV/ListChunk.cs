@@ -63,6 +63,10 @@ namespace CSCore.Codecs.WAV
                         _infoTags.Add(infoKey, infoValue);
                     }
                 }
+
+                // make sure to reset the position to the beginning
+                // since the ReadChunks will seek until the end of this chunk using the ChunkDataSize variable
+                reader.BaseStream.Position = listStartPosition;
             }
         }
 

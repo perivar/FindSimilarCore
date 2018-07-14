@@ -254,7 +254,7 @@ namespace CSCore.Codecs.WAV
                     writer.Write("List chunk \"{0}\"", FourCC.FromFourCC(chunk.ChunkID));
                     writer.Write(", Data size: {0}", ((ListChunk)chunk).ChunkDataSize);
                     writer.Write(", Start pos: {0}", ((ListChunk)chunk).StartPosition);
-                    writer.Write(", End pos: {0} ", ((ListChunk)chunk).EndPosition);
+                    writer.Write(", End pos: {0}", ((ListChunk)chunk).EndPosition);
                     if (((ListChunk)chunk).InfoTags != null)
                     {
                         foreach (var infoTag in ((ListChunk)chunk).InfoTags)

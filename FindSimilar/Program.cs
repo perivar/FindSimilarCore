@@ -85,7 +85,7 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
-/* 
+            /* 
             // sox command to test failed audio files
             // sox --i -V6 "FILE"
 
@@ -95,6 +95,15 @@ namespace FindSimilar
                 .MinimumLevel.Verbose()
                 .WriteTo.Console()
                 .CreateLogger();
+
+            // wav files with PAD sub chunk
+            var data16 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Black Eyed Peas - The Time Mehran Abbasi Reworked Final/VEH3 Snares 026.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data16-pad-chunk.wav", data16.Samples, sampleRate);
+
+            var data17 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Lynda EDM Drums\Crash.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data17-pad-chunk.wav", data17.Samples, sampleRate);
+
+            return 0;
 
             // OGG test files
             var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
@@ -153,7 +162,8 @@ namespace FindSimilar
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data15-24bit.wav", data15.Samples, sampleRate);
 
             return 0;
- */
+             */
+
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
             app.Description = ".NET Core Find Similar App";

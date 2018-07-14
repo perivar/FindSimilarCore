@@ -67,6 +67,8 @@ namespace CSCore.Codecs.WAV
 
             Log.Verbose("Processing chunk: {0}", StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id)) ? FourCC.FromFourCC(id) : string.Format("int {0} is not FourCC", id));
 
+            // check https://github.com/michaelwu/libsndfile/blob/master/src/wav.c
+            // for all possible chunks ids
             if (id == FmtChunk.FmtChunkID)
                 return new FmtChunk(reader);
             if (id == DataChunk.DataChunkID)
