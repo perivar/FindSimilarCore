@@ -96,6 +96,15 @@ namespace FindSimilar
                 .WriteTo.Console()
                 .CreateLogger();
 
+            // wav files with LIST chunk            
+            var data18 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Poker Face\FPC_Crash_G16InLite_05.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data18-LIST-chunk.wav", data18.Samples, sampleRate);
+
+            var data19 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Clean Bandit - Rather Be Programming\Clean Bandit - Region 1 Slow.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data19-LIST-chunk.wav", data19.Samples, sampleRate);
+
+            return 0;
+
             // wav files with PAD sub chunk
             var data16 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Black Eyed Peas - The Time Mehran Abbasi Reworked Final/VEH3 Snares 026.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data16-pad-chunk.wav", data16.Samples, sampleRate);
@@ -103,7 +112,6 @@ namespace FindSimilar
             var data17 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Lynda EDM Drums\Crash.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data17-pad-chunk.wav", data17.Samples, sampleRate);
 
-            return 0;
 
             // OGG test files
             var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);

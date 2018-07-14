@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using CommonUtils;
 
 namespace CSCore.Codecs.WAV
 {
@@ -57,8 +58,8 @@ namespace CSCore.Codecs.WAV
 
                         var infoValue = new String(reader.ReadChars((int)infoValueChunkSize));
 
-                        // remove the null terminations
-                        infoValue = infoValue.Replace("\0", string.Empty);
+                        // remove the non printable characters
+                        infoValue = StringUtils.RemoveNonAsciiCharactersFast(infoValue);
 
                         _infoTags.Add(infoKey, infoValue);
                     }

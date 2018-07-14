@@ -180,7 +180,7 @@ namespace CommonUtils
         {
             // Replace invalid characters with empty strings.
             // only letters, dots, the email 'at' and '-' are allowed
-            return Regex.Replace(strIn, @"[^\w\.\s@-]", "");
+            return Regex.Replace(strIn, @"[^\w\.\s@-]", string.Empty);
         }
 
         /// <summary>
@@ -191,6 +191,23 @@ namespace CommonUtils
         public static string RemoveNonAsciiCharacters(string strIn)
         {
             return Regex.Replace(strIn, @"[^\u0000-\u007F]", string.Empty);
+        }
+
+        /// <summary>
+        /// Faster version to remove non ascii characters from string
+        /// According to https://stackoverflow.com/questions/3210393/how-do-i-remove-all-non-alphanumeric-characters-from-a-string-except-dash
+        /// </summary>
+        /// <param name="strIn">string</param>
+        /// <returns>formatted string</returns>
+        public static string RemoveNonAsciiCharactersFast(string strIn)
+        {
+            char[] arr = strIn.ToCharArray();
+
+            arr = Array.FindAll<char>(arr, (c => (char.IsLetterOrDigit(c)
+                                              || char.IsWhiteSpace(c)
+                                              || c == '-'
+                                              || c == '.')));
+            return new string(arr);
         }
 
         /// <summary>
@@ -550,28 +567,28 @@ namespace CommonUtils
             return stringAfterSearchWord;
         }
 
-		/// <summary>
-		/// Checks if the string contains only ASCII printable characters.
-		/// 
-		/// code>null</code> will return <code>false</code>.
-		/// An empty String ("") will return <code>true</code>.
-		/// 
-		/// <pre>
-		/// StringUtils.IsAsciiPrintable(null)     = false
-		/// StringUtils.IsAsciiPrintable("")       = true
-		/// StringUtils.IsAsciiPrintable(" ")      = true
-		/// StringUtils.IsAsciiPrintable("Ceki")   = true
-		/// StringUtils.IsAsciiPrintable("ab2c")   = true
-		/// StringUtils.IsAsciiPrintable("!ab-c~") = true
-		/// StringUtils.IsAsciiPrintable("\u0020") = true
-		/// StringUtils.IsAsciiPrintable("\u0021") = true
-		/// StringUtils.IsAsciiPrintable("\u007e") = true
-		/// StringUtils.IsAsciiPrintable("\u007f") = false
-		/// StringUtils.IsAsciiPrintable("Ceki G\u00fclc\u00fc") = false
-		/// </pre>
-		/// </summary>
-		/// <param name="str">param str the string to check, may be null</param>
-		/// <returns>return <code>true</code> if every character is in the range 32 thru 126</returns>
+        /// <summary>
+        /// Checks if the string contains only ASCII printable characters.
+        /// 
+        /// code>null</code> will return <code>false</code>.
+        /// An empty String ("") will return <code>true</code>.
+        /// 
+        /// <pre>
+        /// StringUtils.IsAsciiPrintable(null)     = false
+        /// StringUtils.IsAsciiPrintable("")       = true
+        /// StringUtils.IsAsciiPrintable(" ")      = true
+        /// StringUtils.IsAsciiPrintable("Ceki")   = true
+        /// StringUtils.IsAsciiPrintable("ab2c")   = true
+        /// StringUtils.IsAsciiPrintable("!ab-c~") = true
+        /// StringUtils.IsAsciiPrintable("\u0020") = true
+        /// StringUtils.IsAsciiPrintable("\u0021") = true
+        /// StringUtils.IsAsciiPrintable("\u007e") = true
+        /// StringUtils.IsAsciiPrintable("\u007f") = false
+        /// StringUtils.IsAsciiPrintable("Ceki G\u00fclc\u00fc") = false
+        /// </pre>
+        /// </summary>
+        /// <param name="str">param str the string to check, may be null</param>
+        /// <returns>return <code>true</code> if every character is in the range 32 thru 126</returns>
         public static bool IsAsciiPrintable(String str)
         {
             if (str == null)
@@ -589,19 +606,19 @@ namespace CommonUtils
             return true;
         }
 
-		/// <summary>
-		/// Checks whether the character is ASCII 7 bit printable.
-		/// <pre>
-		///   StringUtils.IsAsciiPrintable('a')  = true
-		///   StringUtils.IsAsciiPrintable('A')  = true
-		///   StringUtils.IsAsciiPrintable('3')  = true
-		///   StringUtils.IsAsciiPrintable('-')  = true
-		///   StringUtils.IsAsciiPrintable('\n') = false
-		///   StringUtils.IsAsciiPrintable('&copy;') = false
-		/// </pre>
-		/// </summary>
-		/// <param name="ch">the character to check</param>
-		/// <returns>true if between 32 and 126 inclusive</returns>
+        /// <summary>
+        /// Checks whether the character is ASCII 7 bit printable.
+        /// <pre>
+        ///   StringUtils.IsAsciiPrintable('a')  = true
+        ///   StringUtils.IsAsciiPrintable('A')  = true
+        ///   StringUtils.IsAsciiPrintable('3')  = true
+        ///   StringUtils.IsAsciiPrintable('-')  = true
+        ///   StringUtils.IsAsciiPrintable('\n') = false
+        ///   StringUtils.IsAsciiPrintable('&copy;') = false
+        /// </pre>
+        /// </summary>
+        /// <param name="ch">the character to check</param>
+        /// <returns>true if between 32 and 126 inclusive</returns>
 
         public static bool IsAsciiPrintable(char ch)
 

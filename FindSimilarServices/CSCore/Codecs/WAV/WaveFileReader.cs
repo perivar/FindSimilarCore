@@ -179,7 +179,16 @@ namespace CSCore.Codecs.WAV
                 }
                 else
                 {
-                    stream.Seek(tmp.ChunkDataSize, SeekOrigin.Current);
+                    // One tricky thing about RIFF file chunks is that they must be word aligned. 
+                    // This means that their total size must be a multiple of 2 bytes (ie. 2, 4, 6, 8, and so on). 
+                    // If a chunk contains an odd number of data bytes, causing it not to be word aligned, 
+                    // an extra padding byte with a value of zero must follow the last data byte. 
+                    // This extra padding byte is not counted in the chunk size, therefore a program must always 
+                    // word align a chunk headers size value in order to calculate the offset of the following chunk.
+                    // ensure the text size is word aligned (2 bytes)
+                    var wordAlignedChunkSize = tmp.ChunkDataSize + tmp.ChunkDataSize % 2;
+
+                    stream.Seek(wordAlignedChunkSize, SeekOrigin.Current);
                 }
 
             } while (stream.Length - stream.Position > 8); //8 bytes = size of chunk header
