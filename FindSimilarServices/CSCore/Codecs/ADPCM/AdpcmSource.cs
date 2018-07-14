@@ -23,7 +23,6 @@ namespace CSCore.Codecs.ADPCM
         private bool _disposed;
         private Stream _stream;
         private readonly long _length;
-        private readonly bool _closeStream;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AdpcmSource" /> class.
@@ -65,7 +64,7 @@ namespace CSCore.Codecs.ADPCM
                 audioFormat.Encoding = (AudioEncoding)reader.ReadInt16();
                 audioFormat.Channels = reader.ReadInt16();
                 audioFormat.SampleRate = reader.ReadInt32();
-                audioFormat.BytesPerSecond = reader.ReadInt32();
+                audioFormat.AverageBytesPerSecond = reader.ReadInt32();
                 audioFormat.BlockAlign = reader.ReadInt16();
                 audioFormat.BitsPerSample = reader.ReadInt16();
 

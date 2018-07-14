@@ -85,6 +85,7 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
+            /*  
 
             // sox command to test failed audio files
             // sox --i -V6 "FILE"
@@ -97,18 +98,17 @@ namespace FindSimilar
                 .CreateLogger();
 
             // MuLaw files
-            // var data12 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Ed Sheeran - Shape Of You\Snare (2).wav", sampleRate, 0, 0);
-            // SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data12.wav", data12.Samples, sampleRate);
+            var data12 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Ed Sheeran - Shape Of You\Snare (2).wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data12.wav", data12.Samples, sampleRate);
 
-            // testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", @"C:\Users\pnerseth\My Projects\data13-original.wav");
+            testAudioService.ConvertToPCM16Bit(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", @"C:\Users\pnerseth\My Projects\data13-original.wav");
             var data13 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!Preset_Template\FSS Essential Collection Vol 2\Kraftwerk - The Robots (Album Mix)\cow bell001.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data13.wav", data13.Samples, sampleRate);
 
-            // var data14 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Rihanna - We Found Love ft. Calvin Harris by www.aronize.tk\DNC_Hat_4.wav", sampleRate, 0, 0);
-            // SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data14.wav", data14.Samples, sampleRate);
+            var data14 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Rihanna - We Found Love ft. Calvin Harris by www.aronize.tk\DNC_Hat_4.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data14.wav", data14.Samples, sampleRate);
 
             return 0;
-            /*  
 
             // OGG within wav container fest files
             var data08 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav", sampleRate, 0, 0);

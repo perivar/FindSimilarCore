@@ -27,7 +27,6 @@ namespace FindSimilarServices.Audio
         }
 
         private readonly IAudioSamplesNormalizer audioSamplesNormalizer;
-        private readonly WdlResampler resampler;
         private readonly object _lockObj = new object();
 
         public override IReadOnlyCollection<string> SupportedFormats
@@ -41,66 +40,32 @@ namespace FindSimilarServices.Audio
         public FindSimilarAudioService()
         {
             audioSamplesNormalizer = new AudioSamplesNormalizer();
-
-            // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
-            resampler = new WdlResampler();
-            resampler.SetMode(true, 2, false);
-            resampler.SetFilterParms();
-
-            // feed mode
-            // there are two approaches to resampling:
-            //  - input driven and output driven. 
-            // With input driven, every time you get new audio you give it to the resampler, 
-            // and then read out what it got converted to. 
-            // With output driven, you assume that the input is fully available (e.g. a file) 
-            // and keep reading from the output until you get to the end.
-
-            // if true, that means the first parameter to ResamplePrepare 
-            // will specify however much input you have, not how much you want
-            resampler.SetFeedMode(true); // input driven       
-            //resampler.SetFeedMode(false); // output driven     
         }
 
-        private float[] ToTargetSampleRate(float[] monoSamples, int sourceSampleRate, int newSampleRate)
+        private float[] ToResampled(ISampleSource sampleSource, int sampleRate)
         {
-            return Resample(monoSamples, 1, 1, sourceSampleRate, newSampleRate);
-        }
+            var floatChannelSamples = new List<float>();
 
-        private float[] Resample(float[] audioSamples, int readerChannels, int writerChannels, int sourceSampleRate, int newSampleRate)
-        {
-            float[] resampledBuffer;
+            var resampler = new WdlResamplingSampleSource(sampleSource, sampleRate);
 
-            // make thread safe
-            lock (_lockObj)
+            int srcSampleRate = sampleSource.WaveFormat.SampleRate;
+            int srcChannelCount = sampleSource.WaveFormat.Channels;
+            var buffer = new float[srcSampleRate * srcChannelCount]; // 1 sec
+
+            while (true)
             {
-                // Use WDL Resampler
-                // http://markheath.net/post/fully-managed-input-driven-resampling-wdl
-                // https://github.com/naudio/NAudio/blob/master/NAudio/Wave/SampleProviders/WdlResamplingSampleProvider.cs
-                resampler.SetRates(sourceSampleRate, newSampleRate);
+                int bytesRead = resampler.Read(buffer, 0, buffer.Length);
+                if (bytesRead == 0)
+                {
+                    // end of source provider
+                    break;
+                }
 
-                float[] buffer = audioSamples;
-                int read = audioSamples.Length;
-
-                // resample
-                int framesAvailable = read / readerChannels;
-                float[] inBuffer;
-                int inBufferOffset;
-                int inNeeded = resampler.ResamplePrepare(framesAvailable, writerChannels, out inBuffer, out inBufferOffset);
-
-                // prepare input buffer
-                Array.Copy(buffer, 0, inBuffer, inBufferOffset, inNeeded * readerChannels);
-
-                int inAvailable = inNeeded;
-                float[] outBuffer = new float[inAvailable * writerChannels]; // originally 2000 plenty big enough
-                int framesRequested = outBuffer.Length / writerChannels;
-                int outAvailable = resampler.ResampleOut(outBuffer, 0, inAvailable, framesRequested, writerChannels);
-
-                // copy to output buffer
-                resampledBuffer = new float[outAvailable * writerChannels];
-                Array.Copy(outBuffer, 0, resampledBuffer, 0, outAvailable * writerChannels);
+                // add the number of samples we read
+                floatChannelSamples.AddRange(buffer.Take(bytesRead));
             }
 
-            return resampledBuffer;
+            return floatChannelSamples.ToArray();
         }
 
         public override float GetLengthInSeconds(string pathToSourceFile)
@@ -178,27 +143,15 @@ namespace FindSimilarServices.Audio
 
         public override AudioSamples ReadMonoSamplesFromFile(string pathToSourceFile, int sampleRate, double seconds, double startAt)
         {
-            float[] downsampled = new float[0];
+            float[] samples = new float[0];
             try
             {
                 var soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
                 var sampleSource = soundSource.ToSampleSource();
-
-                int srcSampleRate = sampleSource.WaveFormat.SampleRate;
-                int srcChannelCount = sampleSource.WaveFormat.Channels;
-                float[] sampleBuffer = new float[srcSampleRate * srcChannelCount]; // 1 sec
-                int read;
-                var floatChannelSamples = new List<float>();
-                while ((read = sampleSource.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
-                {
-                    // add the number of samples we read
-                    floatChannelSamples.AddRange(sampleBuffer.Take(read));
-                }
-
-                float[] monoSamples = ToMonoSignal(floatChannelSamples.ToArray(), srcChannelCount);
-                downsampled = ToTargetSampleRate(monoSamples, srcSampleRate, sampleRate);
-                audioSamplesNormalizer.NormalizeInPlace(downsampled);
-                CutRegion(downsampled, sampleRate, seconds, startAt);
+                var resampled = ToResampled(sampleSource, sampleRate);
+                samples = ToMonoSignal(resampled, sampleSource.WaveFormat.Channels);
+                audioSamplesNormalizer.NormalizeInPlace(samples);
+                CutRegion(samples, sampleRate, seconds, startAt);
                 sampleSource.Dispose();
                 soundSource.Dispose();
             }
@@ -207,7 +160,7 @@ namespace FindSimilarServices.Audio
                 throw new ArgumentException(string.Format("ReadSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message), e);
             }
 
-            return new AudioSamples(downsampled, pathToSourceFile, sampleRate);
+            return new AudioSamples(samples, pathToSourceFile, sampleRate);
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ namespace CommonUtils.Audio
         private AudioEncoding _encoding;
         private short _channels;
         private int _sampleRate;
-        private int _bytesPerSecond;
+        private int _averageBytesPerSecond;
         private int _blockAlign;
         private short _bitsPerSample;
         private short _extraSize;
@@ -55,12 +55,12 @@ namespace CommonUtils.Audio
         /// average data rate of 176,400 bytes per second (2 channels — 2 bytes per sample per channel — 44,100 samples per
         /// second).
         /// </summary>
-        public virtual int BytesPerSecond
+        public virtual int AverageBytesPerSecond
         {
-            get { return _bytesPerSecond; }
+            get { return _averageBytesPerSecond; }
             protected internal set
             {
-                _bytesPerSecond = value;
+                _averageBytesPerSecond = value;
             }
         }
 
@@ -267,6 +267,24 @@ namespace CommonUtils.Audio
         }
 
         /// <summary>
+        /// Creates a new 32 bit IEEE floating point wave format
+        /// </summary>
+        /// <param name="sampleRate">sample rate</param>
+        /// <param name="channels">number of channels</param>
+        public static AudioFormat CreateIeeeFloaAudioFormat(int sampleRate, int channels)
+        {
+            var aF = new AudioFormat();
+            aF.Encoding = AudioEncoding.IeeeFloat;
+            aF.Channels = (short)channels;
+            aF.BitsPerSample = 32;
+            aF.SampleRate = sampleRate;
+            aF.BlockAlign = (short)(4 * channels);
+            aF.AverageBytesPerSecond = sampleRate * aF.BlockAlign;
+            aF.ExtraSize = 0;
+            return aF;
+        }
+
+        /// <summary>
         /// Indicates whether the current object is equal to another object of the same type.
         /// </summary>
         /// <param name="other">The <see cref="AudioFormat"/> to compare with this <see cref="AudioFormat"/>.</param>
@@ -275,7 +293,7 @@ namespace CommonUtils.Audio
         {
             return Channels == other.Channels &&
                    SampleRate == other.SampleRate &&
-                   BytesPerSecond == other.BytesPerSecond &&
+                   AverageBytesPerSecond == other.AverageBytesPerSecond &&
                    BlockAlign == other.BlockAlign &&
                    BitsPerSample == other.BitsPerSample &&
                    ExtraSize == other.ExtraSize &&
@@ -305,7 +323,7 @@ namespace CommonUtils.Audio
             var builder = new StringBuilder();
             builder.AppendFormat("Reading Wave file: {0} format, {1} channels, {2} samp/sec", _encoding, _channels, _sampleRate);
             builder.AppendLine();
-            builder.AppendFormat("{0} byte/sec, {1} block align, {2} bits/samp, {3} data bytes", _bytesPerSecond, _blockAlign, _bitsPerSample, _dataChunkSize);
+            builder.AppendFormat("{0} byte/sec, {1} block align, {2} bits/samp, {3} data bytes", _averageBytesPerSecond, _blockAlign, _bitsPerSample, _dataChunkSize);
             builder.AppendLine();
             builder.AppendFormat("{0} Extsize", _extraSize);
             builder.AppendFormat(", {0} Samps/block", _samplesPerBlock);

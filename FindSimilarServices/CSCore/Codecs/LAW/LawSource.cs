@@ -63,7 +63,7 @@ namespace CSCore.Codecs.LAW
                 audioFormat.Encoding = (AudioEncoding)reader.ReadInt16();
                 audioFormat.Channels = reader.ReadInt16();
                 audioFormat.SampleRate = reader.ReadInt32();
-                audioFormat.BytesPerSecond = reader.ReadInt32();
+                audioFormat.AverageBytesPerSecond = reader.ReadInt32();
                 audioFormat.BlockAlign = reader.ReadInt16();
                 audioFormat.BitsPerSample = reader.ReadInt16();
 
