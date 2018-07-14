@@ -32,6 +32,7 @@
 
 using System;
 using System.Collections.Generic;
+using Serilog;
 
 namespace NLayer.Decoder
 {
@@ -1421,22 +1422,28 @@ namespace NLayer.Decoder
             {
                 int cb, window;
 
-                if (_blockSplitFlag[gr][ch] && _blockType[gr][ch] == 2 && !(_mixedBlockFlag[gr][ch] && idx < _sfBandIndexL[8]))
+                try
                 {
-                    // short / mixed short section
-                    cb = _cbLookupS[idx];
-                    window = _cbwLookupS[idx];
+                    if (_blockSplitFlag[gr][ch] && _blockType[gr][ch] == 2 && !(_mixedBlockFlag[gr][ch] && idx < _sfBandIndexL[8]))
+                    {
+                        // short / mixed short section
+                        cb = _cbLookupS[idx];
+                        window = _cbwLookupS[idx];
 
-                    return val * _globalGain[gr][ch] * POW2_TAB[(int)(-2 * (_subblockGain[gr][ch][window] - (_scalefacScale[gr][ch] * _scalefac[ch][window][cb])))];
+                        return val * _globalGain[gr][ch] * POW2_TAB[(int)(-2 * (_subblockGain[gr][ch][window] - (_scalefacScale[gr][ch] * _scalefac[ch][window][cb])))];
+                    }
+                    else
+                    {
+                        // long / mixed long section
+                        cb = _cbLookupL[idx];
+
+                        return val * _globalGain[gr][ch] * POW2_TAB[(int)(2 * _scalefacScale[gr][ch] * (_scalefac[ch][3][cb] + _preflag[gr][ch] * PRETAB[cb]))];
+                    }
                 }
-                else
+                catch (System.Exception e)
                 {
-                    // long / mixed long section
-                    cb = _cbLookupL[idx];
-
-                    return val * _globalGain[gr][ch] * POW2_TAB[(int)(2 * _scalefacScale[gr][ch] * (_scalefac[ch][3][cb] + _preflag[gr][ch] * PRETAB[cb]))];
+                    Log.Warning("Dequantize MP3 Frame failed. {0}", e.Message);
                 }
-
             }
             return 0f;
         }

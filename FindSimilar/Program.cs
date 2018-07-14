@@ -96,14 +96,18 @@ namespace FindSimilar
                 .WriteTo.Console()
                 .CreateLogger();
 
+            // mp3 file that fails due to frame errors (quantization error)
+            var data20 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Britney Spears - 3\03 Britney Spears - 3 (Acapella).mp3", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data20-mp3.wav", data20.Samples, sampleRate);
+
+            return 0;
+
             // wav files with LIST chunk            
             var data18 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Poker Face\FPC_Crash_G16InLite_05.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data18-LIST-chunk.wav", data18.Samples, sampleRate);
 
             var data19 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Clean Bandit - Rather Be Programming\Clean Bandit - Region 1 Slow.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data19-LIST-chunk.wav", data19.Samples, sampleRate);
-
-            return 0;
 
             // wav files with PAD sub chunk
             var data16 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Black Eyed Peas - The Time Mehran Abbasi Reworked Final/VEH3 Snares 026.wav", sampleRate, 0, 0);

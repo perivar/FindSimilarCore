@@ -168,7 +168,7 @@ namespace CommonUtils
         /// <returns>formatted string</returns>
         public static string RemoveInvalidCharacters(string strIn)
         {
-            return Regex.Replace(strIn, @"[^\w\.@-]", "");
+            return Regex.Replace(strIn, @"[^\w\.@-]", string.Empty);
         }
 
         /// <summary>
@@ -196,18 +196,22 @@ namespace CommonUtils
         /// <summary>
         /// Faster version to remove non ascii characters from string
         /// According to https://stackoverflow.com/questions/3210393/how-do-i-remove-all-non-alphanumeric-characters-from-a-string-except-dash
+        /// and
+        /// https://rosettacode.org/wiki/Strip_control_codes_and_extended_characters_from_a_string#C.23
         /// </summary>
         /// <param name="strIn">string</param>
         /// <returns>formatted string</returns>
         public static string RemoveNonAsciiCharactersFast(string strIn)
         {
-            char[] arr = strIn.ToCharArray();
-
-            arr = Array.FindAll<char>(arr, (c => (char.IsLetterOrDigit(c)
-                                              || char.IsWhiteSpace(c)
-                                              || c == '-'
-                                              || c == '.')));
-            return new string(arr);
+            StringBuilder buffer = new StringBuilder(strIn.Length); //Max length
+            foreach(char ch in strIn)
+            {
+                UInt16 num = Convert.ToUInt16(ch); // In .NET, chars are UTF-16
+                
+                // The basic characters have the same code points as ASCII, and the extended characters are bigger
+                if((num >= 32u) && (num <= 126u)) buffer.Append(ch);
+            }
+            return buffer.ToString();
         }
 
         /// <summary>
@@ -477,8 +481,11 @@ namespace CommonUtils
             return new string(chars);
         }
 
-
-        // Convert the string to Pascal case.
+        /// <summary>
+        /// Convert the string to Pascal case. 
+        /// </summary>
+        /// <param name="the_string">the string</param>
+        /// <returns>the case converter to pascal case</returns>
         public static string ToPascalCase(this string the_string)
         {
             // If there are 0 or 1 characters, just return the string.
@@ -502,7 +509,11 @@ namespace CommonUtils
             return result;
         }
 
-        // Convert the string to camel case.
+        /// <summary>
+        /// Convert the string to Camel case. 
+        /// </summary>
+        /// <param name="the_string">the string</param>
+        /// <returns>the case converter to camel case</returns>
         public static string ToCamelCase(this string the_string)
         {
             // If there are 0 or 1 characters, just return the string.
@@ -525,8 +536,12 @@ namespace CommonUtils
             return result;
         }
 
-        // Capitalize the first character and add a space before
-        // each capitalized letter (except the first character).
+        /// <summary>
+        /// Capitalize the first character and add a space before 
+        /// each capitalized letter (except the first character).
+        /// </summary>
+        /// <param name="the_string">the string</param>
+        /// <returns>the case converter to proper case</returns>
         public static string ToProperCase(this string the_string)
         {
             // If there are 0 or 1 characters, just return the string.

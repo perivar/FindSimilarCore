@@ -47,10 +47,7 @@ namespace FindSimilarServices.Audio
             var floatChannelSamples = new List<float>();
 
             var resampler = new WdlResamplingSampleSource(sampleSource, sampleRate);
-
-            int srcSampleRate = sampleSource.WaveFormat.SampleRate;
-            int srcChannelCount = sampleSource.WaveFormat.Channels;
-            var buffer = new float[srcSampleRate * srcChannelCount]; // 1 sec
+            var buffer = new float[sampleRate * sampleSource.WaveFormat.Channels]; // 1 sec
 
             while (true)
             {
