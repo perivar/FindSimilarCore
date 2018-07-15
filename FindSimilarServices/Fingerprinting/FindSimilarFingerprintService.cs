@@ -71,7 +71,7 @@ namespace SoundFingerprinting
                     var imageService = new FindSimilarImageService();
                     using (Image image = imageService.GetLogSpectralImages(spectralImages, spectralImages.Count > 5 ? 5 : spectralImages.Count))
                     {
-                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectral_images.png"));
+                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_spectral_images.png"));
                         if (fileName != null)
                         {
                             image.Save(fileName, ImageFormat.Png);
@@ -89,7 +89,7 @@ namespace SoundFingerprinting
                     var imageService = new FindSimilarImageService();
                     using (Image image = imageService.GetImageForFingerprints(fingerprints, 128, 32, fingerprints.Count > 5 ? 5 : fingerprints.Count))
                     {
-                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_fingerprints.png"));
+                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_fingerprints.png"));
                         if (fileName != null)
                         {
                             image.Save(fileName, ImageFormat.Png);

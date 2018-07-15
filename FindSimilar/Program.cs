@@ -17,7 +17,8 @@ namespace FindSimilar
     class Program
     {
         const string DEFAULT_LOG_PATH = "findsimilar.log";
-        const string DATABASE_PATH = @"C:\Users\pnerseth\My Projects\fingerprint.db";
+        const string DEFAULT_DATABASE_PATH = "fingerprint.db";
+        const string DEFAULT_DEBUG_PATH = "debug";
 
         static Verbosity GetVerbosity(CommandOption verboseOption)
         {
@@ -42,11 +43,42 @@ namespace FindSimilar
             return skipDurationAboveSeconds;
         }
 
+        static string GetDatabaseFilePath(CommandOption dbFilePathOption)
+        {
+            string dbFilePath = DEFAULT_DATABASE_PATH;
+            if (dbFilePathOption.HasValue())
+            {
+                // if the directory for the database file exists, we can create it later if it doesn't exist
+                var dbFilePathValue = dbFilePathOption.Value();
+                if (Directory.Exists(Path.GetDirectoryName(dbFilePathValue)))
+                {
+                    dbFilePath = dbFilePathValue;
+                }
+            }
+            return dbFilePath;
+        }
+
+        static string GetDebugDirectoryPath(CommandOption debugDirectoryPathOption)
+        {
+            string debugDirectoryPath = DEFAULT_DEBUG_PATH;
+            if (debugDirectoryPathOption.HasValue())
+            {
+                // check that the directory for the debug files exists
+                var debugDirectoryPathValue = debugDirectoryPathOption.Value();
+                if (Directory.Exists(Path.GetDirectoryName(debugDirectoryPathValue)))
+                {
+                    debugDirectoryPath = debugDirectoryPathValue;
+                }
+            }
+            return debugDirectoryPath;
+        }
+
         static void DefineLogger(CommandOption logFilePathOption, Verbosity verbosity)
         {
             string logFilePath = DEFAULT_LOG_PATH;
             if (logFilePathOption.HasValue())
             {
+                // if the directory for the log file exists, we can create it later if it doesn't exist
                 var logFilePathValue = logFilePathOption.Value();
                 if (Directory.Exists(Path.GetDirectoryName(logFilePathValue)))
                 {
@@ -190,9 +222,11 @@ namespace FindSimilar
                     var scanArgument = command.Argument("[directory]", "Directory to scan and create audio fingerprints from");
 
                     // options
-                    var skipDurationOption = command.Option("-d|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
+                    var skipDurationOption = command.Option("-s|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
                     var verboseOption = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for silent mode, 3 for normal output, 4 for debug and 5 for the most verbose setting", CommandOptionType.SingleValue);
                     var logDirOption = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
+                    var dbDirOption = command.Option("-d|--db <path>", "Override the default path to database-file: " + DEFAULT_DATABASE_PATH, CommandOptionType.SingleValue);
+                    var debugDirOption = command.Option("--debug <path>", "If verbose = 5, override the default path to the debug directory: " + DEFAULT_DEBUG_PATH, CommandOptionType.SingleValue);
 
                     command.OnExecute(() =>
                         {
@@ -201,8 +235,10 @@ namespace FindSimilar
                                 var skipDurationAboveSeconds = GetSkipDuration(skipDurationOption);
                                 var verbosity = GetVerbosity(verboseOption);
                                 DefineLogger(logDirOption, verbosity);
+                                var dbPath = GetDatabaseFilePath(dbDirOption);
+                                var debugPath = GetDebugDirectoryPath(debugDirOption);
 
-                                ProcessDir(scanArgument.Value, skipDurationAboveSeconds, verbosity);
+                                ProcessDir(dbPath, scanArgument.Value, skipDurationAboveSeconds, verbosity, debugPath);
                                 return 0;
                             }
                             else
@@ -224,6 +260,7 @@ namespace FindSimilar
                     // options
                     var optionMatchThreshold = command.Option("-t|--threshold <NUMBER>", "Threshold votes for a match. Default: 4", CommandOptionType.SingleValue);
                     var optionMaxNumber = command.Option("-n|--num <NUMBER>", "Maximal number of matches to return when querying. Default: 25", CommandOptionType.SingleValue);
+                    var dbDirOption = command.Option("-d|--db <path>", "Override the default path to database-file: " + DEFAULT_DATABASE_PATH, CommandOptionType.SingleValue);
 
                     command.OnExecute(() =>
                         {
@@ -240,7 +277,8 @@ namespace FindSimilar
                                     maxTracksToReturn = int.Parse(optionMaxNumber.Value());
                                 }
 
-                                MatchFile(matchArgument.Value, threshold, maxTracksToReturn);
+                                var dbPath = GetDatabaseFilePath(dbDirOption);
+                                MatchFile(dbPath, matchArgument.Value, threshold, maxTracksToReturn);
                                 return 0;
                             }
                             else
@@ -268,26 +306,24 @@ namespace FindSimilar
             }
         }
 
-        private static void ProcessDir(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)
+        private static void ProcessDir(string dbPath, string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity, string debugDirectoryPath)
         {
             if (Directory.Exists(directoryPath))
             {
-                // https://github.com/AddictedCS/soundfingerprinting.duplicatesdetector/blob/master/src/SoundFingerprinting.DuplicatesDetector/DuplicatesDetectorService.cs
-                // https://github.com/protyposis/Aurio/tree/master/Aurio/Aurio     
-                var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
+                var fingerprinter = new SoundFingerprinter(dbPath, debugDirectoryPath);
                 fingerprinter.FingerprintDirectory(Path.GetFullPath(directoryPath), skipDurationAboveSeconds, verbosity);
-                fingerprinter.Snapshot(DATABASE_PATH);
+                fingerprinter.Snapshot(dbPath);
             }
             else
             {
                 if (verbosity > 0) Console.Error.WriteLine("The directory '{0}' cannot be found.", directoryPath);
             }
         }
-        private static void MatchFile(string filePath, int thresholdVotes, int maxTracksToReturn)
+        private static void MatchFile(string dbPath, string filePath, int thresholdVotes, int maxTracksToReturn)
         {
             if (File.Exists(filePath))
             {
-                var fingerprinter = new SoundFingerprinter(DATABASE_PATH);
+                var fingerprinter = new SoundFingerprinter(dbPath);
                 var results = fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), thresholdVotes, maxTracksToReturn);
 
                 Console.WriteLine("Found {0} similar tracks", results.Count());

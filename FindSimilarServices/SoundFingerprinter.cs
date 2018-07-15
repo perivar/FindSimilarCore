@@ -59,7 +59,7 @@ namespace FindSimilarServices
 
     public class SoundFingerprinter
     {
-        public const string DEBUG_PATH = @"C:\Users\pnerseth\My Projects\tmp-images";
+        public static string DEBUG_DIRECTORY_PATH = "debug";
 
         // Supported audio files
         private static string[] extensions = { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg", ".mp1", ".m1a", ".mp2", ".m2a", ".mp3", ".mpg", ".mpeg", ".mpeg3" };
@@ -75,11 +75,20 @@ namespace FindSimilarServices
 
         private IFingerprintCommandBuilder fingerprintCommandBuilder;
 
-        public SoundFingerprinter() : this(null)
+        public SoundFingerprinter() : this(null, null)
         {
         }
-        public SoundFingerprinter(string loadFromPath)
+        public SoundFingerprinter(string loadFromPath) : this(loadFromPath, null)
         {
+        }
+
+        public SoundFingerprinter(string loadFromPath, string debugDirectoryPath)
+        {
+            if (!string.IsNullOrEmpty(debugDirectoryPath))
+            {
+                DEBUG_DIRECTORY_PATH = debugDirectoryPath;
+            }
+
             if (!string.IsNullOrEmpty(loadFromPath) && File.Exists(loadFromPath))
             {
                 this.modelService = new InMemoryModelService(loadFromPath);

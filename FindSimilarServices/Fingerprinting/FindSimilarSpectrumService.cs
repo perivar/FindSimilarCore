@@ -69,14 +69,14 @@
                 var imageService = new FindSimilarImageService();
                 using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins, width, configuration.LogBins))
                 {
-                    var fileName = Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram.png"));
+                    var fileName = Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram.png"));
                     if (fileName != null)
                     {
                         image.Save(fileName, ImageFormat.Png);
                     }
                 }
 
-                WriteOutputUtils.WriteCSV(frames, Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_frames.csv")));
+                WriteOutputUtils.WriteCSV(frames, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_frames.csv")));
             }
 
             var spectralImages = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
@@ -91,7 +91,7 @@
                         spectralImageList.Add(spectralImage.Image);
                     }
                     var spectralImageArray = spectralImageList.ToArray();
-                    WriteOutputUtils.WriteCSV(spectralImageArray, Path.Combine(SoundFingerprinter.DEBUG_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectral_images.csv")), ";");
+                    WriteOutputUtils.WriteCSV(spectralImageArray, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectral_images.csv")), ";");
                 }
             }
 

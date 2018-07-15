@@ -16,10 +16,14 @@
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
                 "-v",
                 "5",
-                "-d",
+                "-s",
                 "30",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log"
+                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "-d",
+                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "--debug",
+                "C:\\Users\\pnerseth\\My Projects\\tmp-images"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -37,10 +41,14 @@
             "args": [
                 "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
-                "-d",
+                "-s",
                 "30",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log"
+                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "-d",
+                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "--debug",
+                "C:\\Users\\pnerseth\\My Projects\\tmp-images"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -60,10 +68,14 @@
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects",
                 "-v",
                 "5",
-                "-d",
+                "-s",
                 "30",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log"
+                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "-d",
+                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "--debug",
+                "C:\\Users\\pnerseth\\My Projects\\tmp-images"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -82,7 +94,11 @@
                 "match",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
                 "-t",
-                "4"
+                "4",
+                "-d",
+                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "-n",
+                "100"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
