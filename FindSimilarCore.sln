@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
@@ -8,6 +8,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindSimilar", "FindSimilar\FindSimilar.csproj", "{A4EADAA3-7274-48A7-B12E-9152CF68871C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindSimilarTest", "FindSimilarTest\FindSimilarTest.csproj", "{D816353C-C2A6-4838-A098-0C05EF8E7CC8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindSimilarClient", "FindSimilarClient\FindSimilarClient.csproj", "{1948DC3A-62D3-4F5A-B665-002C15B0DF58}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,5 +60,17 @@ Global
 		{D816353C-C2A6-4838-A098-0C05EF8E7CC8}.Release|x64.Build.0 = Release|x64
 		{D816353C-C2A6-4838-A098-0C05EF8E7CC8}.Release|x86.ActiveCfg = Release|x86
 		{D816353C-C2A6-4838-A098-0C05EF8E7CC8}.Release|x86.Build.0 = Release|x86
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Debug|x64.Build.0 = Debug|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Debug|x86.Build.0 = Debug|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Release|x64.ActiveCfg = Release|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Release|x64.Build.0 = Release|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Release|x86.ActiveCfg = Release|Any CPU
+		{1948DC3A-62D3-4F5A-B665-002C15B0DF58}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

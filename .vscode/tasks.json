@@ -16,6 +16,20 @@
             }
         },
         {
+            "label": "build-webclient",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/FindSimilarClient/FindSimilarClient.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "test",
             "command": "dotnet",
             "type": "shell",

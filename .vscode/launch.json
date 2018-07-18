@@ -5,6 +5,32 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": ".NET Core Launch (Chrome)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-webclient",
+            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.1/FindSimilarClient.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/FindSimilarClient",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "launchBrowser": {
+                "enabled": true,
+                "args": "${auto-detect-url}",
+                "windows": {
+                    "command": "cmd.exe",
+                    "args": "/C start \"\" \"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" ${auto-detect-url}"
+                }
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:9999"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
             "name": "FindSimilar (scan) DEBUG",
             "type": "coreclr",
             "request": "launch",
