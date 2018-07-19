@@ -58,7 +58,7 @@
     </tbody>
 </table>
 
-<div id="edit">
+<div id="editForm">
     <form>
         <div class="form-inline mb-2">
             <input type="text" class="form-control mr-2" id="editRowText" placeholder="To edit...">
@@ -85,22 +85,22 @@
 <script type="text/javascript">
 
 // hide edit area
-$('#edit').hide();
+$('#editForm').hide();
 var editing = false;
 
 function highlightRow(tableRowIndex) {
     
-    // just a simple check. If .table-active has reached the last, start again
+    // if .table-active has reached the last, start again
     if (tableRowIndex < 0  || (tableRowIndex + 1) > $('#data tbody tr').length )
         tableRowIndex = 0;    
     
-    // does element exists?
+    // check if element exists
     if($('#data tbody tr:eq('+tableRowIndex+')').length > 0)
     {
-        // remove other highlightRows
+        // remove other highlights
         $('#data tbody tr').removeClass('table-active');
         
-        // highlightRow your target
+        // highlight your target
         $('#data tbody tr:eq('+tableRowIndex+')').addClass('table-active');
     }
 }
@@ -122,11 +122,12 @@ $('#goto_last').click(function() {
 });
 
 
-// Show edit box
-function edit() {
+// Show edit form
+function displayEditForm() {
     editing = true;
-    $('#edit').show();
+    $('#editForm').show();
 
+    // find currently selected row index
     var tableRowIndex = $('#data tbody tr.table-active').index();
     if (tableRowIndex < 0  || (tableRowIndex + 1) > $('#data tbody tr').length )
         tableRowIndex = 0;    
@@ -134,27 +135,27 @@ function edit() {
     // ensure the target is highlightRowed
     $('#data tbody tr:eq('+tableRowIndex+')').addClass('table-active');
 
-    $('#edit #editRowText').val(tableRowIndex);
-    $('#edit #editRowText').select();
+    $('#editForm #editRowText').val(tableRowIndex);
+    $('#editForm #editRowText').select();
 }
 
 // user saves edits
-$('#edit form').submit(function (e) {
+$('#editForm form').submit(function (e) {
     editing = false;
     e.preventDefault();
 
     // Ajax to update value in database
     $.get('#', '', function () {
-        $('#edit').hide();
-        alert('Saving ' + $('#edit #editRowText').val());
+        $('#editForm').hide();
+        alert('Saving ' + $('#editForm #editRowText').val());
     });    
 });
 
 // user can cancel edit by pressing escape
-$('#edit').keydown(function (e) {
+$('#editForm').keydown(function (e) {
     if (editing && e.which == 27) {
         editing = false;
-        $('#edit').hide();
+        $('#editForm').hide();
     }
 });
 
@@ -179,7 +180,7 @@ $(document).keydown(function (e) {
                 // spacebar
             case 113:
                 // F2
-                edit();
+                displayEditForm();
                 break;
         }
     }
@@ -188,7 +189,7 @@ $(document).keydown(function (e) {
 // attach an onclick event handler to the table rows 
 $('#data tbody tr').click( function() {
     editing = false;
-    $('#edit').hide();
+    $('#editForm').hide();
     highlightRow(($(this).index()));
 });
   
