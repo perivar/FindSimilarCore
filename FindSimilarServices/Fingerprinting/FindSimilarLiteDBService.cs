@@ -128,10 +128,9 @@ namespace SoundFingerprinting
                     var mapper = BsonMapper.Global;
                     mapper.Entity<SubFingerprintDTO>()
                     .Id(x => x.SubFingerprintId) // set your POCO document Id                 
-                    .Ignore(x => x.HashBins)
-                    ;
+                    .Ignore(x => x.HashBins);
                 }
-                catch (System.Exception e)
+                catch (System.Exception)
                 {
 
                 }

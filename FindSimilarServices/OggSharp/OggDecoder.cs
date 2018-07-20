@@ -673,30 +673,15 @@ namespace OggSharp
                     if (result == 0) { break; }
                     if (result == -1) {
                         throw new Exception("Corrupt header in logical bitstream.");
-                        //goto bail_header;
-                        vi.clear();
-                        vc.clear();
-                        os.clear();
-                        return -1;
                     }
                     if (vi.synthesis_headerin(vc, op) != 0) {
                         throw new Exception("Illegal header in logical bitstream.");
-                        //goto bail_header;
-                        vi.clear();
-                        vc.clear();
-                        os.clear();
-                        return -1;
                     }
                     i++;
                 }
                 if (i < 3)
                     if (get_next_page(og_ptr, 1) < 0) {
                         throw new Exception("Missing header in logical bitstream.");
-                        //goto bail_header;
-                        vi.clear();
-                        vc.clear();
-                        os.clear();
-                        return -1;
                     }
             }
             return 0;
@@ -733,7 +718,6 @@ namespace OggSharp
                     seek_helper(offsets[i]); //!!!
                     if (fetch_headers(vis[i], vcs[i], null, null) == -1) {
                         throw new Exception("Error opening logical bitstream #" + (i + 1) + "\n");
-                        dataoffsets[i] = -1;
                     }
                     else {
                         dataoffsets[i] = offset;
@@ -752,9 +736,7 @@ namespace OggSharp
                         // this should not be possible
                         throw new Exception("Could not find last page of logical " +
                                             "bitstream #" + (i) + "\n");
-                        vis[i].clear();
-                        vcs[i].clear();
-                        break;
+
                     }
                     if (og.granulepos() != -1) {
                         serialnos[i] = og.serialno();
@@ -782,7 +764,7 @@ namespace OggSharp
             try {
                 bytes = input.Read(buffer, index, CHUNKSIZE);
             }
-            catch (Exception e) {
+            catch (Exception) {
                 //Console.Error.WriteLine(e.Message);
                 return OV_EREAD;
             }
