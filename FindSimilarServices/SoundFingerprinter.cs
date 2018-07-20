@@ -248,25 +248,31 @@ namespace FindSimilarServices
             }
         }
 
-        public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile, int thresholdVotes, int maxTracksToReturn)
+        public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile, int thresholdVotes, int maxTracksToReturn, Verbosity verbosity)
         {
-            var queryConfig = new ShortSamplesQueryConfiguration();
+            lock (_lockObj)
+            {
+                var queryConfig = new ShortSamplesQueryConfiguration();
 
-            // override threshold and max if they were passed
-            if (thresholdVotes > 0) queryConfig.ThresholdVotes = thresholdVotes;
-            if (maxTracksToReturn > 0) queryConfig.MaxTracksToReturn = maxTracksToReturn;
+                // set verbosity
+                queryConfig.FingerprintConfiguration.SpectrogramConfig.Verbosity = verbosity;
 
-            // query the underlying database for similar audio sub-fingerprints
-            var queryResult = new QueryCommandBuilder(fingerprintCommandBuilder, QueryFingerprintService.Instance)
-                                                 .BuildQueryCommand()
-                                                 .From(queryAudioFile)
-                                                 .WithQueryConfig(queryConfig)
-                                                 .UsingServices(modelService, audioService)
-                                                 .Query()
-                                                 .Result;
+                // override threshold and max if they were passed
+                if (thresholdVotes > 0) queryConfig.ThresholdVotes = thresholdVotes;
+                if (maxTracksToReturn > 0) queryConfig.MaxTracksToReturn = maxTracksToReturn;
 
-            //return queryResult.BestMatch.Track; // successful match has been found
-            return queryResult.ResultEntries;
+                // query the underlying database for similar audio sub-fingerprints
+                var queryResult = new QueryCommandBuilder(fingerprintCommandBuilder, QueryFingerprintService.Instance)
+                                                     .BuildQueryCommand()
+                                                     .From(queryAudioFile)
+                                                     .WithQueryConfig(queryConfig)
+                                                     .UsingServices(modelService, audioService)
+                                                     .Query()
+                                                     .Result;
+
+                //return queryResult.BestMatch.Track; // successful match has been found
+                return queryResult.ResultEntries;
+            }
         }
     }
 }

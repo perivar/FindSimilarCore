@@ -146,6 +146,22 @@ namespace CommonUtils
         }
 
         /// <summary>
+        /// Write matrix to file using CSV formatting
+        /// </summary>
+        /// <param name="data">data</param>
+        /// <param name="filename">filename</param>
+        public static void WriteCSV(int[] data, string filename)
+        {
+            TextWriter pw = File.CreateText(filename);
+            for (int i = 0; i < data.Length; i++)
+            {
+                pw.Write("{0}", data[i]);
+                pw.Write("\r");
+            }
+            pw.Close();
+        }
+
+        /// <summary>
         /// Writes the Matrix to a comma separated file
         /// </summary>
         /// <param name="filename">the name of the csv file to create, e.g. "C:\\temp\\matrix.csv"</param>
@@ -159,6 +175,15 @@ namespace CommonUtils
         /// </summary>
         /// <param name="filename">the name of the csv file to create, e.g. "C:\\temp\\matrix.csv"</param>
         public static void WriteCSV(float[][] matrixData, string filename)
+        {
+            WriteCSV(matrixData, filename, ",");
+        }
+
+        /// <summary>
+        /// Writes the Matrix to a comma separated file
+        /// </summary>
+        /// <param name="filename">the name of the csv file to create, e.g. "C:\\temp\\matrix.csv"</param>
+        public static void WriteCSV(int[][] matrixData, string filename)
         {
             WriteCSV(matrixData, filename, ",");
         }
@@ -206,5 +231,28 @@ namespace CommonUtils
             }
             pw.Close();
         }
+
+        /// <summary>
+        /// Writes the Matrix to a text delimited file where the separator character can be specified
+        /// </summary>
+        /// <param name="filename">the name of the csv file to create, e.g. "C:\\temp\\matrix.csv"</param>
+        /// <param name="columnSeparator">the separator character to use</param>
+        public static void WriteCSV(int[][] matrixData, string filename, string columnSeparator)
+        {
+            TextWriter pw = File.CreateText(filename);
+            int rowCount = matrixData.Length;
+            int columnCount = matrixData[0].Length;
+            for (int i = 0; i < columnCount; i++)
+            {
+                var columnElements = new List<string>();
+                for (int j = 0; j < rowCount; j++)
+                {
+                    columnElements.Add(String.Format("\"{0}\"", matrixData[j][i]));
+                }
+                pw.Write("{0}\r\n", string.Join(columnSeparator, columnElements));
+            }
+            pw.Close();
+        }
+
     }
 }

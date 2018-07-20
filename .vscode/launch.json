@@ -175,6 +175,35 @@
             "console": "internalConsole",
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "FindSimilar (match v2 DEBUG)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "args": [
+                "match",
+                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",
+                "-t",
+                "4",
+                "-d",
+                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "-n",
+                "100",
+                "-v",
+                "5",
+                "-l",
+                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "--debug",
+                "C:\\Users\\pnerseth\\My Projects\\tmp-images-match"
+            ],
+            "cwd": "${workspaceFolder}/FindSimilar",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }

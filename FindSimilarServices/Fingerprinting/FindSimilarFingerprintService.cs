@@ -98,7 +98,23 @@ namespace SoundFingerprinting
                 }
             }
 
-            return HashFingerprints(fingerprints, configuration);
+            var hashedFingerprints = HashFingerprints(fingerprints, configuration);
+
+            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Verbose)
+            {
+                if (hashedFingerprints.Count > 0)
+                {
+                    var hashedFingerprintList = new List<int[]>();
+                    foreach (var hashedFingerprint in hashedFingerprints)
+                    {
+                        hashedFingerprintList.Add(hashedFingerprint.HashBins);
+                    }
+                    var hashedFingerprinArray = hashedFingerprintList.ToArray();
+                    WriteOutputUtils.WriteCSV(hashedFingerprinArray, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_hashbins.csv")), ";");
+                }
+            }
+
+            return hashedFingerprints;
         }
 
         public List<Fingerprint> CreateFingerprintsFromLogSpectrum(IEnumerable<SpectralImage> spectralImages, FingerprintConfiguration configuration)

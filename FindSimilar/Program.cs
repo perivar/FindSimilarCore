@@ -261,6 +261,9 @@ namespace FindSimilar
                     var optionMatchThreshold = command.Option("-t|--threshold <NUMBER>", "Threshold votes for a match. Default: 4", CommandOptionType.SingleValue);
                     var optionMaxNumber = command.Option("-n|--num <NUMBER>", "Maximal number of matches to return when querying. Default: 25", CommandOptionType.SingleValue);
                     var dbDirOption = command.Option("-d|--db <path>", "Override the default path to database-file: " + DEFAULT_DATABASE_PATH, CommandOptionType.SingleValue);
+                    var verboseOption = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for silent mode, 3 for normal output, 4 for debug and 5 for the most verbose setting", CommandOptionType.SingleValue);
+                    var logDirOption = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
+                    var debugDirOption = command.Option("--debug <path>", "If verbose = 5, override the default path to the debug directory: " + DEFAULT_DEBUG_PATH, CommandOptionType.SingleValue);
 
                     command.OnExecute(() =>
                         {
@@ -277,8 +280,12 @@ namespace FindSimilar
                                     maxTracksToReturn = int.Parse(optionMaxNumber.Value());
                                 }
 
+                                var verbosity = GetVerbosity(verboseOption);
+                                DefineLogger(logDirOption, verbosity);
                                 var dbPath = GetDatabaseFilePath(dbDirOption);
-                                MatchFile(dbPath, matchArgument.Value, threshold, maxTracksToReturn);
+                                var debugPath = GetDebugDirectoryPath(debugDirOption);
+
+                                MatchFile(dbPath, matchArgument.Value, threshold, maxTracksToReturn, verbosity, debugPath);
                                 return 0;
                             }
                             else
@@ -319,12 +326,12 @@ namespace FindSimilar
                 if (verbosity > 0) Console.Error.WriteLine("The directory '{0}' cannot be found.", directoryPath);
             }
         }
-        private static void MatchFile(string dbPath, string filePath, int thresholdVotes, int maxTracksToReturn)
+        private static void MatchFile(string dbPath, string filePath, int thresholdVotes, int maxTracksToReturn, Verbosity verbosity, string debugDirectoryPath)
         {
             if (File.Exists(filePath))
             {
-                var fingerprinter = new SoundFingerprinter(dbPath);
-                var results = fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), thresholdVotes, maxTracksToReturn);
+                var fingerprinter = new SoundFingerprinter(dbPath, debugDirectoryPath);
+                var results = fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), thresholdVotes, maxTracksToReturn, verbosity);
 
                 Console.WriteLine("Found {0} similar tracks", results.Count());
                 foreach (var result in results)
