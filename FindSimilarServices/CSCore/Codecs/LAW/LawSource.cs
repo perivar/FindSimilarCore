@@ -21,7 +21,6 @@ namespace CSCore.Codecs.LAW
         private bool _disposed;
         private Stream _stream;
         private readonly long _length;
-        private readonly bool _closeStream;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="LawSource" /> class.

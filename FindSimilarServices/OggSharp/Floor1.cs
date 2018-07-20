@@ -30,7 +30,6 @@ namespace OggSharp
 {
     class Floor1 : FuncFloor
     {
-        static int floor1_rangedb=140;
         static int VIF_POSIT=63;
 
         override public void pack(Object i, csBuffer opb)

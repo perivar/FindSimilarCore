@@ -44,10 +44,6 @@ namespace OggSharp
         int      pcm_current;
         int      pcm_returned;
 
-        float[]  multipliers;
-        int      envelope_storage;
-        int      envelope_current;
-
         int eofflag;
 
         int lW;
@@ -77,9 +73,6 @@ namespace OggSharp
         // application does not need to worry about freeing some packets'
         // memory and not others'; packet storage is always tracked.
         // Cleared next call to a _dsp_ function
-        byte[] header;
-        byte[] header1;
-        byte[] header2;
 
         public DspState()
         {

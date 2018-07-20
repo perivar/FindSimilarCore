@@ -33,29 +33,17 @@ namespace OggSharp
     {
         static int CHUNKSIZE = 8500;
         static int SEEK_SET = 0;
-        static int SEEK_CUR = 1;
         static int SEEK_END = 2;
 
         static int OV_FALSE = -1;
         static int OV_EOF = -2;
-        static int OV_HOLE = -3;
-
         static int OV_EREAD = -128;
         static int OV_EFAULT = -129;
-        static int OV_EIMPL = -130;
-        static int OV_EINVAL = -131;
         static int OV_ENOTVORBIS = -132;
-        static int OV_EBADHEADER = -133;
-        static int OV_EVERSION = -134;
-        static int OV_ENOTAUDIO = -135;
-        static int OV_EBADPACKET = -136;
-        static int OV_EBADLINK = -137;
-        static int OV_ENOSEEK = -138;
 
         FileStream datasource;
         bool skable = false;
         long offset;
-        long end;
 
         SyncState oy = new SyncState();
 

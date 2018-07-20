@@ -36,7 +36,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
@@ -63,7 +63,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
@@ -86,7 +86,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects",
@@ -109,7 +109,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects",
@@ -136,7 +136,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/FindSimilar.dll",
             "args": [
                 "match",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
@@ -159,7 +159,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.0/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/FindSimilar.dll",
             "args": [
                 "match",
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",
