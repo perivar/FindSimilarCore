@@ -65,14 +65,14 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "publish release win10-x64",
+            "label": "publish release win-x64",
             "command": "dotnet",
             "args": [
                 "publish",
                 "--configuration",
                 "Release",
                 "--runtime",
-                "win10-x64"
+                "win-x64"
             ],
             "type": "shell",
             "presentation": {
