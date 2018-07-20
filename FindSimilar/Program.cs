@@ -70,6 +70,9 @@ namespace FindSimilar
                     debugDirectoryPath = debugDirectoryPathValue;
                 }
             }
+
+            if (!Directory.Exists(debugDirectoryPath)) Directory.CreateDirectory(debugDirectoryPath);
+
             return debugDirectoryPath;
         }
 
