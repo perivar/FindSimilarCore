@@ -91,11 +91,13 @@ namespace FindSimilarServices
 
             if (!string.IsNullOrEmpty(loadFromPath) && File.Exists(loadFromPath))
             {
-                this.modelService = new InMemoryModelService(loadFromPath);
+                // this.modelService = new InMemoryModelService(loadFromPath);
+                this.modelService = new FindSimilarLiteDBService(loadFromPath);
             }
             else
             {
-                this.modelService = new InMemoryModelService();
+                // this.modelService = new InMemoryModelService();
+                this.modelService = new FindSimilarLiteDBService(loadFromPath);
             }
 
             this.audioService = new FindSimilarAudioService();
@@ -119,7 +121,10 @@ namespace FindSimilarServices
 
         public void Snapshot(string saveToPath)
         {
-            ((InMemoryModelService)modelService).Snapshot(saveToPath);
+            if (modelService is InMemoryModelService)
+            {
+                ((InMemoryModelService)modelService).Snapshot(saveToPath);
+            }
         }
 
         public void FingerprintDirectory(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)

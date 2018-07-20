@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.1.1"/>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.1.1"/>
     <PackageReference Include="protobuf-net" Version="2.3.13"/>
+    <PackageReference Include="LiteDB" Version="4.1.4"/>
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.3"/>

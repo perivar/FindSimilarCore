@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace CommonUtils
 {
@@ -204,12 +205,12 @@ namespace CommonUtils
         public static string RemoveNonAsciiCharactersFast(string strIn)
         {
             StringBuilder buffer = new StringBuilder(strIn.Length); //Max length
-            foreach(char ch in strIn)
+            foreach (char ch in strIn)
             {
                 UInt16 num = Convert.ToUInt16(ch); // In .NET, chars are UTF-16
-                
+
                 // The basic characters have the same code points as ASCII, and the extended characters are bigger
-                if((num >= 32u) && (num <= 126u)) buffer.Append(ch);
+                if ((num >= 32u) && (num <= 126u)) buffer.Append(ch);
             }
             return buffer.ToString();
         }
@@ -634,13 +635,27 @@ namespace CommonUtils
         /// </summary>
         /// <param name="ch">the character to check</param>
         /// <returns>true if between 32 and 126 inclusive</returns>
-
         public static bool IsAsciiPrintable(char ch)
-
         {
-
             return ch >= 32 && ch < 127;
+        }
 
+        public static string CreateMD5(string input)
+        {
+            // byte array representation of that string
+            byte[] inputBytes = new UTF8Encoding().GetBytes(input);
+
+            // need MD5 to calculate the hash
+            byte[] hash = ((HashAlgorithm)CryptoConfig.CreateFromName("MD5")).ComputeHash(inputBytes);
+
+            // string representation (similar to UNIX format)
+            string encoded = BitConverter.ToString(hash)
+               // without dashes
+               .Replace("-", string.Empty)
+               // make lowercase
+               .ToLower();
+
+            return encoded;
         }
 
     }
