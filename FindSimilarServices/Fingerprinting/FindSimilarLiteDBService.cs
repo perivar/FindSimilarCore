@@ -126,12 +126,9 @@ namespace SoundFingerprinting
                 {
 
                     var mapper = BsonMapper.Global;
-                    // mapper.Entity<TrackData>()
-                    // .Id(x => x.ISRC); // set your POCO document Id                 
-
                     mapper.Entity<SubFingerprintDTO>()
                     .Id(x => x.SubFingerprintId) // set your POCO document Id                 
-                                                 // .Ignore(x => x.HashBins)
+                    .Ignore(x => x.HashBins)
                     ;
                 }
                 catch (System.Exception e)
@@ -206,17 +203,13 @@ namespace SoundFingerprinting
 
         public IList<SubFingerprintData> ReadSubFingerprints(int[] hashBins, QueryConfiguration config)
         {
-            // [SolrField("hashTable_")]
-            // public IDictionary<int, int> Hashes { get; set; }
-            // var terms = hashBins.Select((hash, index) => $"hashTable_{index}:{hash}").ToList();
-            // var query = string.Join(" ", terms);
-
             // Get fingerprint collection
             var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
 
             // for some reason only dictionary lookup work, not the int hasbin array
             var hashes = SubFingerprintDTO.FromHashesToDictionary(hashBins);
             var results = col.Find(i => i.Hashes.Equals(hashes));
+            // var results = col.FindAll();
 
             // return the converted results from dtos to a list of SubFingerprintData
             return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
