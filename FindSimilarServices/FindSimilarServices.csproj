@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
@@ -12,8 +12,5 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.1.1"/>
     <PackageReference Include="protobuf-net" Version="2.3.13"/>
     <PackageReference Include="LiteDB" Version="4.1.4"/>
-  </ItemGroup>
-  <ItemGroup>
-    <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.3"/>
   </ItemGroup>
 </Project>
