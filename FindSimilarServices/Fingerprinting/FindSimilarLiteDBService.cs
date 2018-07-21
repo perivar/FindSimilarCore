@@ -233,7 +233,7 @@ namespace SoundFingerprinting
             return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
              */
 
-            return ReadSubFingerprintDataByHashBucketsWithThreshold(hashBins, config);
+            return ReadSubFingerprintDataByHashBucketsWithThreshold(hashBins, config.ThresholdVotes);
         }
 
         public ISet<SubFingerprintData> ReadSubFingerprints(IEnumerable<int[]> hashes, QueryConfiguration config)
@@ -329,16 +329,13 @@ namespace SoundFingerprinting
             return LiteDB.Query.In("HashBin", bsonArray);
         }
 
-        private IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(int[] hashBins, QueryConfiguration config)
+        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(int[] hashBins, int thresholdVotes)
         {
             // check IEnumerable<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(long[] hashBins, int thresholdVotes)
             // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
 
             // var query = GetQueryForHashBins(hashBins);
             var query = GetQueryForHashBinsIgnoreOrder(hashBins);
-
-            // threshold votes
-            var thresholdVotes = config.ThresholdVotes;
 
             // Get hash collection
             var col = db.GetCollection<Hash>("hashes");
@@ -357,7 +354,7 @@ namespace SoundFingerprinting
                     Votes = s.Count(),
                     Hashes = s.OrderBy(f => f.HashTable)
                 })
-                .Where(e => e.Hashes.Count() >= thresholdVotes)
+                .Where(e => e.Votes >= thresholdVotes)
                 .OrderByDescending(o => o.Votes)
                 .Select(s => new ModelReference<string>(s.Key))
                 .ToList();
@@ -369,17 +366,6 @@ namespace SoundFingerprinting
 
             // get the SubFingerprintData for each of the hits
             var subFingerprintDatas = ReadSubFingerprintDataByReference(hashes);
-            /*             
-                        var subFingerprintDatas = new List<SubFingerprintData>();
-                        foreach (var hash in hashes)
-                        {
-                            var subFingerprintId = hash.Key;
-                            var subFingerprint = ReadSubFingerprintDataByReference(new ModelReference<string>(subFingerprintId));
-
-                            subFingerprintDatas.Add(subFingerprint);
-                        }
-
-             */
             return subFingerprintDatas;
         }
 
