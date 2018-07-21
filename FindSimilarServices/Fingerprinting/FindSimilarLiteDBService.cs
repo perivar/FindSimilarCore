@@ -251,13 +251,13 @@ namespace SoundFingerprinting
             throw new System.NotImplementedException();
         }
 
-        public TrackData ReadTrackByReference(IModelReference trackReference)
+        public TrackData ReadTrackByReference(IModelReference id)
         {
             // get track collection
             var col = db.GetCollection<TrackDataDTO>("tracks");
 
             // return by id
-            var result = col.FindById(new BsonValue(trackReference.Id));
+            var result = col.FindById(new BsonValue(id.Id));
             return TrackDataDTO.CopyToTrackData(result);
         }
 
@@ -308,7 +308,8 @@ namespace SoundFingerprinting
 
         private LiteDB.Query GetQueryForHashBins(int[] hashBins)
         {
-            // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
+            // ensure we care about the actual index of the hasbin
+            // See https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
             var queries = new List<LiteDB.Query>();
             for (int hashtable = 1; hashtable <= hashBins.Length; hashtable++)
             {
@@ -320,12 +321,21 @@ namespace SoundFingerprinting
             return LiteDB.Query.Or(queries.ToArray());
         }
 
+        private LiteDB.Query GetQueryForHashBinsIgnoreOrder(int[] hashBins)
+        {
+            // don't care about the actual index of the hasbin, only if it exists
+            // See https://github.com/perivar/FindSimilar2/blob/master/Soundfingerprinting/DatabaseService.cs\
+            var bsonArray = new LiteDB.BsonArray(hashBins.Select(x => new BsonValue(x)));
+            return LiteDB.Query.In("HashBin", bsonArray);
+        }
+
         private IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(int[] hashBins, QueryConfiguration config)
         {
-            // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
             // check IEnumerable<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(long[] hashBins, int thresholdVotes)
+            // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
 
-            var query = GetQueryForHashBins(hashBins);
+            // var query = GetQueryForHashBins(hashBins);
+            var query = GetQueryForHashBinsIgnoreOrder(hashBins);
 
             // threshold votes
             var thresholdVotes = config.ThresholdVotes;
@@ -339,7 +349,7 @@ namespace SoundFingerprinting
 
             // find the subfingerprints that have more than the threshold number
             // of hashes that belong to that subfingerprint  
-            var matches = col.Find(query)
+            var hashes = col.Find(query)
                 .GroupBy(g => g.SubFingerprintId)
                 .Select(s => new
                 {
@@ -347,28 +357,33 @@ namespace SoundFingerprinting
                     Votes = s.Count(),
                     Hashes = s.OrderBy(f => f.HashTable)
                 })
-                .Where(e => e.Votes >= thresholdVotes)
-                .OrderByDescending(o => o.Votes);
+                .Where(e => e.Hashes.Count() >= thresholdVotes)
+                .OrderByDescending(o => o.Votes)
+                .Select(s => new ModelReference<string>(s.Key))
+                .ToList();
 
-            if (!matches.Any())
+            if (!hashes.Any())
             {
                 return Enumerable.Empty<SubFingerprintData>().ToList();
             }
 
             // get the SubFingerprintData for each of the hits
-            var subFingerprintDatas = new List<SubFingerprintData>();
-            foreach (var hash in matches)
-            {
-                var subFingerprintId = hash.Key;
-                var subFingerprint = ReadSubFingerprintDataByReference(new ModelReference<string>(subFingerprintId));
+            var subFingerprintDatas = ReadSubFingerprintDataByReference(hashes);
+            /*             
+                        var subFingerprintDatas = new List<SubFingerprintData>();
+                        foreach (var hash in hashes)
+                        {
+                            var subFingerprintId = hash.Key;
+                            var subFingerprint = ReadSubFingerprintDataByReference(new ModelReference<string>(subFingerprintId));
 
-                subFingerprintDatas.Add(subFingerprint);
-            }
+                            subFingerprintDatas.Add(subFingerprint);
+                        }
 
+             */
             return subFingerprintDatas;
         }
 
-        public SubFingerprintData ReadSubFingerprintDataByReference(IModelReference subFingerprintReference)
+        public SubFingerprintData ReadSubFingerprintDataByReference(IModelReference id)
         {
             // Get fingerprint collection
             var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
@@ -377,8 +392,32 @@ namespace SoundFingerprinting
             col.EnsureIndex(x => x.SubFingerprintId);
 
             // return by id
-            var result = col.FindById(new BsonValue(subFingerprintReference.Id));
+            var result = col.FindById(new BsonValue(id.Id));
             return SubFingerprintDTO.CopyToSubFingerprintData(result);
+        }
+
+        public List<SubFingerprintData> ReadSubFingerprintDataByReference(IEnumerable<IModelReference> ids)
+        {
+            // Get fingerprint collection
+            var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
+
+            // ensure indexes
+            col.EnsureIndex(x => x.SubFingerprintId);
+
+            // two alternative methods
+            // 1. use Query.In
+            var bsonArray = new LiteDB.BsonArray(ids.Select(x => new BsonValue(x.Id)));
+            var results = col.Find(LiteDB.Query.In("_id", bsonArray));
+
+            // 2. Use Find and Linq Contains            
+            // var results = col.Find(x => ids.Contains(new ModelReference<string>(x.Id)));
+
+            if (results.Count() == 0)
+            {
+                return new List<SubFingerprintData>();
+            }
+
+            return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
         }
     }
 }
