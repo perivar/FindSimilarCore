@@ -333,6 +333,10 @@ namespace SoundFingerprinting
             // Get hash collection
             var col = db.GetCollection<Hash>("hashes");
 
+            // ensure indexes
+            col.EnsureIndex(x => x.HashBin);
+            col.EnsureIndex(x => x.HashTable);
+
             // find the subfingerprints that have more than the threshold number
             // of hashes that belong to that subfingerprint  
             var matches = col.Find(query)
@@ -368,6 +372,9 @@ namespace SoundFingerprinting
         {
             // Get fingerprint collection
             var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
+
+            // ensure indexes
+            col.EnsureIndex(x => x.SubFingerprintId);
 
             // return by id
             var result = col.FindById(new BsonValue(subFingerprintReference.Id));
