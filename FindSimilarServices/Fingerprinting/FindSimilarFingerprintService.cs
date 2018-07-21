@@ -61,6 +61,11 @@ namespace SoundFingerprinting
             }
             samples.Samples = audiodata;
 
+            if (configuration.SpectrogramConfig.Verbosity == Verbosity.Verbose)
+            {
+                    WriteOutputUtils.WriteCSV(audiodata, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(samples.Origin) + "_audiodata.csv")));
+            }
+
             // create log spectrogram
             var spectralImages = spectrumService.CreateLogSpectrogram(samples, configuration.SpectrogramConfig);
 

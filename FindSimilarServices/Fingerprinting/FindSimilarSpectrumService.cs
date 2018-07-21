@@ -48,8 +48,11 @@
 
             // PIN: reverted the following FFT to use lomontFFT with managed code (not the unsafe changed made by the original author due to the issues on my computers)
 
-            //for (int index = 0; index < width; index++)
-            Parallel.For(0, width, index =>
+            // NOTE! When using Parallell.For the result becomes different from time to time
+            // when running in Release mode. 
+            // Therefore make sure to use for loop instead
+            for (int index = 0; index < width; index++)
+            // Parallel.For(0, width, index =>
             {
                 var fftArray = CopyAndWindow(samples, index * configuration.Overlap, window);
 
@@ -62,7 +65,7 @@
                 // see https://github.com/perivar/FindSimilar/blob/6b658b1c54d1504136e25e933f39b7c303da5d9e/Mirage/Fft.cs
                 ExtractLogBins(fftArray, logFrequenciesIndexes, configuration.LogBins, wdftSize, frames, index);
             }
-            );
+            // );
 
             if (configuration.Verbosity == Verbosity.Verbose)
             {
