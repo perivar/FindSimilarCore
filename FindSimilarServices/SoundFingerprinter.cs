@@ -180,7 +180,8 @@ namespace FindSimilarServices
                     || skipDurationAboveSeconds <= 0
                     || duration < 0)
                 {
-                    var track = new TrackData(fileInfo.FullName, null, fileInfo.Name, null, 0, duration);
+                    // store the full file path in the title field
+                    var track = new TrackData(null, null, fileInfo.FullName, null, 0, duration);
                     if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track, verbosity))
                     {
                         Log.Fatal("Failed! Could not generate audio fingerprint for: {0}", file);
@@ -270,7 +271,6 @@ namespace FindSimilarServices
                                                      .Query()
                                                      .Result;
 
-                //return queryResult.BestMatch.Track; // successful match has been found
                 return queryResult.ResultEntries;
             }
         }

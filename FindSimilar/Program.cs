@@ -337,9 +337,14 @@ namespace FindSimilar
                 var results = fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), thresholdVotes, maxTracksToReturn, verbosity);
 
                 Console.WriteLine("Found {0} similar tracks", results.Count());
+
+                // results.BestMatch.Track
                 foreach (var result in results)
                 {
-                    Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", result.Track.ISRC, result.Confidence, result.Coverage, result.EstimatedCoverage);
+                    // the track title holds the full filename                     
+                    FileInfo fileInfo = new FileInfo(result.Track.Title);
+
+                    Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", fileInfo.FullName, result.Confidence, result.Coverage, result.EstimatedCoverage);
                 }
             }
             else
