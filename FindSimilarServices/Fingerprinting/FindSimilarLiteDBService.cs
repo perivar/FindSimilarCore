@@ -63,26 +63,7 @@ namespace SoundFingerprinting
             public int SequenceNumber { get; set; }
             public double SequenceAt { get; set; }
             public int[] HashBins { get; private set; }
-            public IDictionary<int, int> Hashes { get; set; }
             public IEnumerable<string> Clusters { get; set; }
-
-            public static Dictionary<int, int> FromHashesToDictionary(int[] hashBins)
-            {
-                var hashTables = hashBins.Select((hash, index) => new { index, hash })
-                                         .ToDictionary(x => x.index, x => x.hash);
-                return hashTables;
-            }
-
-            public static int[] FromDictionaryToHashes(IDictionary<int, int> hashTables)
-            {
-                int[] hashBins = new int[hashTables.Count];
-                foreach (var hashTable in hashTables)
-                {
-                    hashBins[hashTable.Key] = hashTable.Value;
-                }
-
-                return hashBins;
-            }
 
             public static SubFingerprintDTO CopyToSubFingerprintDTO(IModelReference trackReference, HashedFingerprint hash)
             {
@@ -93,7 +74,6 @@ namespace SoundFingerprinting
                     SequenceNumber = (int)hash.SequenceNumber,
                     SequenceAt = hash.StartsAt,
                     HashBins = hash.HashBins,
-                    Hashes = FromHashesToDictionary(hash.HashBins),
                     Clusters = hash.Clusters
                 };
             }
@@ -101,7 +81,7 @@ namespace SoundFingerprinting
             public static SubFingerprintData CopyToSubFingerprintData(SubFingerprintDTO dto)
             {
                 return new SubFingerprintData(
-                    FromDictionaryToHashes(dto.Hashes),
+                    dto.HashBins,
                     (uint)dto.SequenceNumber,
                     (float)dto.SequenceAt,
                     new ModelReference<string>(dto.SubFingerprintId),
@@ -176,7 +156,7 @@ namespace SoundFingerprinting
             // Get fingerprint collection
             var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
 
-            // Insert hashes objects (Id will be auto-incremented)
+            // Insert hashes objects 
             var bson = col.InsertBulk(dtos);
 
             foreach (var dto in dtos)
@@ -193,7 +173,7 @@ namespace SoundFingerprinting
             // get track collection
             var col = db.GetCollection<TrackDataDTO>("tracks");
 
-            // insert new track object (id will be auto-incremented)
+            // insert new track object 
             var bson = col.Insert(dto);
 
             var trackReference = new ModelReference<string>(bson);
@@ -303,7 +283,7 @@ namespace SoundFingerprinting
             // Get hash collection
             var col = db.GetCollection<Hash>("hashes");
 
-            // Insert hashes objects (Id will be auto-incremented)
+            // Insert hashes objects 
             var bson = col.InsertBulk(hashes);
         }
 
