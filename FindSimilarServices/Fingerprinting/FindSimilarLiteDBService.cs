@@ -113,9 +113,9 @@ namespace SoundFingerprinting
         {
             public string Id { get; set; }
 
-            public int HashTable { get; set; }
+            public int HashTable { get; set; } // the index
 
-            public long HashBin { get; set; }
+            public long HashBin { get; set; } // the actual number
 
             public string SubFingerprintId { get; set; }
 
@@ -140,8 +140,8 @@ namespace SoundFingerprinting
 
                     var mapper = BsonMapper.Global;
                     mapper.Entity<SubFingerprintDTO>()
-                    .Id(x => x.SubFingerprintId) // set your POCO document Id                 
-                    .Ignore(x => x.HashBins);
+                    .Id(x => x.SubFingerprintId); // set your POCO document Id                 
+                    // .Ignore(x => x.HashBins);
                 }
                 catch (System.Exception)
                 {
@@ -233,7 +233,8 @@ namespace SoundFingerprinting
             return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
              */
 
-            return ReadSubFingerprintDataByHashBucketsWithThreshold(hashBins, config.ThresholdVotes);
+            //return ReadSubFingerprintDataByHashBucketsWithThresholdDirect(hashBins, config.ThresholdVotes);
+            return ReadSubFingerprintDataByHashBucketsWithThresholdOwnTable(hashBins, config.ThresholdVotes);
         }
 
         public ISet<SubFingerprintData> ReadSubFingerprints(IEnumerable<int[]> hashes, QueryConfiguration config)
@@ -306,6 +307,39 @@ namespace SoundFingerprinting
             var bson = col.InsertBulk(hashes);
         }
 
+        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThresholdDirect(int[] hashBins, int thresholdVotes)
+        {
+            // Get fingerprint collection
+            var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
+
+            // ensure that the hasbins can be searched for by value
+            col.EnsureIndex(x => x.HashBins, "$.HashBins[*]");
+            // don't care about the actual index of the hasbin, only if it exists
+            // See https://github.com/perivar/FindSimilar2/blob/master/Soundfingerprinting/DatabaseService.cs\
+            var bsonArray = new LiteDB.BsonArray(hashBins.Select(x => new BsonValue(x)));
+            var fingerprints = col.Find(LiteDB.Query.In("HashBins[*]", bsonArray));
+
+            // use linq to filter again
+            // see https://stackoverflow.com/questions/31629937/match-to-most-match-words-with-linq
+            var results = from fingerprint in fingerprints
+                          select new
+                          {
+                              Fingerprint = fingerprint,
+                              MatchedCount = hashBins.Count(hashBin => fingerprint.HashBins.Contains(hashBin))
+                          } into e
+                          where e.MatchedCount >= thresholdVotes
+                          orderby e.MatchedCount descending
+                          select e.Fingerprint;
+            //  select new
+            //  {
+            //  e.Fingerprint,
+            //  e.MatchedCount
+            //  };
+
+            // return the converted results from dtos to a list of SubFingerprintData
+            return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
+        }
+
         private LiteDB.Query GetQueryForHashBins(int[] hashBins)
         {
             // ensure we care about the actual index of the hasbin
@@ -329,7 +363,7 @@ namespace SoundFingerprinting
             return LiteDB.Query.In("HashBin", bsonArray);
         }
 
-        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(int[] hashBins, int thresholdVotes)
+        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThresholdOwnTable(int[] hashBins, int thresholdVotes)
         {
             // check IEnumerable<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(long[] hashBins, int thresholdVotes)
             // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
