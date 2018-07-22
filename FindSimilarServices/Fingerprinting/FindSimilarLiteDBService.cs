@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CommonUtils;
 using LiteDB;
+using Serilog;
 using SoundFingerprinting;
 using SoundFingerprinting.Configuration;
 using SoundFingerprinting.DAO;
@@ -91,7 +92,7 @@ namespace SoundFingerprinting
 
         public class Hash
         {
-            public string Id { get; set; }
+            public int Id { get; set; }
 
             public int HashTable { get; set; } // the index
 
@@ -113,19 +114,19 @@ namespace SoundFingerprinting
         {
             if (!string.IsNullOrEmpty(databasePath))
             {
-                db = new LiteDatabase(databasePath);
-
                 try
                 {
+                    db = new LiteDatabase(databasePath);
 
                     var mapper = BsonMapper.Global;
                     mapper.Entity<SubFingerprintDTO>()
-                    .Id(x => x.SubFingerprintId); // set your POCO document Id                 
-                    // .Ignore(x => x.HashBins);
+                    .Id(x => x.SubFingerprintId) // set your POCO document Id                 
+                    // .Ignore(x => x.HashBins); // don't use the hashbin element,rather a separate table
+                    ;
                 }
-                catch (System.Exception)
+                catch (System.Exception e)
                 {
-
+                    Log.Warning("Issues with LiteDatabase:", e);
                 }
             }
         }
@@ -157,13 +158,18 @@ namespace SoundFingerprinting
             var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
 
             // Insert hashes objects 
+            // but ignore the HashBin property
             var bson = col.InsertBulk(dtos);
 
+            // then insert the HashBin property into a separate table 
+            // note: this makes the database significantly larger
+            /*
             foreach (var dto in dtos)
             {
                 // insert each hash as a separate object
                 InsertHashBins(dto.HashBins, dto.SubFingerprintId, (string)trackReference.Id);
             }
+            */
         }
 
         public IModelReference InsertTrack(TrackData track)
@@ -213,8 +219,8 @@ namespace SoundFingerprinting
             return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
              */
 
-            //return ReadSubFingerprintDataByHashBucketsWithThresholdDirect(hashBins, config.ThresholdVotes);
-            return ReadSubFingerprintDataByHashBucketsWithThresholdOwnTable(hashBins, config.ThresholdVotes);
+            return ReadSubFingerprintDataByHashBucketsWithThresholdDirect(hashBins, config.ThresholdVotes);
+            // return ReadSubFingerprintDataByHashBucketsWithThreshold(hashBins, config.ThresholdVotes);
         }
 
         public ISet<SubFingerprintData> ReadSubFingerprints(IEnumerable<int[]> hashes, QueryConfiguration config)
@@ -263,6 +269,52 @@ namespace SoundFingerprinting
             return results.Select(TrackDataDTO.CopyToTrackData).ToList();
         }
 
+        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThresholdDirect(int[] hashBins, int thresholdVotes)
+        {
+            // Get fingerprint collection
+            var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
+
+            // ensure that the hasbins can be searched for by value
+            col.EnsureIndex(x => x.HashBins, "$.HashBins[*]");
+
+            // don't care about the actual index of the hasbin, only if it exists
+            // See https://github.com/perivar/FindSimilar2/blob/master/Soundfingerprinting/DatabaseService.cs\
+            var bsonArray = new LiteDB.BsonArray(hashBins.Select(x => new BsonValue(x)));
+            var fingerprints = col.Find(LiteDB.Query.In("HashBins[*]", bsonArray));
+
+            // use linq to filter again since LiteDB doesn't support this directly
+            // see https://stackoverflow.com/questions/31629937/match-to-most-match-words-with-linq
+            /*
+            var results = from fingerprint in fingerprints
+                          select new
+                          {
+                              Fingerprint = fingerprint,
+                              MatchedCount = hashBins.Count(hashBin => fingerprint.HashBins.Contains(hashBin))
+                          } into e
+                          where e.MatchedCount >= thresholdVotes
+                          orderby e.MatchedCount descending
+                          select e.Fingerprint;
+            */
+            // to see the matched count add this to the returned array
+            //  select new
+            //  {
+            //  e.Fingerprint,
+            //  e.MatchedCount
+            //  };
+
+            var results = fingerprints.Select(fingerprint => new
+            {
+                Fingerprint = fingerprint,
+                MatchedCount = hashBins.Count(hashBin => fingerprint.HashBins.Contains(hashBin))
+            })
+                .Where(e => e.MatchedCount >= thresholdVotes)
+                .OrderByDescending(o => o.MatchedCount)
+                .Select(s => s.Fingerprint);
+
+            // return the converted results from dtos to a list of SubFingerprintData
+            return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
+        }
+
         private void InsertHashBins(int[] hashBins, string subFingerprintId, string trackId)
         {
             // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/7287083b3c6cc06ac59b8eb18bc6796411226246/src/SoundFingerprinting.MongoDb/HashBinDao.cs
@@ -271,7 +323,7 @@ namespace SoundFingerprinting
             {
                 var hash = new Hash
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    // Id = Guid.NewGuid().ToString(), // auto-increment instead
                     HashTable = hashtable,
                     HashBin = hashBins[hashtable - 1],
                     SubFingerprintId = subFingerprintId,
@@ -285,39 +337,6 @@ namespace SoundFingerprinting
 
             // Insert hashes objects 
             var bson = col.InsertBulk(hashes);
-        }
-
-        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThresholdDirect(int[] hashBins, int thresholdVotes)
-        {
-            // Get fingerprint collection
-            var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
-
-            // ensure that the hasbins can be searched for by value
-            col.EnsureIndex(x => x.HashBins, "$.HashBins[*]");
-            // don't care about the actual index of the hasbin, only if it exists
-            // See https://github.com/perivar/FindSimilar2/blob/master/Soundfingerprinting/DatabaseService.cs\
-            var bsonArray = new LiteDB.BsonArray(hashBins.Select(x => new BsonValue(x)));
-            var fingerprints = col.Find(LiteDB.Query.In("HashBins[*]", bsonArray));
-
-            // use linq to filter again
-            // see https://stackoverflow.com/questions/31629937/match-to-most-match-words-with-linq
-            var results = from fingerprint in fingerprints
-                          select new
-                          {
-                              Fingerprint = fingerprint,
-                              MatchedCount = hashBins.Count(hashBin => fingerprint.HashBins.Contains(hashBin))
-                          } into e
-                          where e.MatchedCount >= thresholdVotes
-                          orderby e.MatchedCount descending
-                          select e.Fingerprint;
-            //  select new
-            //  {
-            //  e.Fingerprint,
-            //  e.MatchedCount
-            //  };
-
-            // return the converted results from dtos to a list of SubFingerprintData
-            return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
         }
 
         private LiteDB.Query GetQueryForHashBins(int[] hashBins)
@@ -343,7 +362,7 @@ namespace SoundFingerprinting
             return LiteDB.Query.In("HashBin", bsonArray);
         }
 
-        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThresholdOwnTable(int[] hashBins, int thresholdVotes)
+        public IList<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(int[] hashBins, int thresholdVotes)
         {
             // check IEnumerable<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(long[] hashBins, int thresholdVotes)
             // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
@@ -365,11 +384,11 @@ namespace SoundFingerprinting
                 .Select(s => new
                 {
                     Key = s.Key,
-                    Votes = s.Count(),
+                    MatchedCount = s.Count(),
                     Hashes = s.OrderBy(f => f.HashTable)
                 })
-                .Where(e => e.Votes >= thresholdVotes)
-                .OrderByDescending(o => o.Votes)
+                .Where(e => e.MatchedCount >= thresholdVotes)
+                .OrderByDescending(o => o.MatchedCount)
                 .Select(s => new ModelReference<string>(s.Key))
                 .ToList();
 
@@ -379,8 +398,7 @@ namespace SoundFingerprinting
             }
 
             // get the SubFingerprintData for each of the hits
-            var subFingerprintDatas = ReadSubFingerprintDataByReference(hashes);
-            return subFingerprintDatas;
+            return ReadSubFingerprintDataByReference(hashes);
         }
 
         public SubFingerprintData ReadSubFingerprintDataByReference(IModelReference id)
