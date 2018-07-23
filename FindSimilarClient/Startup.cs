@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SoundFingerprinting;
 using SoundFingerprinting.Audio;
 
 namespace FindSimilarClient
@@ -36,7 +37,8 @@ namespace FindSimilarClient
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.AddScoped<IStreamingService, StreamingService>();
-            services.AddScoped<IAudioService, FindSimilarAudioService>();
+            services.AddSingleton<IAudioService, FindSimilarAudioService>();
+            services.AddSingleton<IModelService>(new FindSimilarLiteDBService(@"C:\Users\pnerseth\My Projects\fingerprint.db"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

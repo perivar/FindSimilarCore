@@ -11,6 +11,8 @@ using SoundFingerprinting.Audio;
 using CSCore.Codecs;
 using CSCore;
 using CSCore.Codecs.WAV;
+using SoundFingerprinting;
+using SoundFingerprinting.DAO;
 
 namespace FindSimilarClient.Controllers
 {
@@ -19,20 +21,32 @@ namespace FindSimilarClient.Controllers
     {
         private IStreamingService _streamingService;
         private IAudioService _audioService;
+        private IModelService _modelService;
 
-        public StreamingController(IStreamingService streamingService, IAudioService audioService)
+        public StreamingController(IStreamingService streamingService, IAudioService audioService, IModelService modelService)
         {
             _streamingService = streamingService;
             _audioService = audioService;
+            _modelService = modelService;
         }
 
         [HttpGet("{name}")]
         public async Task<FileStreamResult> Get(string name)
         {
+            // Id [string]:"b6b9ba73-293c-46ae-bd7d-2ea23ecb5e1c"
+            // Id [string]:"e12ec602-9ab7-4999-9506-1e996f9d6eb2"
+
+            var track = _modelService.ReadTrackByReference(new ModelReference<string>(name));
+
             // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
             // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
-            var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
-            return StreamAudioV2(pathToSourceFile);
+            // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
+            if (!string.IsNullOrEmpty(track.Title)) {
+                return StreamAudioV2(track.Title);
+            } else {
+                return null;
+            }
+
             /* 
             // works but not seeking
             var httpStream = await _streamingService.GetByName(name);
