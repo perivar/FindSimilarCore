@@ -9,10 +9,11 @@ using SoundFingerprinting.Configuration;
 using SoundFingerprinting.DAO;
 using SoundFingerprinting.DAO.Data;
 using SoundFingerprinting.Data;
+using FindSimilarServices.Fingerprinting;
 
 namespace SoundFingerprinting
 {
-    public class FindSimilarLiteDBService : IModelService
+    public class FindSimilarLiteDBService : IModelService, IFindSimilarDatabase
     {
         public class TrackDataDTO
         {
@@ -162,7 +163,12 @@ namespace SoundFingerprinting
 
         public bool ContainsTrack(string isrc, string artist, string title)
         {
-            throw new System.NotImplementedException();
+            // get track collection
+            var col = db.GetCollection<TrackDataDTO>("tracks");
+
+            // return by isrc
+            var result = col.FindOne(x => x.ISRC == isrc && x.Artist == artist && x.Title == title);
+            return result != null ? true : false;
         }
 
         public int DeleteTrack(IModelReference trackReference)
@@ -225,6 +231,22 @@ namespace SoundFingerprinting
             return results.Select(TrackDataDTO.CopyToTrackData).ToList();
         }
 
+        public IList<TrackData> ReadTracksByQuery(string query)
+        {
+            // get track collection
+            var col = db.GetCollection<TrackDataDTO>("tracks");
+
+            var results = col.Find(x => x.Title.Contains(query));
+
+            if (results.Count() == 0)
+            {
+                return new List<TrackData>();
+            }
+
+            return results.Select(TrackDataDTO.CopyToTrackData).ToList();
+        }
+
+
         public IList<HashedFingerprint> ReadHashedFingerprintsByTrack(IModelReference trackReference)
         {
             throw new System.NotImplementedException();
@@ -250,12 +272,27 @@ namespace SoundFingerprinting
 
         public IList<TrackData> ReadTrackByArtistAndTitleName(string artist, string title)
         {
-            throw new System.NotImplementedException();
+            // get track collection
+            var col = db.GetCollection<TrackDataDTO>("tracks");
+
+            var results = col.Find(x => x.Artist.Contains(artist) && x.Title.Contains(title));
+
+            if (results.Count() == 0)
+            {
+                return new List<TrackData>();
+            }
+
+            return results.Select(TrackDataDTO.CopyToTrackData).ToList();
         }
 
         public TrackData ReadTrackByISRC(string isrc)
         {
-            throw new System.NotImplementedException();
+            // get track collection
+            var col = db.GetCollection<TrackDataDTO>("tracks");
+
+            // return by isrc
+            var result = col.FindOne(x => x.ISRC == isrc);
+            return TrackDataDTO.CopyToTrackData(result);
         }
 
         public TrackData ReadTrackByReference(IModelReference id)
@@ -318,30 +355,11 @@ namespace SoundFingerprinting
             col.EnsureIndex(x => x.HashBins, "$.HashBins[*]");
 
             // don't care about the actual index of the hasbin, only if it exists
-            // See https://github.com/perivar/FindSimilar2/blob/master/Soundfingerprinting/DatabaseService.cs\
-            var bsonArray = new LiteDB.BsonArray(hashBins.Select(x => new BsonValue(x)));
-            var fingerprints = col.Find(LiteDB.Query.In("HashBins[*]", bsonArray));
+            var query = GetQueryForHashBinsIgnoreIndex(hashBins, false);
+            var fingerprints = col.Find(query);
 
             // use linq to filter again since LiteDB doesn't support this directly
             // see https://stackoverflow.com/questions/31629937/match-to-most-match-words-with-linq
-            /*
-            var results = from fingerprint in fingerprints
-                          select new
-                          {
-                              Fingerprint = fingerprint,
-                              MatchedCount = hashBins.Count(hashBin => fingerprint.HashBins.Contains(hashBin))
-                          } into e
-                          where e.MatchedCount >= thresholdVotes
-                          orderby e.MatchedCount descending
-                          select e.Fingerprint;
-            */
-            // to see the matched count add this to the returned array
-            //  select new
-            //  {
-            //  e.Fingerprint,
-            //  e.MatchedCount
-            //  };
-
             var results = fingerprints.Select(fingerprint => new
             {
                 Fingerprint = fingerprint,
@@ -355,7 +373,7 @@ namespace SoundFingerprinting
             return results.Select(SubFingerprintDTO.CopyToSubFingerprintData).ToList();
         }
 
-        private void InsertHashBins(int[] hashBins, string subFingerprintId, string trackId)
+        private void InsertHashBinsToSeparateTable(int[] hashBins, string subFingerprintId, string trackId)
         {
             // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/7287083b3c6cc06ac59b8eb18bc6796411226246/src/SoundFingerprinting.MongoDb/HashBinDao.cs
             var hashes = new List<Hash>();
@@ -379,6 +397,8 @@ namespace SoundFingerprinting
             var bson = col.InsertBulk(hashes);
         }
 
+        // build a query for the document hash array that ensures 
+        // a unique match (all hashbins exist)
         private LiteDB.Query GetQueryForHashBinsUnique(int[] hashBins)
         {
             var queries = new List<LiteDB.Query>();
@@ -408,14 +428,23 @@ namespace SoundFingerprinting
             return LiteDB.Query.Or(queries.ToArray());
         }
 
-        // build a query for the separate hashes table that ignores
+        // build a query for the separate hashes-table, or the document hash array that ignores
         // the actual index of the hashbin
-        private LiteDB.Query GetQueryForHashBinsIgnoreIndex(int[] hashBins)
+        private LiteDB.Query GetQueryForHashBinsIgnoreIndex(int[] hashBins, bool useSeparateTable)
         {
             // don't care about the actual index of the hasbin, only if it exists
             // See https://github.com/perivar/FindSimilar2/blob/master/Soundfingerprinting/DatabaseService.cs\
             var bsonArray = new LiteDB.BsonArray(hashBins.Select(x => new BsonValue(x)));
-            return LiteDB.Query.In("HashBin", bsonArray);
+
+            if (useSeparateTable)
+            {
+                return LiteDB.Query.In("HashBin", bsonArray);
+            }
+            else
+            {
+                // use the hashbin array on the main document
+                return LiteDB.Query.In("HashBins[*]", bsonArray);
+            }
         }
 
         // read subfingerprints using the separate hashes table
@@ -427,7 +456,7 @@ namespace SoundFingerprinting
             LiteDB.Query query = null;
             if (ignoreHashTableIndex)
             {
-                query = GetQueryForHashBinsIgnoreIndex(hashBins);
+                query = GetQueryForHashBinsIgnoreIndex(hashBins, true);
             }
             else
             {

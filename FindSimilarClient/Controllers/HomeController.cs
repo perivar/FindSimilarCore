@@ -5,13 +5,23 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using FindSimilarClient.Models;
+using FindSimilarServices.Fingerprinting;
 
 namespace FindSimilarClient.Controllers
 {
     public class HomeController : Controller
     {
+        private IFindSimilarDatabase _database;
+
+        public HomeController(IFindSimilarDatabase database) {
+            _database = database;
+        }
+
         public IActionResult Index()
         {
+            var tracks = _database.ReadTracksByQuery("kick");
+            ViewBag.Tracks = tracks;
+
             return View();
         }
 

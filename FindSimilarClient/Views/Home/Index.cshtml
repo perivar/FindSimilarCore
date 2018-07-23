@@ -1,60 +1,34 @@
-﻿@{
+﻿@using SoundFingerprinting.DAO.Data;
+
+@{
     ViewData["Title"] = "Home Page";
 }
 
-<table id="data" class="table">
-    <thead>
+@section Head {
+    
+}
+
+<table id="data" class="table table-sm">
+    <thead class="thead-light">
         <tr>
             <th scope="col">#</th>
-            <th scope="col">header2</th>
-            <th scope="col">header3</th>
-            <th scope="col">header4</th>
-            <th scope="col">header5</th>
+            <th scope="col">File</th>
+            <th scope="col">Seconds</th>
         </tr>
     </thead>
     <tbody>
+
+@foreach (TrackData track in ViewBag.Tracks) {
         <tr>
-            <th scope="row">1</th>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
+            <th scope="row">
+                <!-- <i class="far fa-play-circle"></i> -->
+                <audio preload="auto" src="/api/streaming/@track.TrackReference.Id"></audio>
+            </th>            
+            <td><small>@track.Title</small></td>
+            <td><small>@track.Length.ToString("N")</small></td>
         </tr>
-        <tr>
-            <th scope="row">2</th>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-        </tr>
-        <tr>
-            <th scope="row">3</th>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-        </tr>
-        <tr>
-            <th scope="row">4</th>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-        </tr>
-        <tr>
-            <th scope="row">5</th>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-        </tr>
-        <tr>
-            <th scope="row">6</th>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-            <td>data</td>
-        </tr>
+
+}
     </tbody>
 </table>
 
@@ -75,11 +49,7 @@
 
 @section Scripts { 
     @* 
-    http://jsfiddle.net/x4qvU/
-    https://jsfiddle.net/bsacheri/gsh7nw5f/7/
-    http://codippa.com/how-to-highlight-a-table-row-on-click/
-    https://gist.github.com/josheinstein/5092789
-    https://gist.github.com/lsmith/2244450
+    Javascript sections
     *@
 
 <script type="text/javascript">
@@ -102,6 +72,23 @@ function highlightRow(tableRowIndex) {
         
         // highlight your target
         $('#data tbody tr:eq('+tableRowIndex+')').addClass('table-active');
+
+        // and make sure to scroll the row into view
+        // $('#data tbody tr:eq('+tableRowIndex+')')[0].scrollIntoView({
+            // behavior: "auto", // smooth or "auto" or "instant"
+            // block: "end" // start or "end"
+        // });
+
+        // and play
+        $('audio').each(function() 
+        {
+            $(this)[0].pause();
+        });
+        var player =  $('#data tbody tr:eq('+tableRowIndex+') audio')[0];
+        player.play();
+        var playericon =  $('#data tbody tr:eq('+tableRowIndex+') i');
+        playericon.removeClass('fa-play-circle');
+        playericon.addClass('fa-pause-circle');
     }
 }
 
@@ -192,6 +179,24 @@ $('#data tbody tr').click( function() {
     $('#editForm').hide();
     highlightRow(($(this).index()));
 });
-  
+
+// attach an onclick event handler to the playpause buttons
+$('#data tbody tr th DISABLED').click( function() {
+
+    var player = $(this).siblings("audio")[0];
+
+    if (player.paused) {
+        player.play();
+        $(this).removeClass('fa-play-circle');
+        $(this).addClass('fa-pause-circle');
+    }
+    else {
+        player.pause();
+        $(this).removeClass('fa-pause-circle');
+        $(this).addClass('fa-play-circle');
+    }
+});
+
+
 </script>
 }

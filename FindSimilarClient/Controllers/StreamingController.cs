@@ -13,6 +13,7 @@ using CSCore;
 using CSCore.Codecs.WAV;
 using SoundFingerprinting;
 using SoundFingerprinting.DAO;
+using FindSimilarServices.Fingerprinting;
 
 namespace FindSimilarClient.Controllers
 {
@@ -20,14 +21,11 @@ namespace FindSimilarClient.Controllers
     public class StreamingController : Controller
     {
         private IStreamingService _streamingService;
-        private IAudioService _audioService;
-        private IModelService _modelService;
-
-        public StreamingController(IStreamingService streamingService, IAudioService audioService, IModelService modelService)
+        private IFindSimilarDatabase _database;
+        public StreamingController(IStreamingService streamingService, IFindSimilarDatabase database)
         {
             _streamingService = streamingService;
-            _audioService = audioService;
-            _modelService = modelService;
+            _database = database;
         }
 
         [HttpGet("{name}")]
@@ -36,7 +34,7 @@ namespace FindSimilarClient.Controllers
             // Id [string]:"b6b9ba73-293c-46ae-bd7d-2ea23ecb5e1c"
             // Id [string]:"e12ec602-9ab7-4999-9506-1e996f9d6eb2"
 
-            var track = _modelService.ReadTrackByReference(new ModelReference<string>(name));
+            var track = _database.ReadTrackByReference(new ModelReference<string>(name));
 
             // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
             // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
