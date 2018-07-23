@@ -201,11 +201,21 @@ namespace CSCore.Codecs.OGG
         {
             get
             {
-                return _oggDecodedStream.Position;
+                if (_oggDecodedStream != null)
+                {
+                    return _oggDecodedStream.Position;
+                }
+                else
+                {
+                    return 0;
+                }
             }
             set
             {
-                _oggDecodedStream.Position = value;
+                if (_oggDecodedStream != null)
+                {
+                    _oggDecodedStream.Position = value;
+                }
             }
         }
 

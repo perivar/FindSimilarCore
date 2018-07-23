@@ -1,7 +1,12 @@
-﻿@{
-    ViewData["Title"] = "About";
-}
+﻿@{ ViewData["Title"] = "About"; }
 <h2>@ViewData["Title"]</h2>
 <h3>@ViewData["Message"]</h3>
 
 <p>Use this area to provide additional information.</p>
+
+<audio controls preload="none">
+    <source src="/api/streaming/earth" type="audio/wav">
+</audio>
+
+
+<a href="/api/streaming/earth" target="_new">Open URL</a>
