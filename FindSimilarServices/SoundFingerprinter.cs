@@ -57,7 +57,7 @@ namespace FindSimilarServices
         Verbose = 5
     }
 
-    public class SoundFingerprinter
+    public class SoundFingerprinter : ISoundFingerprinter
     {
         public static string DEBUG_DIRECTORY_PATH = "debug";
 
@@ -88,6 +88,9 @@ namespace FindSimilarServices
             {
                 DEBUG_DIRECTORY_PATH = debugDirectoryPath;
             }
+
+            // create the debug directory if it doesn't exist
+            if (!Directory.Exists(DEBUG_DIRECTORY_PATH)) Directory.CreateDirectory(DEBUG_DIRECTORY_PATH);
 
             if (!string.IsNullOrEmpty(loadFromPath) && File.Exists(loadFromPath))
             {

@@ -14,6 +14,7 @@
             <th scope="col">#</th>
             <th scope="col">File</th>
             <th scope="col">Seconds</th>
+            <th scope="col">Action</th>
         </tr>
     </thead>
     <tbody>
@@ -21,13 +22,23 @@
 @foreach (TrackData track in ViewBag.Tracks) {
         <tr>
             <th scope="row">
-                <!-- <i class="far fa-play-circle"></i> -->
+                <i class="far fa-play-circle"></i>
                 <audio preload="auto" src="/api/streaming/@track.TrackReference.Id"></audio>
             </th>            
             <td><small>@track.Title</small></td>
             <td><small>@track.Length.ToString("N")</small></td>
+            <td>
+                <div class="dropdown">
+                <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Action
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item" asp-controller="Home" asp-action="FindSimilar" asp-route-id="@track.TrackReference.Id">Find Similar</a>                    
+                    <a class="dropdown-item" asp-controller="Home" asp-action="OpenDirectory" asp-route-id="@track.TrackReference.Id">Open Directory</a>                    
+                </div>
+                </div>                
+            </td>
         </tr>
-
 }
     </tbody>
 </table>
@@ -58,37 +69,87 @@
 $('#editForm').hide();
 var editing = false;
 
-function highlightRow(tableRowIndex) {
-    
+// variable that holds all table rows
+var tableRows = $('#data tbody tr');
+
+// variable that holds the window object
+var w = $(window);
+
+function highlightRow(tableRowIndex) 
+{
     // if .table-active has reached the last, start again
-    if (tableRowIndex < 0  || (tableRowIndex + 1) > $('#data tbody tr').length )
+    if (tableRowIndex < 0  || (tableRowIndex + 1) > tableRows.length )
         tableRowIndex = 0;    
     
     // check if element exists
-    if($('#data tbody tr:eq('+tableRowIndex+')').length > 0)
+    var selectedTableRow = $('#data tbody tr:eq('+tableRowIndex+')');
+    if(selectedTableRow.length > 0)
     {
-        // remove other highlights
-        $('#data tbody tr').removeClass('table-active');
+        // remove other highlights from all table rows
+        tableRows.removeClass('table-active');
         
         // highlight your target
-        $('#data tbody tr:eq('+tableRowIndex+')').addClass('table-active');
+        selectedTableRow.addClass('table-active');
 
         // and make sure to scroll the row into view
-        // $('#data tbody tr:eq('+tableRowIndex+')')[0].scrollIntoView({
-            // behavior: "auto", // smooth or "auto" or "instant"
-            // block: "end" // start or "end"
-        // });
+        w.scrollTop( selectedTableRow.offset().top - (w.height()/2) );
+        
+        // and play audio
+        playRow(tableRowIndex);
+    }
+}
 
-        // and play
+function playRow(tableRowIndex) 
+{
+    // check if element exists
+    var selectedTableRow = $('#data tbody tr:eq('+tableRowIndex+')');
+    if(selectedTableRow.length > 0)
+    {
+        // first ensure all audio stops playing
         $('audio').each(function() 
         {
-            $(this)[0].pause();
+            var audioPlayer = $(this)[0];
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+
+            // find audio icon and set it to not playing
+            var audioPlayerIcon = $(this).siblings('i');
+            SetAudioPlayerIcon(audioPlayerIcon, false);
         });
-        var player =  $('#data tbody tr:eq('+tableRowIndex+') audio')[0];
-        player.play();
-        var playericon =  $('#data tbody tr:eq('+tableRowIndex+') i');
-        playericon.removeClass('fa-play-circle');
-        playericon.addClass('fa-pause-circle');
+
+        // get the correct audio player
+        var audioPlayer = selectedTableRow.find('audio')[0];
+
+        // get the correct audio player icons
+        var audioPlayerIcon = selectedTableRow.find('i');
+
+        // and play
+        if (audioPlayer.paused) {
+            audioPlayer.play();
+            SetAudioPlayerIcon(audioPlayerIcon, true);
+        }
+        else {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            SetAudioPlayerIcon(audioPlayerIcon, false);
+        }
+
+        // add event listener for the ended event
+        selectedTableRow.find('audio').on('ended', function() {
+            SetAudioPlayerIcon(audioPlayerIcon, false);
+        });
+    }
+}
+
+function SetAudioPlayerIcon(audioPlayerIcon, isPlaying) {
+    if (isPlaying) {
+            audioPlayerIcon.removeClass('fa-play-circle');
+            audioPlayerIcon.addClass('fa-pause-circle');
+            audioPlayerIcon.css("color", "red");
+    } else {
+            audioPlayerIcon.removeClass('fa-pause-circle');
+            audioPlayerIcon.addClass('fa-play-circle');
+            audioPlayerIcon.css("color", "black");
     }
 }
 
@@ -116,14 +177,17 @@ function displayEditForm() {
 
     // find currently selected row index
     var tableRowIndex = $('#data tbody tr.table-active').index();
-    if (tableRowIndex < 0  || (tableRowIndex + 1) > $('#data tbody tr').length )
-        tableRowIndex = 0;    
-    
-    // ensure the target is highlightRowed
-    $('#data tbody tr:eq('+tableRowIndex+')').addClass('table-active');
+   
+    // check if element exists
+    var selectedTableRow = $('#data tbody tr:eq('+tableRowIndex+')');
+    if(selectedTableRow.length > 0)
+    {    
+        // ensure the target is highlightRowed
+        selectedTableRow.addClass('table-active');
 
-    $('#editForm #editRowText').val(tableRowIndex);
-    $('#editForm #editRowText').select();
+        $('#editForm #editRowText').val(tableRowIndex);
+        $('#editForm #editRowText').select();
+    }
 }
 
 // user saves edits
@@ -176,29 +240,13 @@ $(document).keydown(function (e) {
  });
 
 // attach an onclick event handler to the table rows 
-$('#data tbody tr').click( function() {
-    editing = false;
-    $('#editForm').hide();
-    highlightRow(($(this).index()));
-});
-
-// attach an onclick event handler to the playpause buttons
-$('#data tbody tr th DISABLED').click( function() {
-
-    var player = $(this).siblings("audio")[0];
-
-    if (player.paused) {
-        player.play();
-        $(this).removeClass('fa-play-circle');
-        $(this).addClass('fa-pause-circle');
-    }
-    else {
-        player.pause();
-        $(this).removeClass('fa-pause-circle');
-        $(this).addClass('fa-play-circle');
+tableRows.click( function(e) {
+    if ( !$( e.target ).is( ":button" ) ) {
+        editing = false;
+        $('#editForm').hide();
+        highlightRow(($(this).index()));
     }
 });
-
 
 </script>
 }

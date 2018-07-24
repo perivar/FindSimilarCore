@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using FindSimilarServices.Audio;
 using FindSimilarServices.Fingerprinting;
 using SoundFingerprinting;
+using FindSimilarServices;
 
 namespace FindSimilarClient
 {
@@ -37,7 +38,8 @@ namespace FindSimilarClient
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.AddScoped<IStreamingService, StreamingService>();
-            services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(@"C:\Users\pnerseth\My Projects\fingerprint.db"));
+            services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
+            services.AddSingleton<ISoundFingerprinter>(new SoundFingerprinter(Configuration["FingerprintDatabase"]));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -28,20 +28,25 @@ namespace FindSimilarClient.Controllers
             _database = database;
         }
 
-        [HttpGet("{name}")]
-        public async Task<FileStreamResult> Get(string name)
+        [HttpGet("{id}")]
+        public async Task<FileStreamResult> Get(string id)
         {
-            // Id [string]:"b6b9ba73-293c-46ae-bd7d-2ea23ecb5e1c"
-            // Id [string]:"e12ec602-9ab7-4999-9506-1e996f9d6eb2"
+            // ids have this form:
+            // "b6b9ba73-293c-46ae-bd7d-2ea23ecb5e1c"
+            // "e12ec602-9ab7-4999-9506-1e996f9d6eb2"
+            var track = _database.ReadTrackByReference(new ModelReference<string>(id));
 
-            var track = _database.ReadTrackByReference(new ModelReference<string>(name));
+            if (!string.IsNullOrEmpty(track.Title))
+            {
+                string pathToSourceFile = track.Title;
 
-            // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
-            // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
-            // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
-            if (!string.IsNullOrEmpty(track.Title)) {
-                return StreamAudioV2(track.Title);
-            } else {
+                // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
+                // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
+                // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
+                return StreamAudioV2(pathToSourceFile);
+            }
+            else
+            {
                 return null;
             }
 
@@ -74,7 +79,6 @@ namespace FindSimilarClient.Controllers
             // return new FileStreamResult(memStream, new MediaTypeHeaderValue("audio/wav"));
              */
         }
-
 
         private FileStreamResult StreamAudioV2(string pathToSourceFile)
         {

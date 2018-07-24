@@ -71,8 +71,6 @@ namespace FindSimilar
                 }
             }
 
-            if (!Directory.Exists(debugDirectoryPath)) Directory.CreateDirectory(debugDirectoryPath);
-
             return debugDirectoryPath;
         }
 
