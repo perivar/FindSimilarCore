@@ -231,6 +231,22 @@ namespace SoundFingerprinting
             return results.Select(TrackDataDTO.CopyToTrackData).ToList();
         }
 
+        public IList<TrackData> ReadAllTracks(int skip, int limit)
+        {
+            // get track collection
+            var col = db.GetCollection<TrackDataDTO>("tracks");
+            
+            // get last added X objects of the collection
+            var results = col.Find(LiteDB.Query.All(LiteDB.Query.Descending), skip, limit);
+
+            if (results.Count() == 0)
+            {
+                return new List<TrackData>();
+            }
+
+            return results.Select(TrackDataDTO.CopyToTrackData).ToList();
+        }
+
         public IList<TrackData> ReadTracksByQuery(string query)
         {
             // get track collection

@@ -1,14 +1,83 @@
 ﻿@{ ViewData["Title"] = "About"; }
-<h2>@ViewData["Title"]</h2>
-<h3>@ViewData["Message"]</h3>
+<!-- <h3>@ViewData["Title"]</h3> -->
+<!-- <h3>@ViewData["Message"]</h3> -->
 
-<p>Use this area to provide additional information.</p>
+<h2>Audio Search Utility utilising Soundfingerprinting methods</h2>
+<p><em>Version X.Y.Z.</em>&nbsp;<em>Copyright (C) 2012-2018 Per Ivar Nerseth&nbsp;<a href="mailto:perivar@nerseth.com">perivar@nerseth.com</a></em></p>
+<p><strong>A massive amount of credits goes to:</strong></p>
+<ul>
+<li><a target="_new" href="https://github.com/AddictedCS/soundfingerprinting">Sound Fingerprinting framework</a></li>
+<li>Code license: MIT</li>
+<li><a href="mailto:ciumac.sergiu@gmail.com">ciumac.sergiu@gmail.com</a></li>
+</ul>
 
-<audio controls preload="none">
-    <source src="/api/streaming/earth" type="audio/wav">
-</audio>
+<h2>Usage</h2>
+<pre><code>
+    Usage: FindSimilar [options] [command]
 
-<br>
-<a href="/api/streaming/b6b9ba73-293c-46ae-bd7d-2ea23ecb5e1c" target="_new">Open URL</a>
-<br>
-<a href="/api/streaming/e12ec602-9ab7-4999-9506-1e996f9d6eb2" target="_new">Open URL</a>
+    Options:
+    -?|-h|--help  Show help information
+
+    Commands:
+    match         Find matches for specified audio-file
+    scan          Scan directory and add audio-fingerprints to database (defaults to ignoring already added files)
+
+    Run 'FindSimilar [command] --help' for more information about a command.
+</code></pre>
+
+<h3>Scan</h3>
+<pre><code>
+    <strong>FindSimilar scan</strong>
+    Scan directory and add audio-fingerprints to database (defaults to ignoring already added files)
+
+    Usage: FindSimilar scan [arguments] [options]
+
+    Arguments:
+    [directory]                 Directory to scan and create audio fingerprints from
+
+    Options:
+    -?|-h|--help                Show help information
+    -s|--skipduration &lt;NUMBER&gt;  Skip files longer than x seconds
+    -v|--verbose &lt;NUMBER&gt;       Increase the verbosity of messages: 0 for silent mode, 3 for normal output, 
+                                4 for debug and 5 for the most verbose setting
+    -l|--log &lt;path&gt;             Path to log-file
+    -d|--db &lt;path&gt;              Override the default path to database-file: fingerprint.db
+    --debug &lt;path&gt;              If verbose = 5, override the default path to the debug directory: debug
+</code></pre>
+
+<h3>Match</h3>
+<pre><code>
+    <strong>FindSimilar match</strong>
+    Find matches for specified audio-file
+
+    Usage: FindSimilar match [arguments] [options]
+
+    Arguments:
+    [file path]              Path to audio-file to find matches for
+
+    Options:
+    -?|-h|--help             Show help information
+    -t|--threshold &lt;NUMBER&gt;  Threshold votes for a match. Default: 4
+    -n|--num &lt;NUMBER&gt;        Maximal number of matches to return when querying. Default: 25
+    -d|--db &lt;path&gt;           Override the default path to database-file: fingerprint.db
+    -v|--verbose &lt;NUMBER&gt;    Increase the verbosity of messages: 0 for silent mode, 3 for normal output, 
+                             4 for debug and 5 for the most verbose setting
+    -l|--log &lt;path&gt;          Path to log-file
+    --debug &lt;path&gt;           If verbose = 5, override the default path to the debug directory: debug
+</code></pre>
+
+<h3>Normal Steps are:</h3>
+<ol>
+<li>
+<p>Scan Directory</p>
+<p><code>FindSimilar scan "path/to/audiosamples/dir"</code></p>
+</li>
+<li>
+<p>Optional - Scan more directories</p>
+<p><code>FindSimilar scan "path/to/another_audiosamples/dir"</code></p>
+</li>
+<li>
+<p>Match using the web client or the command line utility</p>
+<p><code>FindSimilar match "path/to/audiosample.wav|mp3|flac|wma|etc"</code>
+</li>
+</ol>

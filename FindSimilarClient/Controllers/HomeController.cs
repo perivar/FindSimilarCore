@@ -30,6 +30,8 @@ namespace FindSimilarClient.Controllers
             if (!string.IsNullOrEmpty(query))
             {
                 tracks = _database.ReadTracksByQuery(query);
+            } else {
+                tracks = _database.ReadAllTracks(0, 50);
             }
             ViewBag.Tracks = tracks;
 
