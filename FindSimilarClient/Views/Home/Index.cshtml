@@ -149,24 +149,26 @@ $('#editForm').keydown(function (e) {
 // handle key presses
 $(document).keydown(function (e) {
     
-    if (!editing) {
-        e.preventDefault();
+    if (!editing) {        
         switch(e.which) 
         {        
             case 38:
                 // up arrow
+                e.preventDefault();
                 $('#goto_prev').trigger('click');
                 break;
             case 40:
                 // down Arrow
+                e.preventDefault();
                 $('#goto_next').trigger('click');
                 break;
-            case 13:
+            // case 13:
                 // enter
-            case 32:
+            // case 32:
                 // spacebar
             case 113:
                 // F2
+                e.preventDefault();
                 displayEditForm();
                 break;
         }

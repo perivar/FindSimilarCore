@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using FindSimilarClient.Models;
 using FindSimilarServices.Fingerprinting;
+using SoundFingerprinting.DAO.Data;
 
 namespace FindSimilarClient.Controllers
 {
@@ -13,13 +14,18 @@ namespace FindSimilarClient.Controllers
     {
         private IFindSimilarDatabase _database;
 
-        public HomeController(IFindSimilarDatabase database) {
+        public HomeController(IFindSimilarDatabase database)
+        {
             _database = database;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(string query)
         {
-            var tracks = _database.ReadTracksByQuery("kick");
+            IList<TrackData> tracks = new List<TrackData>();
+            if (!string.IsNullOrEmpty(query))
+            {
+                tracks = _database.ReadTracksByQuery(query);
+            }
             ViewBag.Tracks = tracks;
 
             return View();
