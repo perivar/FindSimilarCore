@@ -17,6 +17,7 @@ $(document).ready(function (e) {
 
 	$.fn.stickyAudioPlayer = function (options) {
 		var $this = this;
+		var player = this; // used as a dispatcher for the audio player eventlisteners
 
 		var params = $.extend({
 			url: options.url,
@@ -73,40 +74,42 @@ $(document).ready(function (e) {
 
 		var createAudio = function (file) {
 
-			audioElement.setAttribute('src', file);
+			if (file.length > 0) {
+				audioElement.setAttribute('src', file);
 
-			audioElement.addEventListener('ended', function () {
-				if (params.repeat) {
-					play();
-				} else {
-					stop();
-				}
-				$this.trigger("ended");
-			}, false);
+				audioElement.addEventListener('ended', function () {
+					if (params.repeat) {
+						play();
+					} else {
+						stop();
+					}
+					player.trigger("ended");
+				}, false);
 
-			audioElement.addEventListener("canplay", function () {
-				fileLength = audioElement.duration; //	Seconds
-				console.log("Source:" + audioElement.src);
-				console.log("Status: Ready to play");
-				if (!isRunning) {
-					open();
-					isRunning = true;
-				}
-			});
+				audioElement.addEventListener("canplay", function () {
+					fileLength = audioElement.duration; //	Seconds
+					console.log("Source:" + audioElement.src);
+					console.log("Status: Ready to play");
+					if (!isRunning) {
+						open();
+						isRunning = true;
+					}
+					player.trigger("canplay");
+				});
 
-			audioElement.addEventListener("timeupdate", function () {
-				timeProgress = audioElement.currentTime;
-				barProgressSize();
-				var currentMin = Math.floor(audioElement.currentTime / 60);
-				var currentSeconds = Math.round(Math.abs((currentMin * 60) - audioElement.currentTime));
-				var timelapse = (currentMin < 10 ? '0' + currentMin : currentMin) + ':' + (currentSeconds < 10 ? '0' + currentSeconds : currentSeconds);
-				$('#' + randomId).find(".player-data .bar-container small").html(timelapse);
-			});
+				audioElement.addEventListener("timeupdate", function () {
+					timeProgress = audioElement.currentTime;
+					barProgressSize();
+					var currentMin = Math.floor(audioElement.currentTime / 60);
+					var currentSeconds = Math.round(Math.abs((currentMin * 60) - audioElement.currentTime));
+					var timelapse = (currentMin < 10 ? '0' + currentMin : currentMin) + ':' + (currentSeconds < 10 ? '0' + currentSeconds : currentSeconds);
+					$('#' + randomId).find(".player-data .bar-container small").html(timelapse);
+					player.trigger("timeupdate");
+				});
+			}
 		}
 
 		var init = function () {
-
-			var dispatcher = $({});
 
 			createHtml();
 			setVars();
@@ -162,6 +165,7 @@ $(document).ready(function (e) {
 			setSongName();
 			setMaxWidth();
 			setVolume(volume);
+			open();
 
 			barVolume.mousemove(function (event) {
 				volumeProgress(event);
@@ -206,7 +210,10 @@ $(document).ready(function (e) {
 		var setBoxPosition = function () {
 			if (params.position == 'bottom' || params.position == 'top') {
 				box.css({ position: 'fixed', bottom: 0, left: 0, top: $(window).height() });
-				btnFloat.css({ opacity: 0, position: 'fixed', left: $(window).width() - btnFloat.width() - 30, bottom: 0, top: $(window).height() - boxHeightRemember - btnFloat.height() });
+				btnFloat.css({ opacity: 0, position: 'fixed', 
+					left: $(window).width() - btnFloat.width() - 30, 
+					bottom: 0, 
+					top: $(window).height() - boxHeightRemember - btnFloat.height() });
 				btnFloat.animate({ opacity: 1 }, animationSpeed);
 			}
 			maxWidthBarVolume = $('#' + randomId).find('.player-volume .bar-container .bar-main').innerWidth();
@@ -262,10 +269,12 @@ $(document).ready(function (e) {
 		}
 
 		var play = function () {
-			audioElement.play();
-			btnPlay.css({ display: 'none' });
-			btnPause.css({ display: 'inline-block' });
-			btnStop.css({ display: 'none' }); // optional
+			if (audioElement.src.length > 0) { 
+				audioElement.play();
+				btnPlay.css({ display: 'none' });
+				btnPause.css({ display: 'inline-block' });
+				btnStop.css({ display: 'none' }); // optional
+			}
 		}
 
 		var pause = function () {
@@ -376,6 +385,7 @@ $(document).ready(function (e) {
 					'<section class="stickyAudioPlayerBoxFloatingButton">\
 				<div class="input-go-down"></div>\
 			</section>': '');
+			
 			if (params.position == 'bottom' || params.position == 'top') {
 				container.append(html);
 			} else {
@@ -437,7 +447,7 @@ $(document).ready(function (e) {
 			open: function () {
 				open();
 			},
-			$this			
+			player			
 		}
 	}
 });
