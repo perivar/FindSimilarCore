@@ -14,6 +14,7 @@
  *   http://www.gnu.org/licenses/gpl.html
  */
 $(document).ready(function (e) {
+
 	$.fn.stickyAudioPlayer = function (options) {
 		var $this = this;
 
@@ -80,6 +81,7 @@ $(document).ready(function (e) {
 				} else {
 					stop();
 				}
+				$this.trigger("ended");
 			}, false);
 
 			audioElement.addEventListener("canplay", function () {
@@ -103,6 +105,8 @@ $(document).ready(function (e) {
 		}
 
 		var init = function () {
+
+			var dispatcher = $({});
 
 			createHtml();
 			setVars();
@@ -334,7 +338,7 @@ $(document).ready(function (e) {
 			var html = '<section class="' + (params.theme == 'default' ? 'stickyAudioPlayerBox' : 'stickyAudioPlayerBox' + params.theme) + '" id="' + randomId + '">\
 				<div class="stickyAudioPlayerBoxContainer">\
 					<figure>\
-						<img src="images/cover.png" alt="" />\
+						<img src="/images/cover.png" alt="" />\
 					</figure>\
 					<section class="player-play">\
 						<div class="input-pause"></div>\
@@ -432,7 +436,8 @@ $(document).ready(function (e) {
 			},
 			open: function () {
 				open();
-			}
+			},
+			$this			
 		}
 	}
 });

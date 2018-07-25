@@ -153,9 +153,9 @@ function playRow(tableRowIndex)
             stickyAudioPlayer.play();
 
             // add event listener for the ended event
-            // stickyAudioPlayer.audioElement.on('ended', function() {
-                // SetAudioPlayerIcon(audioPlayerIcon, false);
-            // });
+            stickyAudioPlayer.$this.on('ended', function() {
+                SetAudioPlayerIcon(audioPlayerIcon, false);
+            });
         }
         else {
             // audioPlayer.pause();
