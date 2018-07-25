@@ -24,7 +24,7 @@
         <tr>
             <th scope="row">
                 <i class="far fa-play-circle"></i>
-                <audio src="/api/streaming/@track.TrackReference.Id" title="@track.Title"></audio>
+                <audio preload="none" src="/api/streaming/@track.TrackReference.Id" title="@track.Title"></audio>
             </th>            
             <td><small>@track.Title</small></td>
             <td><small>@track.Length.ToString("N")</small></td>

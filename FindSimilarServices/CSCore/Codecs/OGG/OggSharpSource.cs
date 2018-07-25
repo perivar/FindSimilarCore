@@ -212,10 +212,14 @@ namespace CSCore.Codecs.OGG
             }
             set
             {
-                if (_oggDecodedStream != null)
+                if (_oggDecodedStream == null)
                 {
-                    _oggDecodedStream.Position = value;
+                    _oggDecodedStream = DecodeStream(_oggDecoder);
                 }
+                // if (_oggDecodedStream != null)
+                // {
+                _oggDecodedStream.Position = value;
+                // }
             }
         }
 

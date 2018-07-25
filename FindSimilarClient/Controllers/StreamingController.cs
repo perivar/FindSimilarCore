@@ -20,11 +20,9 @@ namespace FindSimilarClient.Controllers
     [Route("api/[controller]")]
     public class StreamingController : Controller
     {
-        private IStreamingService _streamingService;
         private IFindSimilarDatabase _database;
-        public StreamingController(IStreamingService streamingService, IFindSimilarDatabase database)
+        public StreamingController(IFindSimilarDatabase database)
         {
-            _streamingService = streamingService;
             _database = database;
         }
 
@@ -43,7 +41,7 @@ namespace FindSimilarClient.Controllers
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
-                return StreamAudioV2(pathToSourceFile);
+                return StreamAudioV3(pathToSourceFile);
             }
             else
             {
@@ -80,6 +78,13 @@ namespace FindSimilarClient.Controllers
              */
         }
 
+        private FileStreamResult StreamAudioV3(string pathToSourceFile)
+        {
+            IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            return new IWaveSourceStreamResult(waveSource, new MediaTypeHeaderValue("audio/wav"));
+        }
+
+
         private FileStreamResult StreamAudioV2(string pathToSourceFile)
         {
             MemoryStream outputStream = new MemoryStream();
@@ -97,8 +102,12 @@ namespace FindSimilarClient.Controllers
 
             string contentType = "audio/wav";
             // return new StreamResult(stream, new MediaTypeHeaderValue(contentType));
-            // return new FileStreamResult(outputStream, new MediaTypeHeaderValue(contentType));
-            return File(outputStream, contentType, true);
+            return new FileStreamResult(outputStream, new MediaTypeHeaderValue(contentType))
+            {
+                EnableRangeProcessing = true
+            };
+
+            //return File(outputStream, contentType, true);
         }
 
         private FileStreamResult StreamAudio(string pathToSourceFile)

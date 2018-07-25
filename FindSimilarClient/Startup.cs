@@ -37,7 +37,6 @@ namespace FindSimilarClient
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            services.AddScoped<IStreamingService, StreamingService>();
             services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
             services.AddSingleton<ISoundFingerprinter>(new SoundFingerprinter(Configuration["FingerprintDatabase"]));
         }

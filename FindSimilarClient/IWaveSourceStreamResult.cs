@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using CSCore;
+using CSCore.Codecs.WAV;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
@@ -10,23 +12,25 @@ using Microsoft.Net.Http.Headers;
 
 namespace FindSimilarClient
 {
-    public class StreamResult : FileStreamResult
+    public class IWaveSourceStreamResult : FileStreamResult
     {
         // default buffer size as defined in BufferedStream type
         private const int BufferSize = 0x1000;
         private string MultipartBoundary = "<qwe123>";
         private const string CrLf = "\r\n";
+        private bool doSendWaveHeaders = true;
+        private IWaveSource WaveSource { get; set; }
 
-        public StreamResult(Stream fileStream, string contentType)
-            : base(fileStream, contentType)
+        public IWaveSourceStreamResult(IWaveSource waveSource, string contentType)
+            : base(new MemoryStream(), contentType)
         {
-
+            WaveSource = waveSource;
         }
 
-        public StreamResult(Stream fileStream, MediaTypeHeaderValue contentType)
-            : base(fileStream, contentType)
+        public IWaveSourceStreamResult(IWaveSource waveSource, MediaTypeHeaderValue contentType)
+            : base(new MemoryStream(), contentType)
         {
-
+            WaveSource = waveSource;
         }
 
         private bool IsMultipartRequest(RangeHeaderValue range)
@@ -44,7 +48,7 @@ namespace FindSimilarClient
             var bufferingFeature = response.HttpContext.Features.Get<IHttpBufferingFeature>();
             bufferingFeature?.DisableResponseBuffering();
 
-            var length = FileStream.Length;
+            var length = WaveSource.Length;
 
             var range = response.HttpContext.GetRanges(length);
 
@@ -59,12 +63,17 @@ namespace FindSimilarClient
 
             response.Headers.Add("Accept-Ranges", "bytes");
 
+            // check https://github.com/aspnet/Mvc/blob/a67d9363e22be8ef63a1a62539991e1da3a6e30e/src/Microsoft.AspNetCore.Mvc.Core/Infrastructure/FileResultExecutorBase.cs
             if (IsRangeRequest(range))
             {
                 response.StatusCode = (int)HttpStatusCode.PartialContent;
 
                 if (!IsMultipartRequest(range))
                 {
+                    // check https://github.com/dotnet/corefx/blob/master/src/System.Net.Http/src/System/Net/Http/Headers/ContentRangeHeaderValue.cs
+                    // 14.16 Content-Range - A server sending a response with status code 416 (Requested range not satisfiable)
+                    // SHOULD include a Content-Range field with a byte-range-resp-spec of "*". The instance-length specifies
+                    // the current length of the selected resource.  e.g. */length
                     response.Headers.Add("Content-Range", $"bytes {range.Ranges.First().From}-{range.Ranges.First().To}/{length}");
                 }
 
@@ -78,6 +87,12 @@ namespace FindSimilarClient
                         await response.WriteAsync(CrLf);
                         await response.WriteAsync($"Content-Range: bytes {range.Ranges.First().From}-{range.Ranges.First().To}/{length}");
                         await response.WriteAsync(CrLf);
+                    }
+
+                    if (doSendWaveHeaders)
+                    {
+                        await WriteWaveHeadersToResponseBody(response);
+                        doSendWaveHeaders = false;
                     }
 
                     await WriteDataToResponseBody(rangeValue, response);
@@ -96,7 +111,44 @@ namespace FindSimilarClient
             }
             else
             {
-                await FileStream.CopyToAsync(response.Body);
+                // write until end
+                await WriteDataToResponseBody(response.Body);
+            }
+        }
+
+        private async Task WriteDataToResponseBody(Stream responseBody)
+        {
+            byte[] buffer = new byte[BufferSize];
+            long totalToSend = WaveSource.Length - WaveSource.Position;
+            int count = 0;
+
+            long bytesRemaining = totalToSend + 1;
+
+            while (bytesRemaining > 0)
+            {
+                try
+                {
+                    if (bytesRemaining <= buffer.Length)
+                        count = WaveSource.Read(buffer, 0, (int)bytesRemaining);
+                    else
+                        count = WaveSource.Read(buffer, 0, buffer.Length);
+
+                    if (count == 0)
+                        return;
+
+                    await responseBody.WriteAsync(buffer, 0, count);
+
+                    bytesRemaining -= count;
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    await responseBody.FlushAsync();
+                    return;
+                }
+                finally
+                {
+                    await responseBody.FlushAsync();
+                }
             }
         }
 
@@ -112,16 +164,17 @@ namespace FindSimilarClient
             long bytesRemaining = totalToSend + 1;
             response.ContentLength = bytesRemaining;
 
-            FileStream.Seek(startIndex, SeekOrigin.Begin);
+            // WaveSource.Seek(startIndex, SeekOrigin.Begin);
+            WaveSource.Position = startIndex;
 
             while (bytesRemaining > 0)
             {
                 try
                 {
                     if (bytesRemaining <= buffer.Length)
-                        count = FileStream.Read(buffer, 0, (int)bytesRemaining);
+                        count = WaveSource.Read(buffer, 0, (int)bytesRemaining);
                     else
-                        count = FileStream.Read(buffer, 0, buffer.Length);
+                        count = WaveSource.Read(buffer, 0, buffer.Length);
 
                     if (count == 0)
                         return;
@@ -142,10 +195,35 @@ namespace FindSimilarClient
             }
         }
 
+        private async Task WriteWaveHeadersToResponseBody(HttpResponse response)
+        {
+            try
+            {
+                MemoryStream ms = new MemoryStream();
+                using (WaveWriter waveWriter = new WaveWriter(ms, WaveSource.WaveFormat))
+                {
+                }
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var buffer = ms.ToArray();
+
+                await response.Body.WriteAsync(buffer, 0, buffer.Length);
+
+            }
+            catch (Exception e)
+            {
+                await response.Body.FlushAsync();
+                return;
+            }
+            finally
+            {
+                await response.Body.FlushAsync();
+            }
+        }
+
         public override async Task ExecuteResultAsync(ActionContext context)
         {
             await WriteStreamAsync(context.HttpContext.Response);
         }
-
     }
 }
