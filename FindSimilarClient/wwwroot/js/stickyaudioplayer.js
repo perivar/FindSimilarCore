@@ -147,7 +147,7 @@ $(document).ready(function (e) {
 			btnMute.click(function () {
 				mute();
 			});
-			
+
 			if (params.position == 'bottom' || params.position == 'top') {
 				btnFloat.click(function () {
 					floatClickHide();
