@@ -5,9 +5,10 @@
 }
 
 @section Head {
-    
+    <link rel="stylesheet" href="/css/stickyaudioplayer.css">  
 }
 
+<div class="table-responsive-xl">  
 <table id="data" class="table table-sm">
     <thead class="thead-light">
         <tr>
@@ -23,7 +24,7 @@
         <tr>
             <th scope="row">
                 <i class="far fa-play-circle"></i>
-                <audio preload="auto" src="/api/streaming/@track.TrackReference.Id"></audio>
+                <audio src="/api/streaming/@track.TrackReference.Id" title="@track.Title"></audio>
             </th>            
             <td><small>@track.Title</small></td>
             <td><small>@track.Length.ToString("N")</small></td>
@@ -42,6 +43,7 @@
 }
     </tbody>
 </table>
+</div>
 
 <div id="editForm">
     <form>
@@ -60,9 +62,10 @@
 
 @section Scripts { 
     @* 
-    Javascript sections
+    Javascripts section
     *@
 
+<script src="/js/stickyaudioplayer.js"></script>
 <script type="text/javascript">
 
 // hide edit area
@@ -74,6 +77,21 @@ var tableRows = $('#data tbody tr');
 
 // variable that holds the window object
 var w = $(window);
+
+var stickyAudioPlayer; // declare it outside to use methods after
+$(document).ready(function()
+{
+    stickyAudioPlayer = $('body').stickyAudioPlayer(
+    {
+        url:       '',
+        position:  'bottom', //'bottom'|'top'|'inline'
+        text:      'No Sounds Loaded',
+        image:     '',
+        volume:    40,
+        repeat:    false,
+    }
+    );
+});
 
 function highlightRow(tableRowIndex) 
 {
@@ -108,9 +126,9 @@ function playRow(tableRowIndex)
         // first ensure all audio stops playing
         $('audio').each(function() 
         {
-            var audioPlayer = $(this)[0];
-            audioPlayer.pause();
-            audioPlayer.currentTime = 0;
+            // var audioPlayer = $(this)[0];
+            // audioPlayer.pause();
+            // audioPlayer.currentTime = 0;
 
             // find audio icon and set it to not playing
             var audioPlayerIcon = $(this).siblings('i');
@@ -118,26 +136,37 @@ function playRow(tableRowIndex)
         });
 
         // get the correct audio player
-        var audioPlayer = selectedTableRow.find('audio')[0];
+        var audioObject = selectedTableRow.find('audio');
+        var audioPlayer = audioObject[0];
 
         // get the correct audio player icons
         var audioPlayerIcon = selectedTableRow.find('i');
 
         // and play
         if (audioPlayer.paused) {
-            audioPlayer.play();
+            // audioPlayer.play();
             SetAudioPlayerIcon(audioPlayerIcon, true);
+
+            // and add to sticky audio player as well            
+            stickyAudioPlayer.stop();
+            stickyAudioPlayer.changeAudio(audioPlayer.src, audioPlayer.title);
+            stickyAudioPlayer.play();
+
+            // add event listener for the ended event
+            stickyAudioPlayer.audioElement.on('ended', function() {
+                SetAudioPlayerIcon(audioPlayerIcon, false);
+            });
         }
         else {
-            audioPlayer.pause();
-            audioPlayer.currentTime = 0;
-            SetAudioPlayerIcon(audioPlayerIcon, false);
+            // audioPlayer.pause();
+            // audioPlayer.currentTime = 0;
+            // SetAudioPlayerIcon(audioPlayerIcon, false);
         }
 
         // add event listener for the ended event
-        selectedTableRow.find('audio').on('ended', function() {
-            SetAudioPlayerIcon(audioPlayerIcon, false);
-        });
+        // selectedTableRow.find('audio').on('ended', function() {
+            // SetAudioPlayerIcon(audioPlayerIcon, false);
+        // });
     }
 }
 
