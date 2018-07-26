@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
+using Serilog;
 
 namespace FindSimilarClient
 {
@@ -13,6 +14,8 @@ namespace FindSimilarClient
 
             if (!string.IsNullOrEmpty(rangeHeader))
             {
+                Log.Verbose("Parsing Range Header: {0}", rangeHeader);
+
                 // rangeHeader contains the value of the Range HTTP Header and can have values like:
                 //      Range: bytes=0-1            * Get bytes 0 and 1, inclusive
                 //      Range: bytes=0-500          * Get bytes 0 to 500 (the first 501 bytes), inclusive
@@ -55,6 +58,7 @@ namespace FindSimilarClient
                         endByte = contentSize - 1;
                     }
 
+                    Log.Verbose("Found Byte Range: {0}-{1} / {2}", startByte, endByte, contentSize);
                     rangesResult.Ranges.Add(new RangeItemHeaderValue(startByte, endByte));
                 }
             }

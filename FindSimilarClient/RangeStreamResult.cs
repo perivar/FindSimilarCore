@@ -14,7 +14,7 @@ namespace FindSimilarClient
     {
         // default buffer size as defined in BufferedStream type
         private const int BufferSize = 0x1000;
-        private string MultipartBoundary = "<qwe123>";
+        private string MultipartBoundary = "THIS_STRING_SEPARATES";
         private const string CrLf = "\r\n";
 
         public RangeStreamResult(Stream fileStream, string contentType)
@@ -50,6 +50,7 @@ namespace FindSimilarClient
 
             if (IsMultipartRequest(range))
             {
+                // check https://github.com/aspnet/Mvc/blob/a67d9363e22be8ef63a1a62539991e1da3a6e30e/src/Microsoft.AspNetCore.Mvc.Core/Infrastructure/FileResultExecutorBase.cs
                 response.ContentType = $"multipart/byteranges; boundary={MultipartBoundary}";
             }
             else
@@ -75,13 +76,15 @@ namespace FindSimilarClient
 
                 foreach (var rangeValue in range.Ranges)
                 {
-                    if (IsMultipartRequest(range)) // dunno if multipart works
+                    // check https://stackoverflow.com/questions/38069730/how-to-create-a-multipart-http-response-with-asp-net-core
+                    // and https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html
+                    if (IsMultipartRequest(range))
                     {
                         await response.WriteAsync($"--{MultipartBoundary}");
                         await response.WriteAsync(CrLf);
                         await response.WriteAsync($"Content-type: {ContentType}");
                         await response.WriteAsync(CrLf);
-                        await response.WriteAsync($"Content-Range: bytes {range.Ranges.First().From}-{range.Ranges.First().To}/{length}");
+                        await response.WriteAsync($"Content-Range: bytes {rangeValue.From}-{rangeValue.To}/{length}");
                         await response.WriteAsync(CrLf);
                     }
 
@@ -95,7 +98,7 @@ namespace FindSimilarClient
 
                 if (IsMultipartRequest(range))
                 {
-                    await response.WriteAsync($"--{MultipartBoundary}--");
+                    await response.WriteAsync($"--{MultipartBoundary}");
                     await response.WriteAsync(CrLf);
                 }
             }
