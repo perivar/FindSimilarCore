@@ -18,7 +18,6 @@ namespace FindSimilarClient
         private const int BufferSize = 0x1000;
         private string MultipartBoundary = "<qwe123>";
         private const string CrLf = "\r\n";
-        private bool doSendWaveHeaders = true;
         private IWaveSource WaveSource { get; set; }
 
         public IWaveSourceStreamResult(IWaveSource waveSource, string contentType)
@@ -89,12 +88,6 @@ namespace FindSimilarClient
                         await response.WriteAsync(CrLf);
                     }
 
-                    if (doSendWaveHeaders)
-                    {
-                        await WriteWaveHeadersToResponseBody(response);
-                        doSendWaveHeaders = false;
-                    }
-
                     await WriteDataToResponseBody(rangeValue, response);
 
                     if (IsMultipartRequest(range))
@@ -162,9 +155,18 @@ namespace FindSimilarClient
             int count = 0;
 
             long bytesRemaining = totalToSend + 1;
-            response.ContentLength = bytesRemaining;
 
-            // WaveSource.Seek(startIndex, SeekOrigin.Begin);
+            if (startIndex == 0)
+            {
+                // beginning of a file requires the header
+                int headerBytes = await WriteWaveHeadersToResponseBody(response);
+                response.ContentLength = bytesRemaining + headerBytes;
+            }
+            else
+            {
+                response.ContentLength = bytesRemaining;
+            }
+
             WaveSource.Position = startIndex;
 
             while (bytesRemaining > 0)
@@ -195,25 +197,26 @@ namespace FindSimilarClient
             }
         }
 
-        private async Task WriteWaveHeadersToResponseBody(HttpResponse response)
+        private async Task<int> WriteWaveHeadersToResponseBody(HttpResponse response)
         {
             try
             {
-                MemoryStream ms = new MemoryStream();
-                using (WaveWriter waveWriter = new WaveWriter(ms, WaveSource.WaveFormat))
+                using (MemoryStream ms = new MemoryStream())
                 {
+                    using (WaveWriter waveWriter = new WaveWriter(ms, WaveSource.WaveFormat))
+                    {
+                    }
+                    ms.Seek(0, SeekOrigin.Begin);
+
+                    var buffer = ms.ToArray();
+                    await response.Body.WriteAsync(buffer, 0, buffer.Length);
+                    return buffer.Length;
                 }
-                ms.Seek(0, SeekOrigin.Begin);
-
-                var buffer = ms.ToArray();
-
-                await response.Body.WriteAsync(buffer, 0, buffer.Length);
-
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 await response.Body.FlushAsync();
-                return;
+                return 0;
             }
             finally
             {
