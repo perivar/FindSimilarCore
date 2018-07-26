@@ -23,12 +23,18 @@ namespace FindSimilarClient
         public IWaveSourceStreamResult(IWaveSource waveSource, string contentType)
             : base(new MemoryStream(), contentType)
         {
+            if (waveSource == null)
+                throw new ArgumentNullException("waveSource");
+
             WaveSource = waveSource;
         }
 
         public IWaveSourceStreamResult(IWaveSource waveSource, MediaTypeHeaderValue contentType)
             : base(new MemoryStream(), contentType)
         {
+            if (waveSource == null)
+                throw new ArgumentNullException("waveSource");
+
             WaveSource = waveSource;
         }
 
@@ -109,42 +115,6 @@ namespace FindSimilarClient
             }
         }
 
-        private async Task WriteDataToResponseBody(Stream responseBody)
-        {
-            byte[] buffer = new byte[BufferSize];
-            long totalToSend = WaveSource.Length - WaveSource.Position;
-            int count = 0;
-
-            long bytesRemaining = totalToSend + 1;
-
-            while (bytesRemaining > 0)
-            {
-                try
-                {
-                    if (bytesRemaining <= buffer.Length)
-                        count = WaveSource.Read(buffer, 0, (int)bytesRemaining);
-                    else
-                        count = WaveSource.Read(buffer, 0, buffer.Length);
-
-                    if (count == 0)
-                        return;
-
-                    await responseBody.WriteAsync(buffer, 0, count);
-
-                    bytesRemaining -= count;
-                }
-                catch (IndexOutOfRangeException)
-                {
-                    await responseBody.FlushAsync();
-                    return;
-                }
-                finally
-                {
-                    await responseBody.FlushAsync();
-                }
-            }
-        }
-
         private async Task WriteDataToResponseBody(RangeItemHeaderValue rangeValue, HttpResponse response)
         {
             var startIndex = rangeValue.From ?? 0;
@@ -158,9 +128,18 @@ namespace FindSimilarClient
 
             if (startIndex == 0)
             {
-                // beginning of a file requires the header
-                int headerBytes = await WriteWaveHeadersToResponseBody(response);
-                response.ContentLength = bytesRemaining + headerBytes;
+                // the beginning of a file requires a header
+                try
+                {
+                    var headerBytes = GetWaveHeaderBytes();
+                    response.ContentLength = bytesRemaining + headerBytes.Length;
+
+                    await response.Body.WriteAsync(headerBytes, 0, headerBytes.Length);
+                }
+                finally
+                {
+                    await response.Body.FlushAsync();
+                }
             }
             else
             {
@@ -197,30 +176,51 @@ namespace FindSimilarClient
             }
         }
 
-        private async Task<int> WriteWaveHeadersToResponseBody(HttpResponse response)
+        private byte[] GetWaveHeaderBytes()
         {
-            try
+            using (MemoryStream ms = new MemoryStream())
             {
-                using (MemoryStream ms = new MemoryStream())
+                using (WaveWriter waveWriter = new WaveWriter(ms, WaveSource.WaveFormat))
                 {
-                    using (WaveWriter waveWriter = new WaveWriter(ms, WaveSource.WaveFormat))
-                    {
-                    }
-                    ms.Seek(0, SeekOrigin.Begin);
-
-                    var buffer = ms.ToArray();
-                    await response.Body.WriteAsync(buffer, 0, buffer.Length);
-                    return buffer.Length;
                 }
+                ms.Seek(0, SeekOrigin.Begin);
+                return ms.ToArray();
             }
-            catch (Exception)
+        }
+
+        private async Task WriteDataToResponseBody(Stream responseBody)
+        {
+            byte[] buffer = new byte[BufferSize];
+            long totalToSend = WaveSource.Length - WaveSource.Position;
+            int count = 0;
+
+            long bytesRemaining = totalToSend + 1;
+
+            while (bytesRemaining > 0)
             {
-                await response.Body.FlushAsync();
-                return 0;
-            }
-            finally
-            {
-                await response.Body.FlushAsync();
+                try
+                {
+                    if (bytesRemaining <= buffer.Length)
+                        count = WaveSource.Read(buffer, 0, (int)bytesRemaining);
+                    else
+                        count = WaveSource.Read(buffer, 0, buffer.Length);
+
+                    if (count == 0)
+                        return;
+
+                    await responseBody.WriteAsync(buffer, 0, count);
+
+                    bytesRemaining -= count;
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    await responseBody.FlushAsync();
+                    return;
+                }
+                finally
+                {
+                    await responseBody.FlushAsync();
+                }
             }
         }
 

@@ -16,17 +16,19 @@ namespace CSCore.Codecs.OGG
         private readonly object _lockObj = new object();
         private readonly WaveFormat _waveFormat;
         private readonly OggDecoder _oggDecoder;
-        private Stream _oggDecodedStream;
+        private IEnumerator<PCMChunk> _oggPCMChunkEnumerator;
+        private byte[] _prevPCMChunkBuffer;
         private readonly Stream _stream;
         private readonly long _length;
         private bool _disposed;
+        private Stream _oggDecodedMemoryStream; // not used by the PCM chunk reader
 
         public OggSharpSource(Stream stream) : this(stream, null, null)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="OggSharpSource" /> class.
+        /// Initializes a new instance of the <see cref="OggSharpSource" /> class.
         /// </summary>
         /// <param name="stream"><see cref="Stream" /> which contains raw waveform-audio data.</param>
         /// <param name="waveFormat">The format of the waveform-audio data within the <paramref name="stream" />.</param>
@@ -122,23 +124,50 @@ namespace CSCore.Codecs.OGG
                 stream.CopyTo(memoryStream);
                 memoryStream.Position = 0;
                 _oggDecoder.Initialize(memoryStream);
+                _oggPCMChunkEnumerator = _oggDecoder.GetEnumerator();
             }
             else
             {
                 _oggDecoder.Initialize(stream);
+                _oggPCMChunkEnumerator = _oggDecoder.GetEnumerator();
             }
 
-            int channels = (_oggDecoder.Stereo ? 2 : 1);
+            int channels = _oggDecoder.Channels;
             int sampleRate = _oggDecoder.SampleRate;
-            _length = (long)(_oggDecoder.Length * sampleRate * channels * 2); // 2 bytes per sample
 
             Log.Verbose(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
             Log.Verbose(string.Format("Comment: {0}", _oggDecoder.Comment));
             Log.Verbose(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
 
             _waveFormat = new WaveFormat(sampleRate, 16, channels, AudioEncoding.Pcm);
+
+            // store length in bytes according to the new waveformat
+            _length = SecondsToBytes(_oggDecoder.Length);
         }
-        private Stream DecodeStream(OggDecoder decoder)
+
+        /// <summary>
+        /// Convert position in seconds to byte position according to the new wave format
+        /// </summary>
+        /// <param name="positionInSeconds">position</param>
+        /// <returns>the raw byte position</returns>
+        private long SecondsToBytes(float positionInSeconds)
+        {
+            // 2 bytes per sample
+            return (long)(positionInSeconds * _waveFormat.SampleRate * _waveFormat.Channels * _waveFormat.BytesPerSample);
+        }
+
+        /// <summary>
+        /// Convert byte position to position in seconds according to the new wave format
+        /// </summary>
+        /// <param name="positionInBytes">the raw byte position</param>
+        /// <returns>position in seconds</returns>
+        private float BytesToSeconds(long positionInBytes)
+        {
+            return (float)TimeSpan.FromSeconds((double)positionInBytes / _waveFormat.SampleRate / _waveFormat.Channels / _waveFormat.BytesPerSample).TotalSeconds;
+        }
+
+        #region Memory Stream methods (not used)
+        private Stream DecodeToMemoryStream(OggDecoder decoder)
         {
             Stream output = new MemoryStream(4096);
             foreach (PCMChunk chunk in decoder)
@@ -149,35 +178,97 @@ namespace CSCore.Codecs.OGG
             return output;
         }
 
-        /// <summary>
-        ///     Reads a sequence of bytes from the <see cref="OggSharpSource" /> and advances the position within the stream by the
-        ///     number of bytes read.
-        /// </summary>
-        /// <param name="buffer">
-        ///     An array of bytes. When this method returns, the <paramref name="buffer" /> contains the specified
-        ///     byte array with the values between <paramref name="offset" /> and (<paramref name="offset" /> +
-        ///     <paramref name="count" /> - 1) replaced by the bytes read from the current source.
-        /// </param>
-        /// <param name="offset">
-        ///     The zero-based byte offset in the <paramref name="buffer" /> at which to begin storing the data
-        ///     read from the current stream.
-        /// </param>
-        /// <param name="count">The maximum number of bytes to read from the current source.</param>
-        /// <returns>The total number of bytes read into the buffer.</returns>
-        public int Read(byte[] buffer, int offset, int count)
+        public int ReadFromMemoryStream(byte[] buffer, int offset, int count)
         {
             lock (_lockObj)
             {
-                if (_oggDecodedStream == null)
+                if (_oggDecodedMemoryStream == null)
                 {
-                    _oggDecodedStream = DecodeStream(_oggDecoder);
+                    _oggDecodedMemoryStream = DecodeToMemoryStream(_oggDecoder);
                 }
-                return _oggDecodedStream.Read(buffer, offset, count);
+                return _oggDecodedMemoryStream.Read(buffer, offset, count);
             }
+        }
+        #endregion
+
+        /// <summary>
+        /// Reads a sequence of bytes from the <see cref="OggSharpSource" /> and advances the position within the stream by the
+        /// number of bytes read.
+        /// </summary>
+        /// <param name="buffer">
+        /// An array of bytes. When this method returns, the <paramref name="buffer" /> contains the specified
+        /// byte array with the values between <paramref name="offset" /> and (<paramref name="offset" /> +
+        /// <paramref name="count" /> - 1) replaced by the bytes read from the current source.
+        /// </param>
+        /// <param name="offset">
+        /// The zero-based byte offset in the <paramref name="buffer" /> at which to begin storing the data
+        /// read from the current stream.
+        /// </param>
+        /// <param name="count">The maximum number of bytes to read from the current source.</param>
+        /// <returns>The total number of bytes read into the buffer.</returns>
+        public int Read(byte[] buffer, int offset, int remainingByteCount)
+        {
+            // check https://github.com/renaudbedard/nvorbis/blob/master/NVorbis/VorbisStreamDecoder.cs
+
+            int samplesRead = 0;
+
+            lock (_lockObj)
+            {
+                if (_prevPCMChunkBuffer != null)
+                {
+                    // get samples from the previous buffer's data
+                    var cnt = Math.Min(remainingByteCount, _prevPCMChunkBuffer.Length);
+                    Buffer.BlockCopy(_prevPCMChunkBuffer, 0, buffer, offset, cnt);
+
+                    // if we have samples left over, rebuild the previous buffer array...
+                    if (cnt < _prevPCMChunkBuffer.Length)
+                    {
+                        int remainingBytesInPrevBuffer = _prevPCMChunkBuffer.Length - cnt;
+                        var buf = new byte[remainingBytesInPrevBuffer];
+                        Buffer.BlockCopy(_prevPCMChunkBuffer, cnt, buf, 0, remainingBytesInPrevBuffer);
+                        _prevPCMChunkBuffer = buf;
+                    }
+                    else
+                    {
+                        // if no samples left over, clear the previous buffer
+                        _prevPCMChunkBuffer = null;
+                    }
+
+                    // reduce the desired sample count & increase the desired sample offset
+                    remainingByteCount -= cnt;
+                    offset += cnt;
+                    samplesRead = cnt;
+                }
+
+                while (remainingByteCount > 0 && _oggPCMChunkEnumerator.MoveNext())
+                {
+                    var curPCMChunk = _oggPCMChunkEnumerator.Current;
+
+                    // get samples from the current pcm chunk data
+                    var cnt = Math.Min(remainingByteCount, curPCMChunk.Length);
+                    Buffer.BlockCopy(curPCMChunk.Bytes, 0, buffer, offset, cnt);
+
+                    // if we have samples left over, rebuild the previous buffer array...
+                    if (cnt < curPCMChunk.Length)
+                    {
+                        int remainingBytesInChunk = curPCMChunk.Length - cnt;
+                        var buf = new byte[remainingBytesInChunk];
+                        Buffer.BlockCopy(curPCMChunk.Bytes, cnt, buf, 0, remainingBytesInChunk);
+                        _prevPCMChunkBuffer = buf;
+                    }
+
+                    // reduce the desired sample count & increase the desired sample offset
+                    remainingByteCount -= cnt;
+                    offset += cnt;
+                    samplesRead += cnt;
+                }
+            }
+
+            return samplesRead + remainingByteCount;
         }
 
         /// <summary>
-        /// Gets a value indicating whether the <see cref="IAudioSource"/> supports seeking.
+        /// Gets a value indicating whether the <see cref="OggSharpSource"/> supports seeking.
         /// </summary>
         public bool CanSeek
         {
@@ -185,52 +276,53 @@ namespace CSCore.Codecs.OGG
         }
 
         /// <summary>
-        ///     Gets the format of the raw data.
+        /// Gets the format of the raw data.
         /// </summary>
         public WaveFormat WaveFormat
         {
             get { return _waveFormat; }
         }
 
+        /// <summary>
+        /// Gets the length of the <see cref="OggSharpSource" /> in bytes.
+        /// </summary>
         public long Length
         {
             get { return _length; }
         }
 
+        /// <summary>
+        /// Gets or sets the position of the <see cref="OggSharpSource" /> in bytes.
+        /// </summary>
         public long Position
         {
             get
             {
-                if (_oggDecodedStream != null)
-                {
-                    return _oggDecodedStream.Position;
-                }
-                else
-                {
-                    return 0;
-                }
+                return CanSeek ? SecondsToBytes(_oggDecoder.Position) : 0;
             }
             set
             {
-                if (_oggDecodedStream == null)
-                {
-                    _oggDecodedStream = DecodeStream(_oggDecoder);
-                }
-                // if (_oggDecodedStream != null)
-                // {
-                _oggDecodedStream.Position = value;
-                // }
+                if (!CanSeek)
+                    throw new InvalidOperationException("OggSharpSource is not seekable.");
+                if (value < 0 || value > Length)
+                    throw new ArgumentOutOfRangeException("value");
+
+                // _oggDecoder doesn't support seeking to 0
+                if (value > 0) _oggDecoder.Position = BytesToSeconds(value);
             }
         }
 
+        /// <summary>
+        /// Disposes the <see cref="OggSharpSource" /> instance and disposes the underlying stream.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)
             {
-                if (_oggDecodedStream != null)
+                if (_oggDecodedMemoryStream != null)
                 {
-                    _oggDecodedStream.Dispose();
-                    _oggDecodedStream = null;
+                    _oggDecodedMemoryStream.Dispose();
+                    _oggDecodedMemoryStream = null;
                 }
                 if (_oggDecoder != null) _oggDecoder.Dispose();
                 if (_stream != null) _stream.Dispose();

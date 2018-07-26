@@ -10,7 +10,8 @@ using System.IO;
 
 namespace OggSharp
 {
-    public struct PCMChunk {
+    public struct PCMChunk
+    {
         public byte[] Bytes;
         public int Length;
         public int Channels;
@@ -68,7 +69,7 @@ namespace OggSharp
 
         private SyncState oy; // sync and verify incoming physical bitstream
         private StreamState os; // take physical pages, weld into a logical stream of packets
-        private Page og = new Page(); // one Ogg bitstream page.  Vorbis packets are inside
+        private Page og = new Page(); // one Ogg bitstream page. Vorbis packets are inside
         private Packet op; // one raw packet of data for decode
         private Info vi;  // struct that stores all the static vorbis bitstream settings
         private Comment vc; // struct that stores all the bitstream user comments
@@ -83,28 +84,34 @@ namespace OggSharp
         #region Private methods
 
         //  link:   -1) return the vorbis_info struct for the bitstream section
-        //              currently being decoded
-        //         0-n) to request information for a specific bitstream section
+        //     currently being decoded
+        //  0-n) to request information for a specific bitstream section
         //
         // In the case of a non-seekable bitstream, any call returns the
-        // current bitstream.  NULL in the case that the machine is not
+        // current bitstream. NULL in the case that the machine is not
         // initialized
 
         private Info getInfo(int link)
         {
-            if (link < 0) {
-                if (decode_ready) {
+            if (link < 0)
+            {
+                if (decode_ready)
+                {
                     return vis[current_link];
                 }
-                else {
+                else
+                {
                     return null;
                 }
             }
-            else {
-                if (link >= links) {
+            else
+            {
+                if (link >= links)
+                {
                     return null;
                 }
-                else {
+                else
+                {
                     return vis[link];
                 }
             }
@@ -112,11 +119,13 @@ namespace OggSharp
 
         private Comment getComment(int link)
         {
-            if (link < 0) {
+            if (link < 0)
+            {
                 if (decode_ready) { return vcs[current_link]; }
                 else { return null; }
             }
-            else {
+            else
+            {
                 if (link >= links) { return null; }
                 else { return vcs[link]; }
             }
@@ -130,38 +139,42 @@ namespace OggSharp
             return (0);
         }
 
-        // fetch and process a packet.  Handles the case where we're at a
-        // bitstream boundary and dumps the decoding machine.  If the decoding
-        // machine is unloaded, it loads it.  It also keeps pcm_offset up to
-        // date (seek and read both use this.  seek uses a special hack with
+        // fetch and process a packet. Handles the case where we're at a
+        // bitstream boundary and dumps the decoding machine. If the decoding
+        // machine is unloaded, it loads it. It also keeps pcm_offset up to
+        // date (seek and read both use this. seek uses a special hack with
         // readp).
         //
         // return: -1) hole in the data (lost packet)
-        //          0) need more date (only if readp==0)/eof
-        //          1) got a packet
+        // 0) need more date (only if readp==0)/eof
+        // 1) got a packet
 
         private int process_packet(int readp)
         {
             Page og = new Page();
 
-            // handle one packet.  Try to fetch it from current stream state
+            // handle one packet. Try to fetch it from current stream state
             // extract packets from page
-            while (true) {
-                // process a packet if we can.  If the machine isn't loaded,
+            while (true)
+            {
+                // process a packet if we can. If the machine isn't loaded,
                 // neither is a page
-                if (decode_ready) {
+                if (decode_ready)
+                {
                     Packet op = new Packet();
                     int result = os.packetout(op);
                     long granulepos;
                     // if(result==-1)return(-1); // hole in the data. For now, swallow
                     // and go. We'll need to add a real
                     // error code in a bit.
-                    if (result > 0) {
-                        // got a packet.  process it
+                    if (result > 0)
+                    {
+                        // got a packet. process it
                         granulepos = op.granulepos;
-                        if (vb.synthesis(op) == 0) {
+                        if (vb.synthesis(op) == 0)
+                        {
                             // lazy check for lazy
-                            // header handling.  The
+                            // header handling. The
                             // header packets aren't
                             // audio, so if/when we
                             // submit them,
@@ -176,7 +189,8 @@ namespace OggSharp
                             }
 
                             // update the pcm offset.
-                            if (granulepos != -1 && op.e_o_s == 0) {
+                            if (granulepos != -1 && op.e_o_s == 0)
+                            {
                                 int link = current_link;
                                 int samples;
                                 // this packet has a pcm_offset on it (the last packet
@@ -189,11 +203,12 @@ namespace OggSharp
                                 // granulepos declares the last frame in the stream, and the
                                 // last packet of the last page may be a partial frame.
                                 // So, we need a previous granulepos from an in-sequence page
-                                // to have a reference point.  Thus the !op.e_o_s clause above
+                                // to have a reference point. Thus the !op.e_o_s clause above
 
                                 samples = vd.synthesis_pcmout(null, null);
                                 granulepos -= samples;
-                                for (int i = 0; i < link; i++) {
+                                for (int i = 0; i < link; i++)
+                                {
                                     granulepos += pcmlengths[i];
                                 }
                                 pcm_offset = granulepos;
@@ -211,8 +226,10 @@ namespace OggSharp
                 bittrack += og.header_len * 8;
 
                 // has our decoding just traversed a bitstream boundary?
-                if (decode_ready) {
-                    if (current_serialno != og.serialno()) {
+                if (decode_ready)
+                {
+                    if (current_serialno != og.serialno())
+                    {
                         decode_clear();
                     }
                 }
@@ -228,17 +245,19 @@ namespace OggSharp
                 // boundary if we just left the previous logical bitstream and
                 // we're now nominally at the header of the next bitstream
 
-                if (!decode_ready) {
+                if (!decode_ready)
+                {
                     int i;
                     current_serialno = og.serialno();
 
-                    // match the serialno to bitstream section.  We use this rather than
+                    // match the serialno to bitstream section. We use this rather than
                     // offset positions to avoid problems near logical bitstream
                     // boundaries
-                    for (i = 0; i < links; i++) {
+                    for (i = 0; i < links; i++)
+                    {
                         if (serialnos[i] == current_serialno) { break; }
                     }
-                    if (i == links) { return (-1); } // sign of a bogus stream.  error out,
+                    if (i == links) { return (-1); } // sign of a bogus stream. error out,
                     // leave machine uninitialized
                     current_link = i;
 
@@ -263,56 +282,65 @@ namespace OggSharp
         }
 
         // returns: total raw (compressed) length of content if i==-1
-        //          raw (compressed) length of that logical bitstream for i==0 to n
-        //          -1 if the stream is not seekable (we can't know the length)
+        // raw (compressed) length of that logical bitstream for i==0 to n
+        // -1 if the stream is not seekable (we can't know the length)
 
         private long raw_total(int i)
         {
             if (i >= links) { return (-1); }
-            if (i < 0) {
+            if (i < 0)
+            {
                 long acc = 0;               // bug?
-                for (int j = 0; j < links; j++) {
+                for (int j = 0; j < links; j++)
+                {
                     acc += raw_total(j);
                 }
                 return (acc);
             }
-            else {
+            else
+            {
                 return (offsets[i + 1] - offsets[i]);
             }
         }
 
         // returns: total PCM length (samples) of content if i==-1
-        //          PCM length (samples) of that logical bitstream for i==0 to n
-        //          -1 if the stream is not seekable (we can't know the length)
+        // PCM length (samples) of that logical bitstream for i==0 to n
+        // -1 if the stream is not seekable (we can't know the length)
         private long pcm_total(int i)
         {
             if (i >= links) { return (-1); }
-            if (i < 0) {
+            if (i < 0)
+            {
                 long acc = 0;
-                for (int j = 0; j < links; j++) {
+                for (int j = 0; j < links; j++)
+                {
                     acc += pcm_total(j);
                 }
                 return (acc);
             }
-            else {
+            else
+            {
                 return (pcmlengths[i]);
             }
         }
 
         // returns: total seconds of content if i==-1
-        //          seconds in that logical bitstream for i==0 to n
-        //          -1 if the stream is not seekable (we can't know the length)
+        // seconds in that logical bitstream for i==0 to n
+        // -1 if the stream is not seekable (we can't know the length)
         private float time_total(int i)
         {
             if (i >= links) { return (-1); }
-            if (i < 0) {
+            if (i < 0)
+            {
                 float acc = 0;
-                for (int j = 0; j < links; j++) {
+                for (int j = 0; j < links; j++)
+                {
                     acc += time_total(j);
                 }
                 return (acc);
             }
-            else {
+            else
+            {
                 return ((float)(pcmlengths[i]) / vis[i].rate);
             }
         }
@@ -324,15 +352,16 @@ namespace OggSharp
         // surprises).
         //
         // returns zero on success, nonzero on failure
-
         private int raw_seek(int pos)
         {
-            if (!seekable && pos != 0) {
+            if (!seekable && pos != 0)
+            {
                 throw new InvalidOperationException("Cannot seek, the stream is not seekable");
             }
 
-            if (pos < 0 || pos > offsets[links]) {
-                //goto seek_error;
+            if (pos < 0 || pos > offsets[links])
+            {
+                // goto seek_error;
                 pcm_offset = -1;
                 decode_clear();
                 return -1;
@@ -345,79 +374,84 @@ namespace OggSharp
             // seek
             seek_helper(pos);
 
-            // we need to make sure the pcm_offset is set.  We use the
+            // we need to make sure the pcm_offset is set. We use the
             // _fetch_packet helper to process one packet with readp set, then
             // call it until it returns '0' with readp not set (the last packet
             // from a page has the 'granulepos' field set, and that's how the
             // helper updates the offset
-
-            switch (process_packet(1)) {
-            case 0:
-                // oh, eof. There are no packets remaining.  Set the pcm offset to
-                // the end of file
-                pcm_offset = pcm_total(-1);
-                return (0);
-            case -1:
-                // error! missing data or invalid bitstream structure
-                //goto seek_error;
-                pcm_offset = -1;
-                decode_clear();
-                return -1;
-            default:
-                // all OK
-                if (!seekable) {
-                    break;
-                }
-                break;
-            }
-            while (true) {
-                switch (process_packet(0)) {
+            switch (process_packet(1))
+            {
                 case 0:
-                    // the offset is set.  If it's a bogus bitstream with no offset
-                    // information, it's not but that's not our fault.  We still run
-                    // gracefully, we're just missing the offset
+                    // oh, eof. There are no packets remaining. Set the pcm offset to
+                    // the end of file
+                    pcm_offset = pcm_total(-1);
                     return (0);
                 case -1:
                     // error! missing data or invalid bitstream structure
-                    //goto seek_error;
+                    // goto seek_error;
                     pcm_offset = -1;
                     decode_clear();
                     return -1;
                 default:
-                    // continue processing packets
-                    if (!seekable) {
+                    // all OK
+                    if (!seekable)
+                    {
                         break;
                     }
                     break;
+            }
+            while (true)
+            {
+                switch (process_packet(0))
+                {
+                    case 0:
+                        // the offset is set. If it's a bogus bitstream with no offset
+                        // information, it's not but that's not our fault. We still run
+                        // gracefully, we're just missing the offset
+                        return (0);
+                    case -1:
+                        // error! missing data or invalid bitstream structure
+                        // goto seek_error;
+                        pcm_offset = -1;
+                        decode_clear();
+                        return -1;
+                    default:
+                        // continue processing packets
+                        if (!seekable)
+                        {
+                            break;
+                        }
+                        break;
                 }
             }
         }
 
         // seek to a sample offset relative to the decompressed pcm stream
         // returns zero on success, nonzero on failure
-
         private int pcm_seek(long pos)
         {
             int link = -1;
             long total = pcm_total(-1);
 
-            if (pos < 0 || pos > total) {
-                //goto seek_error;
+            if (pos < 0 || pos > total)
+            {
+                // goto seek_error;
                 pcm_offset = -1;
                 decode_clear();
                 return -1;
             }
 
             // which bitstream section does this pcm offset occur in?
-            for (link = links - 1; link >= 0; link--) {
+            for (link = links - 1; link >= 0; link--)
+            {
                 total -= pcmlengths[link];
                 if (pos >= total) { break; }
             }
 
             // search within the logical bitstream for the page with the highest
-            // pcm_pos preceeding (or equal to) pos.  There is a danger here;
+            // pcm_pos preceeding (or equal to) pos. There is a danger here;
             // missing pages or incorrect frame number information in the
-            // bitstream could make our task impossible.  Account for that (it
+            // bitstream could make our task impossible. Account for that (it
             // would be an error condition)
             {
                 long target = pos - total;
@@ -426,37 +460,45 @@ namespace OggSharp
                 int best = (int)begin;
 
                 Page og = new Page();
-                while (begin < end) {
+                while (begin < end)
+                {
                     long bisect;
                     int ret;
 
-                    if (end - begin < CHUNKSIZE) {
+                    if (end - begin < CHUNKSIZE)
+                    {
                         bisect = begin;
                     }
-                    else {
+                    else
+                    {
                         bisect = (end + begin) / 2;
                     }
 
                     seek_helper(bisect);
                     ret = get_next_page(og, end - bisect);
 
-                    if (ret == -1) {
+                    if (ret == -1)
+                    {
                         end = bisect;
                     }
-                    else {
+                    else
+                    {
                         long granulepos = og.granulepos();
-                        if (granulepos < target) {
+                        if (granulepos < target)
+                        {
                             best = ret;  // raw offset of packet with granulepos
                             begin = offset; // raw offset of next packet
                         }
-                        else {
+                        else
+                        {
                             end = bisect;
                         }
                     }
                 }
                 // found our page. seek to it (call raw_seek).
-                if (raw_seek(best) != 0) {
-                    //goto seek_error;
+                if (raw_seek(best) != 0)
+                {
+                    // goto seek_error;
                     pcm_offset = -1;
                     decode_clear();
                     return -1;
@@ -464,14 +506,16 @@ namespace OggSharp
             }
 
             // verify result
-            if (pcm_offset >= pos) {
-                //goto seek_error;
+            if (pcm_offset >= pos)
+            {
+                // goto seek_error;
                 pcm_offset = -1;
                 decode_clear();
                 return -1;
             }
-            if (pos > pcm_total(-1)) {
-                //goto seek_error;
+            if (pos > pcm_total(-1))
+            {
+                // goto seek_error;
                 pcm_offset = -1;
                 decode_clear();
                 return -1;
@@ -479,7 +523,8 @@ namespace OggSharp
 
             // discard samples until we reach the desired position. Crossing a
             // logical bitstream boundary with abandon is OK.
-            while (pcm_offset < pos) {
+            while (pcm_offset < pos)
+            {
                 float[][] pcm;
                 int target = (int)(pos - pcm_offset);
                 float[][][] _pcm = new float[1][][];
@@ -491,7 +536,8 @@ namespace OggSharp
                 pcm_offset += samples;
 
                 if (samples < target)
-                    if (process_packet(1) == 0) {
+                    if (process_packet(1) == 0)
+                    {
                         pcm_offset = pcm_total(-1); // eof
                     }
             }
@@ -499,9 +545,9 @@ namespace OggSharp
 
             // seek_error:
             // dump machine so we're in a known state
-            //pcm_offset=-1;
-            //decode_clear();
-            //return -1;
+            // pcm_offset=-1;
+            // decode_clear();
+            // return -1;
         }
 
         // seek to a playback time relative to the decompressed pcm stream
@@ -514,15 +560,17 @@ namespace OggSharp
             long pcm_tot = pcm_total(-1);
             float time_tot = time_total(-1);
 
-            if (seconds < 0 || seconds > time_tot) {
-                //goto seek_error;
+            if (seconds < 0 || seconds > time_tot)
+            {
+                // goto seek_error;
                 pcm_offset = -1;
                 decode_clear();
                 return -1;
             }
 
             // which bitstream section does this time offset occur in?
-            for (link = links - 1; link >= 0; link--) {
+            for (link = links - 1; link >= 0; link--)
+            {
                 pcm_tot -= pcmlengths[link];
                 time_tot -= time_total(link);
                 if (seconds >= time_tot) { break; }
@@ -535,7 +583,7 @@ namespace OggSharp
             }
         }
 
-        // tell the current stream offset cursor.  Note that seek followed by
+        // tell the current stream offset cursor. Note that seek followed by
         // tell will likely not give the set offset due to caching
         private long raw_tell()
         {
@@ -561,7 +609,8 @@ namespace OggSharp
             time_tot = time_total(-1);
 
             // which bitstream section does this time offset occur in?
-            for (link = links - 1; link >= 0; link--) {
+            for (link = links - 1; link >= 0; link--)
+            {
                 pcm_tot -= pcmlengths[link];
                 time_tot -= time_total(link);
                 if (pcm_offset >= pcm_tot) { break; }
@@ -570,7 +619,7 @@ namespace OggSharp
             return ((float)time_tot + (float)(pcm_offset - pcm_tot) / vis[link].rate);
         }
 
-        //The helpers are over; it's all toplevel interface from here on out
+        // The helpers are over; it's all toplevel interface from here on out
         // clear out the OggVorbis_File struct
         private int clear()
         {
@@ -578,8 +627,10 @@ namespace OggSharp
             vd.clear();
             os.clear();
 
-            if (vis != null && links != 0) {
-                for (int i = 0; i < links; i++) {
+            if (vis != null && links != 0)
+            {
+                for (int i = 0; i < links; i++)
+                {
                     vis[i].clear();
                     vcs[i].clear();
                 }
@@ -620,17 +671,21 @@ namespace OggSharp
             // Most OggVorbis files will contain a single logical bitstream
             end = get_prev_page(og);
             // moer than one logical bitstream?
-            if (og.serialno() != serialno) {
+            if (og.serialno() != serialno)
+            {
                 // Chained bitstream. Bisect-search each logical bitstream
-                // section.  Do so based on serial number only
-                if (bisect_forward_serialno(0, 0, end + 1, serialno, 0) < 0) {
+                // section. Do so based on serial number only
+                if (bisect_forward_serialno(0, 0, end + 1, serialno, 0) < 0)
+                {
                     clear();
                     return OV_EREAD;
                 }
             }
-            else {
+            else
+            {
                 // Only one logical bitstream
-                if (bisect_forward_serialno(0, end, end + 1, serialno, 0) < 0) {
+                if (bisect_forward_serialno(0, end, end + 1, serialno, 0) < 0)
+                {
                     clear();
                     return OV_EREAD;
                 }
@@ -648,7 +703,8 @@ namespace OggSharp
             Packet op = new Packet();
             int ret;
 
-            if (og_ptr == null) {
+            if (og_ptr == null)
+            {
                 ret = get_next_page(og, CHUNKSIZE);
                 if (ret == OV_EREAD) { return OV_EREAD; }
                 if (ret < 0) { return OV_ENOTVORBIS; }
@@ -666,21 +722,26 @@ namespace OggSharp
             vc.init();
 
             int i = 0;
-            while (i < 3) {
+            while (i < 3)
+            {
                 os.pagein(og_ptr);
-                while (i < 3) {
+                while (i < 3)
+                {
                     int result = os.packetout(op);
                     if (result == 0) { break; }
-                    if (result == -1) {
+                    if (result == -1)
+                    {
                         throw new Exception("Corrupt header in logical bitstream.");
                     }
-                    if (vi.synthesis_headerin(vc, op) != 0) {
+                    if (vi.synthesis_headerin(vc, op) != 0)
+                    {
                         throw new Exception("Illegal header in logical bitstream.");
                     }
                     i++;
                 }
                 if (i < 3)
-                    if (get_next_page(og_ptr, 1) < 0) {
+                    if (get_next_page(og_ptr, 1) < 0)
+                    {
                         throw new Exception("Missing header in logical bitstream.");
                     }
             }
@@ -688,7 +749,7 @@ namespace OggSharp
         }
 
         // last step of the OggVorbis_File initialization; get all the
-        // vorbis_info structs and PCM positions.  Only called by the seekable
+        // vorbis_info structs and PCM positions. Only called by the seekable
         // initialization (local stream storage is hacked slightly; pay
         // attention to how that's done)
         private void prefetch_all_headers(Info first_i, Comment first_c, int dataoffset)
@@ -702,9 +763,11 @@ namespace OggSharp
             pcmlengths = new long[links];
             serialnos = new int[links];
 
-            for (int i = 0; i < links; i++) {
-                if (first_i != null && first_c != null && i == 0) {
-                    // we already grabbed the initial header earlier.  This just
+            for (int i = 0; i < links; i++)
+            {
+                if (first_i != null && first_c != null && i == 0)
+                {
+                    // we already grabbed the initial header earlier. This just
                     // saves the waste of grabbing it again
                     // !!!!!!!!!!!!!
                     vis[i] = first_i;
@@ -713,13 +776,16 @@ namespace OggSharp
                     //memcpy(vf->vc+i,first_c,sizeof(vorbis_comment));
                     dataoffsets[i] = dataoffset;
                 }
-                else {
+                else
+                {
                     // seek to the location of the initial header
                     seek_helper(offsets[i]); //!!!
-                    if (fetch_headers(vis[i], vcs[i], null, null) == -1) {
+                    if (fetch_headers(vis[i], vcs[i], null, null) == -1)
+                    {
                         throw new Exception("Error opening logical bitstream #" + (i + 1) + "\n");
                     }
-                    else {
+                    else
+                    {
                         dataoffsets[i] = offset;
                         os.clear();
                     }
@@ -730,15 +796,18 @@ namespace OggSharp
                 long end = offsets[i + 1]; //!!!
                 seek_helper(end);
 
-                while (true) {
+                while (true)
+                {
                     ret = get_prev_page(og);
-                    if (ret == -1) {
+                    if (ret == -1)
+                    {
                         // this should not be possible
                         throw new Exception("Could not find last page of logical " +
                                             "bitstream #" + (i) + "\n");
 
                     }
-                    if (og.granulepos() != -1) {
+                    if (og.granulepos() != -1)
+                    {
                         serialnos[i] = og.serialno();
                         pcmlengths[i] = og.granulepos();
                         break;
@@ -761,15 +830,18 @@ namespace OggSharp
             byte[] buffer = oy.data;
             //  int bytes=callbacks.read_func(buffer, index, 1, CHUNKSIZE, datasource);
             int bytes = 0;
-            try {
+            try
+            {
                 bytes = input.Read(buffer, index, CHUNKSIZE);
             }
-            catch (Exception) {
+            catch (Exception)
+            {
                 //Console.Error.WriteLine(e.Message);
                 return OV_EREAD;
             }
             oy.wrote(bytes);
-            if (bytes == -1) {
+            if (bytes == -1)
+            {
                 bytes = 0;
             }
             return bytes;
@@ -778,20 +850,24 @@ namespace OggSharp
         private int get_next_page(Page page, long boundary)
         {
             if (boundary > 0) { boundary += offset; }
-            while (true) {
+            while (true)
+            {
                 int more;
                 if (boundary > 0 && offset >= boundary) { return OV_FALSE; }
                 more = oy.pageseek(page);
                 if (more < 0) { offset -= more; }
-                else {
-                    if (more == 0) {
+                else
+                {
+                    if (more == 0)
+                    {
                         if (boundary == 0) { return OV_FALSE; }
                         //	  if(get_data()<=0)return -1;
                         int ret = get_data();
                         if (ret == 0) { return OV_EOF; }
                         if (ret < 0) { return OV_EREAD; }
                     }
-                    else {
+                    else
+                    {
                         int ret = (int)offset; //!!!
                         offset += more;
                         return ret;
@@ -805,13 +881,16 @@ namespace OggSharp
             long begin = offset; //!!!
             int ret;
             int offst = -1;
-            while (offst == -1) {
+            while (offst == -1)
+            {
                 begin -= CHUNKSIZE;
-                if (begin < 0) {
+                if (begin < 0)
+                {
                     begin = 0;
                 }
                 seek_helper(begin);
-                while (offset < begin + CHUNKSIZE) {
+                while (offset < begin + CHUNKSIZE)
+                {
                     ret = get_next_page(page, begin + CHUNKSIZE - offset);
                     if (ret == OV_EREAD) { return OV_EREAD; }
                     if (ret < 0) { break; }
@@ -820,7 +899,8 @@ namespace OggSharp
             }
             seek_helper(offst); //!!!
             ret = get_next_page(page, CHUNKSIZE);
-            if (ret < 0) {
+            if (ret < 0)
+            {
                 //System.err.println("Missed page fencepost at end of logical bitstream Exiting");
                 //System.exit(1);
                 return OV_EFAULT;
@@ -835,23 +915,28 @@ namespace OggSharp
             Page page = new Page();
             int ret;
 
-            while (searched < endsearched) {
+            while (searched < endsearched)
+            {
                 long bisect;
-                if (endsearched - searched < CHUNKSIZE) {
+                if (endsearched - searched < CHUNKSIZE)
+                {
                     bisect = searched;
                 }
-                else {
+                else
+                {
                     bisect = (searched + endsearched) / 2;
                 }
 
                 seek_helper(bisect);
                 ret = get_next_page(page, -1);
                 if (ret == OV_EREAD) { return OV_EREAD; }
-                if (ret < 0 || page.serialno() != currentno) {
+                if (ret < 0 || page.serialno() != currentno)
+                {
                     endsearched = bisect;
                     if (ret >= 0) { next = ret; }
                 }
-                else {
+                else
+                {
                     searched = ret + page.header_len + page.body_len;
                 }
             }
@@ -859,12 +944,14 @@ namespace OggSharp
             ret = get_next_page(page, -1);
             if (ret == OV_EREAD) { return OV_EREAD; }
 
-            if (searched >= end || ret == -1) {
+            if (searched >= end || ret == -1)
+            {
                 links = m + 1;
                 offsets = new long[m + 2];
                 offsets[m + 1] = searched;
             }
-            else {
+            else
+            {
                 ret = bisect_forward_serialno(next, offset, end, page.serialno(), m + 1);
                 if (ret == OV_EREAD) { return OV_EREAD; }
             }
@@ -877,10 +964,12 @@ namespace OggSharp
             int index = oy.buffer(pageSize);
             int bytes = 0;
             byte[] buffer = oy.data;
-            try {
+            try
+            {
                 bytes = input.Read(buffer, index, pageSize);
             }
-            catch {
+            catch
+            {
                 // TODO: Handle error
                 throw;
             }
@@ -907,7 +996,7 @@ namespace OggSharp
             vc = vcs[0];
 
             SampleRate = vi.rate;
-            Stereo = (vi.channels > 1);
+            Channels = vi.channels;
             Length = this.time_total(-1);
             _index = new int[vi.channels];
             convsize = 4096 / vi.channels;
@@ -930,7 +1019,8 @@ namespace OggSharp
 
 #endif
 
-                            for (int i = 0; i < vi.channels; i++) {
+            for (int i = 0; i < vi.channels; i++)
+            {
 
 #if UNSAFE
 
@@ -939,14 +1029,15 @@ namespace OggSharp
 
 #else
 
-                                float[] currentPcm = (i == 0 ? pcm[0] : pcm[1]);
-                                int ptr = (bytesRead + (i * 2));
+                float[] currentPcm = (i == 0 ? pcm[0] : pcm[1]);
+                int ptr = (bytesRead + (i * 2));
 
 #endif
 
-                                //int ptr=i;
-                                int mono = _index[i];
-                                for (int j = 0; j < bout; j++) {
+                //int ptr=i;
+                int mono = _index[i];
+                for (int j = 0; j < bout; j++)
+                {
 
 #if UNSAFE
 
@@ -954,24 +1045,27 @@ namespace OggSharp
 
 #else
 
-                                    int val = (int)(currentPcm[mono + j] * 32767.0);
+                    int val = (int)(currentPcm[mono + j] * 32767.0);
 
 #endif
 
-                                    //        short val=(short)(pcm[i][mono+j]*32767.);
-                                    //        int val=(int)Math.round(pcm[i][mono+j]*32767.);
-                                    // might as well guard against clipping
-                                    if (val > 32767) {
-                                        val = 32767;
-                                        clipflag = true;
-                                    }
-                                    if (val < -32768) {
-                                        val = -32768;
-                                        clipflag = true;
-                                    }
-                                    if (val < 0) { val = val | 0x8000; }
+                    // short val=(short)(pcm[i][mono+j]*32767.);
+                    // int val=(int)Math.round(pcm[i][mono+j]*32767.);
+                    // might as well guard against clipping
+                    if (val > 32767)
+                    {
+                        val = 32767;
+                        clipflag = true;
+                    }
+                    if (val < -32768)
+                    {
+                        val = -32768;
+                        clipflag = true;
+                    }
+                    if (val < 0) { val = val | 0x8000; }
 
-                                    if (BitConverter.IsLittleEndian) {
+                    if (BitConverter.IsLittleEndian)
+                    {
 
 #if UNSAFE
 
@@ -981,13 +1075,14 @@ namespace OggSharp
 
 #else
 
-                                        convbuffer[ptr] = (byte)(val);
-                                        convbuffer[ptr + 1] = (byte)((uint)val >> 8);
+                        convbuffer[ptr] = (byte)(val);
+                        convbuffer[ptr + 1] = (byte)((uint)val >> 8);
 
 #endif
 
-                                    }
-                                    else {
+                    }
+                    else
+                    {
 
 #if UNSAFE
 
@@ -996,16 +1091,16 @@ namespace OggSharp
 
 #else
 
-                                        convbuffer[ptr] = (byte)((uint)val >> 8);
-                                        convbuffer[ptr + 1] = (byte)(val);
+                        convbuffer[ptr] = (byte)((uint)val >> 8);
+                        convbuffer[ptr + 1] = (byte)(val);
 
 #endif
 
-                                    }
+                    }
 
-                                    ptr += 2 * (vi.channels);
-                                }
-                            }
+                    ptr += 2 * (vi.channels);
+                }
+            }
 
 #if UNSAFE
 
@@ -1014,7 +1109,8 @@ namespace OggSharp
 
 #endif
 
-            if (clipflag) {
+            if (clipflag)
+            {
                 // throw new Exception("Clipping in frame "+vd.sequence);
             }
         }
@@ -1022,6 +1118,14 @@ namespace OggSharp
         #endregion Private methods
 
         #region Public methods
+        public OggDecoder()
+        {
+        }
+
+        public OggDecoder(Stream input)
+        {
+            this.Initialize(input, input.CanSeek);
+        }
 
         /// <summary>
         /// Inializes and gets ready to decode. The stream will be seekable.
@@ -1038,7 +1142,8 @@ namespace OggSharp
         /// <param name="seekable"></param>
         public void Initialize(Stream input, bool seekable)
         {
-            if (initialized) {
+            if (initialized)
+            {
                 throw new InvalidOperationException("Already initialized");
             }
 
@@ -1078,45 +1183,54 @@ namespace OggSharp
         {
             int bytesRead = 0;
 
-            while (eos == 0) {
-                while (eos == 0) {
+            while (eos == 0)
+            {
+                while (eos == 0)
+                {
                     int result = oy.pageout(og);
                     if (result == 0) { break; } // need more data
-                    if (result == -1) {
+                    if (result == -1)
+                    {
                         // missing or corrupt data at this page position
                         throw new Exception("Corrupt or missing data in bitstream...");
                     }
-                    else {
+                    else
+                    {
                         os.pagein(og); // can safely ignore errors at this point
-                        while (true) {
+                        while (true)
+                        {
                             result = os.packetout(op);
 
                             if (result == 0) { break; } // need more data
-                            if (result == -1) {
+                            if (result == -1)
+                            {
                                 // missing or corrupt data at this page position
                                 // no reason to complain; already complained above
                             }
-                            else {
-                                // we have a packet.  Decode it
+                            else
+                            {
+                                // we have a packet. Decode it
                                 int samples;
 
-                                if (vb.synthesis(op) == 0) {
+                                if (vb.synthesis(op) == 0)
+                                {
                                     // test for success!
                                     vd.synthesis_blockin(vb);
                                 }
 
-                                // **pcm is a multichannel float vector.  In stereo, for
-                                // example, pcm[0] is left, and pcm[1] is right.  samples is
-                                // the size of each channel.  Convert the float values
+                                // **pcm is a multichannel float vector. In stereo, for
+                                // example, pcm[0] is left, and pcm[1] is right. samples is
+                                // the size of each channel. Convert the float values
                                 // (-1.<=range<=1.) to whatever PCM format and write it out
-
-                                while ((samples = vd.synthesis_pcmout(_pcm, _index)) > 0) {
+                                while ((samples = vd.synthesis_pcmout(_pcm, _index)) > 0)
+                                {
                                     float[][] pcm = _pcm[0];
                                     int bout = (samples < convsize ? samples : convsize);
                                     int chunkSize = 2 * vi.channels * bout;
                                     pcm_offset += samples;
 
-                                    if (bytesRead + chunkSize > convbuffer.Length) {
+                                    if (bytesRead + chunkSize > convbuffer.Length)
+                                    {
                                         PCMChunk chunk = new PCMChunk { Bytes = convbuffer, Channels = vi.channels, Length = bytesRead, Rate = vi.rate };
                                         bytesRead = 0;
                                         yield return chunk;
@@ -1129,21 +1243,25 @@ namespace OggSharp
                                 }
                             }
                         }
-                        if (og.eos() != 0) {
+                        if (og.eos() != 0)
+                        {
                             eos = 1;
                         }
                     }
                 }
-                if (eos == 0) {
+                if (eos == 0)
+                {
                     ReadNextPage();
                 }
             }
 
-            if (bytesRead != 0) {
+            if (bytesRead != 0)
+            {
                 PCMChunk chunk = new PCMChunk { Bytes = convbuffer, Channels = vi.channels, Length = bytesRead, Rate = vi.rate };
                 yield return chunk;
             }
-            else {
+            else
+            {
                 yield break;
             }
         }
@@ -1172,10 +1290,11 @@ namespace OggSharp
             OggDecoder decoder = new OggDecoder();
             decoder.Initialize(input);
             MemoryStream ms = new MemoryStream(4096);
-            foreach (PCMChunk chunk in decoder) {
+            foreach (PCMChunk chunk in decoder)
+            {
                 ms.Write(chunk.Bytes, 0, chunk.Length);
             }
-            return new PCMChunk { Bytes = ms.ToArray(), Channels = (decoder.Stereo ? 2 : 1), Length = (int)ms.Length, Rate = decoder.SampleRate };
+            return new PCMChunk { Bytes = ms.ToArray(), Channels = decoder.Channels, Length = (int)ms.Length, Rate = decoder.SampleRate };
         }
 
         #endregion Public methods
@@ -1200,9 +1319,9 @@ namespace OggSharp
         }
 
         /// <summary>
-        /// True for stereo, false for mono
+        /// Return number of Channels
         /// </summary>
-        public bool Stereo
+        public int Channels
         {
             get;
             private set;
@@ -1229,18 +1348,23 @@ namespace OggSharp
         /// <summary>
         /// Gets the comments stored in the vorbis file
         /// </summary>
-        public string Comment {
-            get {
-                if (initialized) {
+        public string Comment
+        {
+            get
+            {
+                if (initialized)
+                {
                     byte[][] ptr = vc.user_comments;
                     StringWriter writer = new StringWriter();
                     for (int j = 0; j < vc.user_comments.Length; j++)
                     {
-                        if (ptr[j] == null) break;                    
+                        if (ptr[j] == null) break;
                         writer.WriteLine(vc.getComment(j).TrimEnd('\0'));
                     }
                     return writer.ToString();
-                } else {
+                }
+                else
+                {
                     return null;
                 }
             }
@@ -1249,11 +1373,16 @@ namespace OggSharp
         /// <summary>
         /// Gets the vendor stored in the vorbis file
         /// </summary>
-        public string Vendor {
-            get {
-                if (initialized) {
+        public string Vendor
+        {
+            get
+            {
+                if (initialized)
+                {
                     return vc.getVendor().TrimEnd('\0');
-                } else {
+                }
+                else
+                {
                     return null;
                 }
             }

@@ -14,6 +14,7 @@ using CSCore.Codecs.WAV;
 using SoundFingerprinting;
 using SoundFingerprinting.DAO;
 using FindSimilarServices.Fingerprinting;
+using Serilog;
 
 namespace FindSimilarClient.Controllers
 {
@@ -24,6 +25,11 @@ namespace FindSimilarClient.Controllers
         public StreamingController(IFindSimilarDatabase database)
         {
             _database = database;
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console()
+                .CreateLogger();
         }
 
         [HttpGet("{id}")]
