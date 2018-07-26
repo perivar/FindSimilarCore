@@ -8,6 +8,8 @@ namespace FindSimilarClient
     {
         public static RangeHeaderValue GetRanges(this HttpContext context, long contentSize)
         {
+            // see http://www.mintydog.com/2014/01/serving-video-from-sitecore-for-iphones/
+
             RangeHeaderValue rangesResult = null;
 
             string rangeHeader = context.Request.Headers["Range"];
@@ -27,7 +29,8 @@ namespace FindSimilarClient
                 //      Range: bytes=0-500,600-1000 * Get bytes 0-500 (the first 501 bytes), inclusive plus bytes 600-1000 (401 bytes) inclusive
 
                 // Remove "Ranges" and break up the ranges
-                string[] ranges = rangeHeader.Replace("bytes=", string.Empty).Split(",".ToCharArray());
+                string[] ranges = rangeHeader.Replace("bytes=", string.Empty)
+                                             .Split(",".ToCharArray());
 
                 rangesResult = new RangeHeaderValue();
 
@@ -39,16 +42,25 @@ namespace FindSimilarClient
 
                     long parsedValue;
 
+                    // Get the START and END values for the current range
                     string[] currentRange = ranges[i].Split("-".ToCharArray());
-
                     if (long.TryParse(currentRange[END], out parsedValue))
+                    {
+                        // An end was specified
                         endByte = parsedValue;
+                    }
                     else
+                    {
+                        // No end specified
                         endByte = contentSize - 1;
+                    }
 
 
                     if (long.TryParse(currentRange[START], out parsedValue))
+                    {
+                        // A normal begin value
                         startByte = parsedValue;
+                    }
                     else
                     {
                         // No beginning specified, get last n bytes of file
@@ -59,6 +71,7 @@ namespace FindSimilarClient
                     }
 
                     Log.Verbose("Found Byte Range: {0}-{1} / {2}", startByte, endByte, contentSize);
+
                     rangesResult.Ranges.Add(new RangeItemHeaderValue(startByte, endByte));
                 }
             }

@@ -84,12 +84,26 @@ namespace FindSimilarClient.Controllers
              */
         }
 
+        private FileStreamResult StreamAudioV5(string pathToSourceFile)
+        {
+            IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            ISampleSource sampleSource = waveSource.ToSampleSource();
+            IWaveSource ieeeFloatSource = sampleSource.ToWaveSource();
+            return new WaveSourceStreamResult(ieeeFloatSource, new MediaTypeHeaderValue("audio/wav"));
+        }
+
+        private FileStreamResult StreamAudioV4(string pathToSourceFile)
+        {
+            IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            ISampleSource sampleSource = waveSource.ToSampleSource();
+            return new SampleSourceStreamResult(sampleSource, new MediaTypeHeaderValue("audio/wav"));
+        }
+
         private FileStreamResult StreamAudioV3(string pathToSourceFile)
         {
             IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
-            return new IWaveSourceStreamResult(waveSource, new MediaTypeHeaderValue("audio/wav"));
+            return new WaveSourceStreamResult(waveSource, new MediaTypeHeaderValue("audio/wav"));
         }
-
 
         private FileStreamResult StreamAudioV2(string pathToSourceFile)
         {
