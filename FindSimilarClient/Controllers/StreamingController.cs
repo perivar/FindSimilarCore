@@ -33,8 +33,10 @@ namespace FindSimilarClient.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<FileStreamResult> Get(string id)
+        public async Task Get(string id)
         {
+            // <FileStreamResult>
+            
             // ids have this form:
             // "b6b9ba73-293c-46ae-bd7d-2ea23ecb5e1c"
             // "e12ec602-9ab7-4999-9506-1e996f9d6eb2"
@@ -49,11 +51,16 @@ namespace FindSimilarClient.Controllers
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
                 // return StreamAudioV3(pathToSourceFile);
                 // return StreamAudioSampleSource(pathToSourceFile);
-                return StreamAudioBuiltIn(pathToSourceFile);
+                // return StreamAudioBuiltIn(pathToSourceFile);
+
+                await MultipartFileSender.FromFile(pathToSourceFile)
+                                    .With(HttpContext.Request)
+                                    .With(HttpContext.Response)
+                                    .ServeResource();
             }
             else
             {
-                return null;
+                // return null;
             }
 
             /* 
