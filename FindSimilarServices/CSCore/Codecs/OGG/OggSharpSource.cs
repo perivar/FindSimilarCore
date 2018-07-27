@@ -304,11 +304,16 @@ namespace CSCore.Codecs.OGG
             {
                 if (!CanSeek)
                     throw new InvalidOperationException("OggSharpSource is not seekable.");
-                if (value < 0 || value > Length)
+                if (value < 0)
                     throw new ArgumentOutOfRangeException("value");
 
                 // _oggDecoder doesn't support seeking to 0
-                if (value > 0) _oggDecoder.Position = BytesToSeconds(value);
+                if (value > 0)
+                {
+                    float seconds = BytesToSeconds(value);
+                    seconds = Math.Min(seconds, _oggDecoder.Length);
+                    _oggDecoder.Position = seconds;
+                }
             }
         }
 

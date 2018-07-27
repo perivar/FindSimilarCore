@@ -47,7 +47,9 @@ namespace FindSimilarClient.Controllers
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
-                return StreamAudioV3(pathToSourceFile);
+                // return StreamAudioV3(pathToSourceFile);
+                // return StreamAudioSampleSource(pathToSourceFile);
+                return StreamAudioBuiltIn(pathToSourceFile);
             }
             else
             {
@@ -92,7 +94,7 @@ namespace FindSimilarClient.Controllers
             return new WaveSourceStreamResult(ieeeFloatSource, new MediaTypeHeaderValue("audio/wav"));
         }
 
-        private FileStreamResult StreamAudioV4(string pathToSourceFile)
+        private FileStreamResult StreamAudioSampleSource(string pathToSourceFile)
         {
             IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
             ISampleSource sampleSource = waveSource.ToSampleSource();
@@ -152,6 +154,23 @@ namespace FindSimilarClient.Controllers
             // return new StreamResult(stream, new MediaTypeHeaderValue(contentType));
             // return new FileStreamResult(outputStream, new MediaTypeHeaderValue(contentType));
             return File(outputStream, contentType, true);
+        }
+
+        private FileStreamResult StreamAudioBuiltIn(string pathToSourceFile)
+        {
+            string contentType = "audio/wav";
+
+            return new FileStreamResult(System.IO.File.OpenRead(pathToSourceFile), new MediaTypeHeaderValue(contentType))
+            {
+                EnableRangeProcessing = true
+            };
+
+            // ASP NET CORE 2.1 supports enableRangeProcessing: Set to true to enable range requests processing.
+            // So no need to enable this in Program.cs
+            // ref. https://github.com/aspnet/Mvc/pull/6895#issuecomment-356477675
+            // return File(System.IO.File.OpenRead(pathToSourceFile), contentType, true);
+
+            // return new StreamResult(stream, new MediaTypeHeaderValue(contentType));
         }
 
         public byte[] GetByteArray(Stream stream)

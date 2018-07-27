@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using Serilog;
 using System.Threading.Tasks;
 using CSCore;
 using CSCore.Codecs.WAV;
@@ -21,6 +22,7 @@ namespace FindSimilarClient
         private const string CrLf = "\r\n";
         private ISampleSource SampleSource { get; set; }
         private long _lengthInBytes;
+        private double _durationInSeconds;
 
         public SampleSourceStreamResult(ISampleSource sampleSource, string contentType)
             : base(new MemoryStream(), contentType)
@@ -45,6 +47,8 @@ namespace FindSimilarClient
         private void Init()
         {
             _lengthInBytes = SampleSource.Length * SampleSource.WaveFormat.BytesPerSample;
+            _durationInSeconds = (double)SampleSource.Length / (double)SampleSource.WaveFormat.SampleRate / (double)SampleSource.WaveFormat.Channels;
+            Log.Verbose("SampleSource: byte length: {0}, duration: {1}", _lengthInBytes, _durationInSeconds);
         }
 
         private bool IsMultipartRequest(RangeHeaderValue range)
@@ -132,10 +136,7 @@ namespace FindSimilarClient
             var startIndex = rangeValue.From ?? 0;
             var endIndex = rangeValue.To ?? 0;
 
-            byte[] buffer = new byte[BufferSize / SampleSource.WaveFormat.BytesPerSample];
             long totalToSend = endIndex - startIndex;
-            int count = 0;
-
             long bytesRemaining = totalToSend + 1;
 
             // handle special case if the request is for only two bytes
@@ -171,23 +172,35 @@ namespace FindSimilarClient
             }
 
             SampleSource.Position = startIndex;
-/* 
+
+
+            int read = 0;
+            byte[] buffer = new byte[BufferSize];
+            float[] floatBuffer = new float[BufferSize / 4];
 
             while (bytesRemaining > 0)
             {
                 try
                 {
-                    if (bytesRemaining <= buffer.Length)
-                        count = SampleSource.Read(buffer, 0, (int)bytesRemaining);
+                    if (bytesRemaining <= buffer.Length / 4)
+                    {
+                        read = SampleSource.Read(floatBuffer, 0, (int)bytesRemaining / 4);
+                    }
                     else
-                        count = SampleSource.Read(buffer, 0, buffer.Length);
+                    {
+                        read = SampleSource.Read(floatBuffer, 0, buffer.Length / 4);
+                    }
 
-                    if (count == 0)
+                    if (read == 0)
+                    {
                         return;
+                    }
 
-                    await response.Body.WriteAsync(buffer, 0, count);
+                    System.Buffer.BlockCopy(floatBuffer, 0, buffer, 0, read * 4);
 
-                    bytesRemaining -= count;
+                    await response.Body.WriteAsync(buffer, 0, read * 4);
+
+                    bytesRemaining -= (read * 4);
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -199,7 +212,7 @@ namespace FindSimilarClient
                     await response.Body.FlushAsync();
                 }
             }
- */
+
         }
 
         private byte[] GetWaveHeaderBytes(long totalSampleCount)
@@ -278,34 +291,34 @@ namespace FindSimilarClient
 
             long bytesRemaining = totalToSend + 1;
 
-/* 
-            while (bytesRemaining > 0)
-            {
-                try
-                {
-                    if (bytesRemaining <= buffer.Length)
-                        count = SampleSource.Read(buffer, 0, (int)bytesRemaining);
-                    else
-                        count = SampleSource.Read(buffer, 0, buffer.Length);
+            /* 
+                        while (bytesRemaining > 0)
+                        {
+                            try
+                            {
+                                if (bytesRemaining <= buffer.Length)
+                                    count = SampleSource.Read(buffer, 0, (int)bytesRemaining);
+                                else
+                                    count = SampleSource.Read(buffer, 0, buffer.Length);
 
-                    if (count == 0)
-                        return;
+                                if (count == 0)
+                                    return;
 
-                    await response.Body.WriteAsync(buffer, 0, count);
+                                await response.Body.WriteAsync(buffer, 0, count);
 
-                    bytesRemaining -= count;
-                }
-                catch (IndexOutOfRangeException)
-                {
-                    await response.Body.FlushAsync();
-                    return;
-                }
-                finally
-                {
-                    await response.Body.FlushAsync();
-                }
-            }
- */
+                                bytesRemaining -= count;
+                            }
+                            catch (IndexOutOfRangeException)
+                            {
+                                await response.Body.FlushAsync();
+                                return;
+                            }
+                            finally
+                            {
+                                await response.Body.FlushAsync();
+                            }
+                        }
+             */
         }
 
         public override async Task ExecuteResultAsync(ActionContext context)
