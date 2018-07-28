@@ -133,7 +133,7 @@ namespace FindSimilarClient
             {
                 lastModifiedDTO = RoundDownToWholeSeconds(lastModifiedDTO.Value);
             }
-            long lastModified = lastModifiedDTO.Value.ToUnixTimeSeconds();
+            long lastModified = lastModifiedDTO.Value.ToUnixTimeMilliseconds();
 
             string contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
 
@@ -191,7 +191,7 @@ namespace FindSimilarClient
                 // Range header should match format "bytes=n-n,n-n,n-n...". If not, then return 416.
                 if (!rangeRegex.IsMatch(range))
                 {
-                    response.Headers.Add(HeaderNames.ContentRange, "bytes */" + length); // Required in 416.
+                    response.Headers.Add(HeaderNames.ContentRange, $"bytes */{length}"); // Required in 416.
                     response.StatusCode = (int)HttpStatusCode.RequestedRangeNotSatisfiable;
                     return;
                 }
@@ -237,7 +237,7 @@ namespace FindSimilarClient
                             // 14.16 Content-Range - A server sending a response with status code 416 (Requested range not satisfiable)
                             // SHOULD include a Content-Range field with a byte-range-resp-spec of "*". The instance-length specifies
                             // the current length of the selected resource.  e.g. */length
-                            response.Headers.Add(HeaderNames.ContentRange, "bytes */" + length); // Required in 416.
+                            response.Headers.Add(HeaderNames.ContentRange, $"bytes */{length}"); // Required in 416.
                             response.StatusCode = (int)HttpStatusCode.RequestedRangeNotSatisfiable;
                             return;
                         }
@@ -278,7 +278,7 @@ namespace FindSimilarClient
             try
             {
                 response.Headers.Add(HeaderNames.ContentType, contentType);
-                response.Headers.Add(HeaderNames.ContentDisposition, disposition + ";filename=\"" + fileName + "\"");
+                response.Headers.Add(HeaderNames.ContentDisposition, disposition + $";filename=\"{fileName}\"");
                 Log.Debug("{0} : {1}", HeaderNames.ContentDisposition, disposition);
 
                 response.Headers.Add(HeaderNames.AcceptRanges, "bytes");
@@ -390,7 +390,7 @@ namespace FindSimilarClient
                                 DateTimeStyles.AdjustToUniversal,
                                 out parsedDateOffset);
 
-            return parsedDateOffset.ToUnixTimeSeconds();
+            return parsedDateOffset.ToUnixTimeMilliseconds();
         }
 
         private static void SetDateHeader(HttpResponse response, string header, DateTimeOffset date)
