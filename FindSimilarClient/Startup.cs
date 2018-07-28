@@ -13,6 +13,7 @@ using FindSimilarServices.Audio;
 using FindSimilarServices.Fingerprinting;
 using SoundFingerprinting;
 using FindSimilarServices;
+using Microsoft.Extensions.Logging;
 
 namespace FindSimilarClient
 {
@@ -42,7 +43,7 @@ namespace FindSimilarClient
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -53,6 +54,11 @@ namespace FindSimilarClient
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
+
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();
+            loggerFactory.AddFile("Logs/ts-{Date}.txt");
+            app.UseRequestResponseLogging();
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();

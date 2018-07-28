@@ -49,9 +49,10 @@ namespace FindSimilarClient.Controllers
                 // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
                 // return StreamAudioV3(pathToSourceFile);
                 // return StreamAudioSampleSource(pathToSourceFile);
-                // return StreamAudioBuiltIn(pathToSourceFile);
+                return StreamAudioBuiltIn(pathToSourceFile);
 
-                return MultipartFileSender.FromFile(pathToSourceFile, "audio/wav");
+                // return MultipartFileSender.FromFile(pathToSourceFile, "audio/wav");
+                // return File(System.IO.File.OpenRead(pathToSourceFile), "audio/wav", true);
             }
             else
             {
@@ -164,7 +165,7 @@ namespace FindSimilarClient.Controllers
 
             return new FileStreamResult(System.IO.File.OpenRead(pathToSourceFile), new MediaTypeHeaderValue(contentType))
             {
-                EnableRangeProcessing = true
+                EnableRangeProcessing = true,
             };
 
             // ASP NET CORE 2.1 supports enableRangeProcessing: Set to true to enable range requests processing.
