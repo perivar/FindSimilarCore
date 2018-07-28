@@ -277,24 +277,29 @@ namespace FindSimilarClient
 
             // Initialize response.
             response.Headers.Add("Content-Type", contentType);
-            response.Headers.Add("Content-Disposition", disposition + ";filename=\"" + fileName + "\"");
+            try
+            {
+                response.Headers.Add("Content-Disposition", disposition + ";filename=\"" + fileName + "\"");
+                Log.Debug("Content-Disposition : {0}", disposition);
 
-            Log.Debug("Content-Disposition : {0}", disposition);
+                response.Headers.Add("Accept-Ranges", "bytes");
 
-            response.Headers.Add("Accept-Ranges", "bytes");
+                // Check SetLastModifiedAndEtagHeaders() in FileResultExecutorBase.cs
+                response.Headers.Add("ETag", fileName);
+                response.Headers.Add("Last-Modified", lastModifiedDTO.Value.ToString("r", CultureInfo.InvariantCulture));
 
-            // Check SetLastModifiedAndEtagHeaders() in FileResultExecutorBase.cs
-            response.Headers.Add("ETag", fileName);
-            response.Headers.Add("Last-Modified", lastModifiedDTO.Value.ToString("r", CultureInfo.InvariantCulture));
+                // set expiration header (remove milliseconds)
+                var expiresValue = DateTimeOffset
+                                .UtcNow
+                                .AddSeconds(DEFAULT_EXPIRE_TIME_SECONDS)
+                                .ToString("r", CultureInfo.InvariantCulture);
 
-            // set expiration header (remove milliseconds)
-            var expiresValue = DateTimeOffset
-                            .UtcNow
-                            .AddSeconds(DEFAULT_EXPIRE_TIME_SECONDS)
-                            .ToString("r", CultureInfo.InvariantCulture);
-
-            response.Headers.Add("Expires", expiresValue);
-
+                response.Headers.Add("Expires", expiresValue);
+            }
+            catch (System.Exception e)
+            {
+                Log.Error("Failed adding response headers: {0}", e.Message);
+            }
 
             // Send requested file (part(s)) to client ------------------------------------------------
 
