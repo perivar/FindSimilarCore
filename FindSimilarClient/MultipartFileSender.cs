@@ -1,18 +1,18 @@
 using System;
 using System.IO;
-using Microsoft.AspNetCore.Http;
-using Serilog;
-using MimeMapping;
-using CommonUtils;
 using System.Net;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Http.Features;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading.Tasks;
+using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
+using MimeMapping;
+using Serilog;
+using CommonUtils;
 
 namespace FindSimilarClient
 {
@@ -37,14 +37,14 @@ namespace FindSimilarClient
 
         public static MultipartFileSender FromFile(FileInfo file, MediaTypeHeaderValue contentType)
         {
-            return new MultipartFileSender(new FileStream(file.FullName, FileMode.Open, FileAccess.Read), contentType).SetFilePath(file.FullName);
-            // return new MultipartFileSender(File.OpenRead(file.FullName), contentType).SetFilePath(file.FullName);
+            // File.OpenRead(filePath) is the same as new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
+            return new MultipartFileSender(File.OpenRead(file.FullName), contentType).SetFilePath(file.FullName);
         }
 
         public static MultipartFileSender FromFile(string filePath, string contentType)
         {
-            return new MultipartFileSender(new FileStream(filePath, FileMode.Open, FileAccess.Read), contentType).SetFilePath(filePath);
-            // return new MultipartFileSender(File.OpenRead(filePath), contentType).SetFilePath(filePath);
+            // File.OpenRead(filePath) is the same as new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
+            return new MultipartFileSender(File.OpenRead(filePath), contentType).SetFilePath(filePath);
         }
 
         public static MultipartFileSender FromStream(Stream stream, MediaTypeHeaderValue contentType)
@@ -141,20 +141,20 @@ namespace FindSimilarClient
             // Validate request headers for caching ---------------------------------------------------
 
             // If-None-Match header should contain "*" or ETag. If so, then return 304.
-            string ifNoneMatch = response.HttpContext.Request.Headers["If-None-Match"];
+            string ifNoneMatch = response.HttpContext.Request.Headers[HeaderNames.IfNoneMatch];
             if (ifNoneMatch != null && HttpUtils.Matches(ifNoneMatch, fileName))
             {
-                response.Headers.Add("ETag", fileName); // Required in 304.
+                response.Headers.Add(HeaderNames.ETag, fileName); // Required in 304.
                 response.StatusCode = (int)HttpStatusCode.NotModified;
                 return;
             }
 
             // If-Modified-Since header should be greater than LastModified. If so, then return 304.
             // This header is ignored if any If-None-Match header is specified.
-            long ifModifiedSince = GetDateHeader(response, "If-Modified-Since");
+            long ifModifiedSince = GetDateHeader(response, HeaderNames.IfModifiedSince);
             if (ifNoneMatch == null && ifModifiedSince != -1 && ifModifiedSince + 1000 > lastModified)
             {
-                response.Headers.Add("ETag", fileName); // Required in 304.
+                response.Headers.Add(HeaderNames.ETag, fileName); // Required in 304.
                 response.StatusCode = (int)HttpStatusCode.NotModified;
                 return;
             }
@@ -162,7 +162,7 @@ namespace FindSimilarClient
             // Validate request headers for resume ----------------------------------------------------
 
             // If-Match header should contain "*" or ETag. If not, then return 412.
-            string ifMatch = response.HttpContext.Request.Headers["If-Match"];
+            string ifMatch = response.HttpContext.Request.Headers[HeaderNames.IfMatch];
             if (ifMatch != null && !HttpUtils.Matches(ifMatch, fileName))
             {
                 response.StatusCode = (int)HttpStatusCode.PreconditionFailed;
@@ -170,7 +170,7 @@ namespace FindSimilarClient
             }
 
             // If-Unmodified-Since header should be greater than LastModified. If not, then return 412.
-            long ifUnmodifiedSince = GetDateHeader(response, "If-Unmodified-Since");
+            long ifUnmodifiedSince = GetDateHeader(response, HeaderNames.IfUnmodifiedSince);
             if (ifUnmodifiedSince != -1 && ifUnmodifiedSince + 1000 <= lastModified)
             {
                 response.StatusCode = (int)HttpStatusCode.PreconditionFailed;
@@ -191,15 +191,15 @@ namespace FindSimilarClient
                 // Range header should match format "bytes=n-n,n-n,n-n...". If not, then return 416.
                 if (!rangeRegex.IsMatch(range))
                 {
-                    response.Headers.Add("Content-Range", "bytes */" + length); // Required in 416.
+                    response.Headers.Add(HeaderNames.ContentRange, "bytes */" + length); // Required in 416.
                     response.StatusCode = (int)HttpStatusCode.RequestedRangeNotSatisfiable;
                     return;
                 }
 
-                string ifRange = response.HttpContext.Request.Headers["If-Range"];
+                string ifRange = response.HttpContext.Request.Headers[HeaderNames.IfRange];
                 if (ifRange != null && !ifRange.Equals(fileName))
                 {
-                    long ifRangeTime = GetDateHeader(response, "If-Range");
+                    long ifRangeTime = GetDateHeader(response, HeaderNames.IfRange);
                     if (ifRangeTime != -1)
                     {
                         ranges.Add(full);
@@ -233,7 +233,11 @@ namespace FindSimilarClient
                         // Check if Range is syntactically valid. If not, then return 416.
                         if (start > end)
                         {
-                            response.Headers.Add("Content-Range", "bytes */" + length); // Required in 416.
+                            // check https://github.com/dotnet/corefx/blob/master/src/System.Net.Http/src/System/Net/Http/Headers/ContentRangeHeaderValue.cs
+                            // 14.16 Content-Range - A server sending a response with status code 416 (Requested range not satisfiable)
+                            // SHOULD include a Content-Range field with a byte-range-resp-spec of "*". The instance-length specifies
+                            // the current length of the selected resource.  e.g. */length
+                            response.Headers.Add(HeaderNames.ContentRange, "bytes */" + length); // Required in 416.
                             response.StatusCode = (int)HttpStatusCode.RequestedRangeNotSatisfiable;
                             return;
                         }
@@ -264,7 +268,7 @@ namespace FindSimilarClient
             {
                 // Else, expect for images, determine content disposition. If content type is supported by
                 // the browser, then Set to inline, else attachment which will pop a 'save as' dialogue.
-                string accept = response.HttpContext.Request.Headers["Accept"];
+                string accept = response.HttpContext.Request.Headers[HeaderNames.Accept];
                 disposition = accept != null && HttpUtils.Accepts(accept, contentType) ? "inline" : "attachment";
             }
 
@@ -273,23 +277,22 @@ namespace FindSimilarClient
             // Initialize response.
             try
             {
-                response.Headers.Add("Content-Type", contentType);
-                response.Headers.Add("Content-Disposition", disposition + ";filename=\"" + fileName + "\"");
-                Log.Debug("Content-Disposition : {0}", disposition);
+                response.Headers.Add(HeaderNames.ContentType, contentType);
+                response.Headers.Add(HeaderNames.ContentDisposition, disposition + ";filename=\"" + fileName + "\"");
+                Log.Debug("{0} : {1}", HeaderNames.ContentDisposition, disposition);
 
-                response.Headers.Add("Accept-Ranges", "bytes");
+                response.Headers.Add(HeaderNames.AcceptRanges, "bytes");
 
                 // Check SetLastModifiedAndEtagHeaders() in FileResultExecutorBase.cs for info about adding headers
-                response.Headers.Add("ETag", fileName);
-                response.Headers.Add("Last-Modified", lastModifiedDTO.Value.ToString("r", CultureInfo.InvariantCulture));
+                response.Headers.Add(HeaderNames.ETag, fileName);
+                SetDateHeader(response, HeaderNames.LastModified, lastModifiedDTO.Value);
 
                 // set expiration header (remove milliseconds)
-                var expiresValue = DateTimeOffset
+                var expires = DateTimeOffset
                                 .UtcNow
-                                .AddSeconds(DEFAULT_EXPIRE_TIME_SECONDS)
-                                .ToString("r", CultureInfo.InvariantCulture);
+                                .AddSeconds(DEFAULT_EXPIRE_TIME_SECONDS);
 
-                response.Headers.Add("Expires", expiresValue);
+                SetDateHeader(response, HeaderNames.Expires, expires);
             }
             catch (System.Exception e)
             {
@@ -305,34 +308,39 @@ namespace FindSimilarClient
             if (ranges.Count == 0 || ranges[0] == full)
             {
                 // Return full file.
-                Log.Information("Return full file");
+                Log.Information("Return full file : from ({0}) to ({1}) of ({2})", full.Start, full.End, full.Total);
                 response.ContentType = contentType;
-                response.Headers.Add("Content-Range", "bytes " + full.Start + "-" + full.End + "/" + full.Total);
-                response.Headers.Add("Content-Length", full.Length.ToString());
+
+                response.Headers.Add(HeaderNames.ContentRange, $"bytes {full.Start}-{full.End}/{full.Total}");
+                response.Headers.Add(HeaderNames.ContentLength, full.Length.ToString());
 
                 LogResponseHeaders(response);
 
-                await Range.Copy(input, output, length, full.Start, full.Length);
+                await Range.CopyStream(input, output, length, full.Start, full.Length);
             }
             else if (ranges.Count == 1)
             {
                 // Return single part of file.
                 Range r = ranges[0];
-                Log.Information("Return 1 part of file : from ({0}) to ({1})", r.Start, r.End);
+
+                Log.Information("Return 1 part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
                 response.ContentType = contentType;
-                response.Headers.Add("Content-Range", "bytes " + r.Start + "-" + r.End + "/" + r.Total);
-                response.Headers.Add("Content-Length", r.Length.ToString());
+
+                response.Headers.Add(HeaderNames.ContentRange, $"bytes {r.Start}-{r.End}/{r.Total}");
+                response.Headers.Add(HeaderNames.ContentLength, r.Length.ToString());
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
 
                 LogResponseHeaders(response);
 
                 // Copy single part range.
-                await Range.Copy(input, output, length, r.Start, r.Length);
+                await Range.CopyStream(input, output, length, r.Start, r.Length);
             }
             else
             {
                 // Return multiple parts of file.
-                response.ContentType = "multipart/byteranges; boundary=" + MULTIPART_BOUNDARY;
+                // check https://stackoverflow.com/questions/38069730/how-to-create-a-multipart-http-response-with-asp-net-core
+                // and https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html
+                response.ContentType = $"multipart/byteranges; boundary={MULTIPART_BOUNDARY}";
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
 
                 LogResponseHeaders(response);
@@ -340,24 +348,24 @@ namespace FindSimilarClient
                 // Copy multi part range.
                 foreach (Range r in ranges)
                 {
-                    Log.Information("Return multi part of file : from ({0}) to ({1})", r.Start, r.End);
+                    Log.Information("Return multi part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
 
                     // Add multipart boundary and header fields for every range.
                     await response.WriteAsync(CrLf);
-                    await response.WriteAsync("--" + MULTIPART_BOUNDARY);
+                    await response.WriteAsync($"--{MULTIPART_BOUNDARY}");
                     await response.WriteAsync(CrLf);
-                    await response.WriteAsync("Content-Type: " + contentType);
+                    await response.WriteAsync($"Content-type: {contentType}");
                     await response.WriteAsync(CrLf);
-                    await response.WriteAsync("Content-Range: bytes " + r.Start + "-" + r.End + "/" + r.Total);
+                    await response.WriteAsync($"Content-Range: bytes {r.Start}-{r.End}/{r.Total}");
                     await response.WriteAsync(CrLf);
 
                     // Copy single part range of multi part range.
-                    await Range.Copy(input, output, length, r.Start, r.Length);
+                    await Range.CopyStream(input, output, length, r.Start, r.Length);
                 }
 
                 // End with multipart boundary.
                 await response.WriteAsync(CrLf);
-                await response.WriteAsync("--" + MULTIPART_BOUNDARY + "--");
+                await response.WriteAsync($"--{MULTIPART_BOUNDARY}");
                 await response.WriteAsync(CrLf);
             }
         }
@@ -383,6 +391,19 @@ namespace FindSimilarClient
                                 out parsedDateOffset);
 
             return parsedDateOffset.ToUnixTimeSeconds();
+        }
+
+        private static void SetDateHeader(HttpResponse response, string header, DateTimeOffset date)
+        {
+            // The RFC1123 ("R", "r") Format Specifier
+            // The "R" or "r" standard format specifier represents a custom date and time format string
+            //  that is defined by the DateTimeFormatInfo.RFC1123Pattern property. 
+            // The pattern reflects a defined standard, and the property is read-only. 
+            // Therefore, it is always the same, regardless of the culture used or the format provider supplied. 
+            // The custom format string is "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'". 
+            // When this standard format specifier is used, the formatting or parsing operation 
+            // always uses the invariant culture.
+            response.Headers.Add(header, date.ToString("r"));
         }
 
         private class Range
@@ -416,11 +437,12 @@ namespace FindSimilarClient
                 }
                 catch (ArgumentOutOfRangeException)
                 {
+                    Log.Verbose("No substring range found. Returning -1.");
                     return -1;
                 }
             }
 
-            public static async Task Copy(Stream input, Stream output, long inputSize, long start, long length)
+            public static async Task CopyStream(Stream input, Stream output, long inputSize, long start, long length)
             {
                 byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
                 int bytesRead;
@@ -430,7 +452,7 @@ namespace FindSimilarClient
                     try
                     {
                         // Write full range.
-                        while ((bytesRead = input.Read(buffer)) > 0)
+                        while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             await output.WriteAsync(buffer, 0, bytesRead);
                             await output.FlushAsync();
@@ -447,7 +469,7 @@ namespace FindSimilarClient
                     long toRead = length;
                     try
                     {
-                        while ((bytesRead = input.Read(buffer)) > 0)
+                        while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             if ((toRead -= bytesRead) > 0)
                             {
