@@ -354,9 +354,9 @@ namespace FindSimilarClient
                     await response.WriteAsync(CrLf);
                     await response.WriteAsync($"--{MULTIPART_BOUNDARY}");
                     await response.WriteAsync(CrLf);
-                    await response.WriteAsync($"Content-type: {contentType}");
+                    await response.WriteAsync($"{HeaderNames.ContentType}: {contentType}");
                     await response.WriteAsync(CrLf);
-                    await response.WriteAsync($"Content-Range: bytes {r.Start}-{r.End}/{r.Total}");
+                    await response.WriteAsync($"{HeaderNames.ContentRange}: bytes {r.Start}-{r.End}/{r.Total}");
                     await response.WriteAsync(CrLf);
 
                     // Copy single part range of multi part range.
