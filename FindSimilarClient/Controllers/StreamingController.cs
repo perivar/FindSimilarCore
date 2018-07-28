@@ -49,9 +49,9 @@ namespace FindSimilarClient.Controllers
                 // var filePath = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
                 // return StreamAudioWaveSource(filePath);
                 // return StreamAudioSampleSource(filePath);
-                return StreamAudioBuiltIn(filePath);
+                // return StreamAudioBuiltIn(filePath);
 
-                // return MultipartFileSender.FromFile(filePath, "audio/wav");
+                return MultipartFileSender.FromFile(filePath);
                 // return File(System.IO.File.OpenRead(filePath), "audio/wav", true);
             }
             else

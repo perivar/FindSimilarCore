@@ -35,14 +35,26 @@ namespace FindSimilarClient
         {
         }
 
-        public static MultipartFileSender FromFile(FileInfo file, MediaTypeHeaderValue contentType)
+        public static MultipartFileSender FromFile(FileInfo file)
         {
-            // File.OpenRead(filePath) is the same as new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
-            return new MultipartFileSender(File.OpenRead(file.FullName), contentType).SetFilePath(file.FullName);
+            if (file == null)
+            {
+                throw new ArgumentNullException("File cannot be null.");
+            }
+
+            string filePath = file.FullName;
+            return MultipartFileSender.FromFile(filePath);
         }
 
-        public static MultipartFileSender FromFile(string filePath, string contentType)
+        public static MultipartFileSender FromFile(string filePath)
         {
+            if (!File.Exists(filePath))
+            {
+                throw new FileNotFoundException(filePath);
+            }
+
+            string contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
+
             // File.OpenRead(filePath) is the same as new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
             return new MultipartFileSender(File.OpenRead(filePath), contentType).SetFilePath(filePath);
         }
@@ -135,8 +147,8 @@ namespace FindSimilarClient
             }
             long lastModified = lastModifiedDTO.Value.ToUnixTimeMilliseconds();
 
-            string contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
-
+            // read in stored Content-Type
+            string contentType = ContentType;
 
             // Validate request headers for caching ---------------------------------------------------
 
@@ -432,7 +444,9 @@ namespace FindSimilarClient
                 string substring;
                 try
                 {
-                    substring = value.Substring(beginIndex, endIndex);
+                    // simulates Java substring function
+                    int len = endIndex - beginIndex;
+                    substring = value.Substring(beginIndex, len);
                     return (substring.Length > 0) ? long.Parse(substring) : -1;
                 }
                 catch (ArgumentOutOfRangeException)
