@@ -113,7 +113,7 @@ namespace FindSimilarClient
             }
 
             long length = new FileInfo(filePath).Length;
-            string fileName = StringUtils.HeaderEncode(Path.GetFileName(filePath));
+            string fileName = StringUtils.RemoveNonAsciiCharactersFast(Path.GetFileName(filePath));
             DateTime lastModifiedObj = File.GetLastWriteTime(filePath);
 
             if (string.IsNullOrEmpty(fileName) || lastModifiedObj == null)
@@ -276,15 +276,15 @@ namespace FindSimilarClient
             Log.Debug("Content-Type : {0}", contentType);
 
             // Initialize response.
-            response.Headers.Add("Content-Type", contentType);
             try
             {
+                response.Headers.Add("Content-Type", contentType);
                 response.Headers.Add("Content-Disposition", disposition + ";filename=\"" + fileName + "\"");
                 Log.Debug("Content-Disposition : {0}", disposition);
 
                 response.Headers.Add("Accept-Ranges", "bytes");
 
-                // Check SetLastModifiedAndEtagHeaders() in FileResultExecutorBase.cs
+                // Check SetLastModifiedAndEtagHeaders() in FileResultExecutorBase.cs for info about adding headers
                 response.Headers.Add("ETag", fileName);
                 response.Headers.Add("Last-Modified", lastModifiedDTO.Value.ToString("r", CultureInfo.InvariantCulture));
 
