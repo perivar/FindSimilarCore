@@ -169,7 +169,7 @@
 }
 
 .stickyAudioPlayerBox .player-data {
-    width: 55%
+    width: 65%
 }
 
 .stickyAudioPlayerBox .player-data p {
@@ -334,13 +334,13 @@
 
 @media screen and (max-width:760px) {
     .stickyAudioPlayerBox .player-data {
-        width: 40%
+        width: 65%
     }
 }
 
 @media screen and (max-width:590px) {
     .stickyAudioPlayerBox .player-data {
-        width: 25%;
+        width: 50%;
     }
     .stickyAudioPlayerBox .player-download .input-download,
     .stickyAudioPlayerBox .player-play .input-pause,
