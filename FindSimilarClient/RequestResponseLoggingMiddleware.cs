@@ -12,70 +12,76 @@ namespace FindSimilarClient
 {
     public class RequestResponseLoggingMiddleware
     {
-        private readonly RequestDelegate next;
-        private readonly ILogger logger;
+        private readonly RequestDelegate _next;
+        private readonly ILogger _logger;
 
-        public RequestResponseLoggingMiddleware(RequestDelegate next,
+        public RequestResponseLoggingMiddleware(RequestDelegate _next,
                                                 ILoggerFactory loggerFactory)
         {
-            this.next = next;
-            this.logger = loggerFactory
+            this._next = _next;
+            this._logger = loggerFactory
                       .CreateLogger<RequestResponseLoggingMiddleware>();
         }
 
         public async Task Invoke(HttpContext context)
         {
 
-            LogRequestHeaders(context.Request);
+            _logger.LogInformation(GetRequestInformation(context.Request));
 
-            await this.next.Invoke(context);
+            // Call the _next delegate/middleware in the pipeline
+            await _next(context);
 
-            LogResponseHeaders(context.Response);
+            _logger.LogInformation(GetResponseInformation(context.Response));
+
 
             /* 
-                        _logger.LogInformation(await FormatRequest(context.Request));
+                _logger.LogInformation(await FormatRequest(context.Request));
 
-                        var originalBodyStream = context.Response.Body;
+                var originalBodyStream = context.Response.Body;
 
-                        using (var responseBody = new MemoryStream())
-                        {
-                            context.Response.Body = responseBody;
+                using (var responseBody = new MemoryStream())
+                {
+                    context.Response.Body = responseBody;
 
-                            await _next(context);
+                    await _next(context);
 
-                            _logger.LogInformation(await FormatResponse(context.Response));
+                    _logger.LogInformation(await FormatResponse(context.Response));
 
-                            //Because you change the response body which is not allowed on a 204.
-                            if (context.Response.StatusCode != 204)
-                                await responseBody.CopyToAsync(originalBodyStream);
-                        }
+                    //Because you change the response body which is not allowed on a 204.
+                    if (context.Response.StatusCode != 204)
+                        await responseBody.CopyToAsync(originalBodyStream);
+                }
              */
         }
 
-        private void LogRequestHeaders(HttpRequest request)
+        private string GetRequestInformation(HttpRequest request)
         {
-            if (Debugger.IsAttached)
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("-------HTTP REQUEST INFORMATION-------");
+            sb.AppendLine($"{request.Scheme} {request.Host}{request.Path} {request.QueryString}");
+
+            sb.AppendLine("Headers:");
+            foreach (var key in request.Headers.Keys)
             {
-                string headers = String.Empty;
-                foreach (var key in request.Headers.Keys)
-                {
-                    headers += key + "=" + request.Headers[key] + Environment.NewLine;
-                }
-                logger.LogInformation("----Request Headers----\n" + headers);
+                sb.AppendLine($"{key}={request.Headers[key]}");
             }
+
+            return sb.ToString();
         }
 
-        private void LogResponseHeaders(HttpResponse response)
+        private string GetResponseInformation(HttpResponse response)
         {
-            if (Debugger.IsAttached)
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("-------HTTP RESPONSE INFORMATION-------");
+            sb.AppendLine($"StatusCode: {response.StatusCode}");
+
+            sb.AppendLine("Headers:");
+            foreach (var key in response.Headers.Keys)
             {
-                string headers = "StatusCode: " + response.StatusCode.ToString() + Environment.NewLine;
-                foreach (var key in response.Headers.Keys)
-                {
-                    headers += key + "=" + response.Headers[key] + Environment.NewLine;
-                }
-                logger.LogInformation("----Response Headers----\n" + headers);
+                sb.AppendLine($"{key}={response.Headers[key]}");
             }
+
+            return sb.ToString();
         }
 
         private async Task<string> FormatRequest(HttpRequest request)

@@ -68,14 +68,14 @@ namespace FindSimilarClient
             await ServeResource(context.HttpContext.Response);
         }
 
-        private void LogRequestHeaders(HttpResponse response)
+        private void LogRequestHeaders(HttpRequest request)
         {
             if (Debugger.IsAttached)
             {
                 string headers = String.Empty;
-                foreach (var key in response.HttpContext.Request.Headers.Keys)
+                foreach (var key in request.Headers.Keys)
                 {
-                    headers += key + "=" + response.HttpContext.Request.Headers[key] + Environment.NewLine;
+                    headers += key + "=" + request.Headers[key] + Environment.NewLine;
                 }
                 Log.Debug("----Request Headers----\n" + headers);
             }
@@ -101,7 +101,7 @@ namespace FindSimilarClient
                 return;
             }
 
-            LogRequestHeaders(response);
+            LogRequestHeaders(response.HttpContext.Request);
 
 
             // Read all the file properties needed ---------------------------------------------------

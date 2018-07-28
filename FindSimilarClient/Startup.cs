@@ -57,10 +57,10 @@ namespace FindSimilarClient
 
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
-            loggerFactory.AddFile("Logs/ts-{Date}.txt");
+            loggerFactory.AddFile("Logs/ts-{Date}.log");
             app.UseRequestResponseLogging();
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
 

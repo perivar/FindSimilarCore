@@ -42,17 +42,17 @@ namespace FindSimilarClient.Controllers
 
             if (!string.IsNullOrEmpty(track.Title))
             {
-                string pathToSourceFile = track.Title;
+                string filePath = track.Title;
 
-                // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
-                // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
-                // var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
-                // return StreamAudioV3(pathToSourceFile);
-                // return StreamAudioSampleSource(pathToSourceFile);
-                return StreamAudioBuiltIn(pathToSourceFile);
+                // var filePath = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Van Halen Jump\FPC_Crash_G16InLite_01.wav";
+                // var filePath = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\House Baerum\ATE Reverb Kick - 003.wav";
+                // var filePath = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
+                // return StreamAudioWaveSource(filePath);
+                // return StreamAudioSampleSource(filePath);
+                return StreamAudioBuiltIn(filePath);
 
-                // return MultipartFileSender.FromFile(pathToSourceFile, "audio/wav");
-                // return File(System.IO.File.OpenRead(pathToSourceFile), "audio/wav", true);
+                // return MultipartFileSender.FromFile(filePath, "audio/wav");
+                // return File(System.IO.File.OpenRead(filePath), "audio/wav", true);
             }
             else
             {
@@ -75,9 +75,9 @@ namespace FindSimilarClient.Controllers
             return File(System.IO.File.OpenRead(pathToVideoFile), "video/mp4", true);
 
             // works with seeking
-            var pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
+            var filePath = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Jason Derulo In My Head Remix\La Manga.ogg";
             Stream memStream;
-            using (var fileStream = new FileStream(pathToSourceFile, FileMode.Open))
+            using (var fileStream = new FileStream(filePath, FileMode.Open))
             {
                 memStream = GetMemoryStream(fileStream);
             }
@@ -89,31 +89,31 @@ namespace FindSimilarClient.Controllers
              */
         }
 
-        private FileStreamResult StreamAudioV5(string pathToSourceFile)
+        private FileStreamResult StreamAudioV5(string filePath)
         {
-            IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            IWaveSource waveSource = CodecFactory.Instance.GetCodec(filePath);
             ISampleSource sampleSource = waveSource.ToSampleSource();
             IWaveSource ieeeFloatSource = sampleSource.ToWaveSource();
             return new WaveSourceStreamResult(ieeeFloatSource, new MediaTypeHeaderValue("audio/wav"));
         }
 
-        private FileStreamResult StreamAudioSampleSource(string pathToSourceFile)
+        private FileStreamResult StreamAudioSampleSource(string filePath)
         {
-            IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            IWaveSource waveSource = CodecFactory.Instance.GetCodec(filePath);
             ISampleSource sampleSource = waveSource.ToSampleSource();
             return new SampleSourceStreamResult(sampleSource, new MediaTypeHeaderValue("audio/wav"));
         }
 
-        private FileStreamResult StreamAudioV3(string pathToSourceFile)
+        private FileStreamResult StreamAudioWaveSource(string filePath)
         {
-            IWaveSource waveSource = CodecFactory.Instance.GetCodec(pathToSourceFile);
+            IWaveSource waveSource = CodecFactory.Instance.GetCodec(filePath);
             return new WaveSourceStreamResult(waveSource, new MediaTypeHeaderValue("audio/wav"));
         }
 
-        private FileStreamResult StreamAudioV2(string pathToSourceFile)
+        private FileStreamResult StreamAudioV2(string filePath)
         {
             MemoryStream outputStream = new MemoryStream();
-            using (IWaveSource soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile))
+            using (IWaveSource soundSource = CodecFactory.Instance.GetCodec(filePath))
             {
                 using (WaveWriter waveWriter = new WaveWriter(outputStream, soundSource.WaveFormat))
                 {
@@ -135,10 +135,10 @@ namespace FindSimilarClient.Controllers
             //return File(outputStream, contentType, true);
         }
 
-        private FileStreamResult StreamAudio(string pathToSourceFile)
+        private FileStreamResult StreamAudio(string filePath)
         {
             MemoryStream outputStream = new MemoryStream();
-            using (var soundSource = CodecFactory.Instance.GetCodec(pathToSourceFile))
+            using (var soundSource = CodecFactory.Instance.GetCodec(filePath))
             {
                 using (var inputStream = GetMemoryStream(soundSource))
                 {
@@ -159,11 +159,11 @@ namespace FindSimilarClient.Controllers
             return File(outputStream, contentType, true);
         }
 
-        private FileStreamResult StreamAudioBuiltIn(string pathToSourceFile)
+        private FileStreamResult StreamAudioBuiltIn(string filePath)
         {
-            string contentType = "audio/wav";
+            string contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
 
-            return new FileStreamResult(System.IO.File.OpenRead(pathToSourceFile), new MediaTypeHeaderValue(contentType))
+            return new FileStreamResult(System.IO.File.OpenRead(filePath), new MediaTypeHeaderValue(contentType))
             {
                 EnableRangeProcessing = true,
             };
@@ -171,9 +171,7 @@ namespace FindSimilarClient.Controllers
             // ASP NET CORE 2.1 supports enableRangeProcessing: Set to true to enable range requests processing.
             // So no need to enable this in Program.cs
             // ref. https://github.com/aspnet/Mvc/pull/6895#issuecomment-356477675
-            // return File(System.IO.File.OpenRead(pathToSourceFile), contentType, true);
-
-            // return new StreamResult(stream, new MediaTypeHeaderValue(contentType));
+            // return File(System.IO.File.OpenRead(filePath), contentType, true);
         }
 
         public byte[] GetByteArray(Stream stream)
