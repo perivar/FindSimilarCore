@@ -9,31 +9,52 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http.Features;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
+using System.Diagnostics;
+using System.Globalization;
 
 namespace FindSimilarClient
 {
-    public class MultipartFileSender
+    public class MultipartFileSender : FileStreamResult
     {
-        private static int DEFAULT_BUFFER_SIZE = 20480; // ..bytes = 20KB.
-        private static long DEFAULT_EXPIRE_TIME = 604800000L; // ..ms = 1 week.
-        private static string MULTIPART_BOUNDARY = "MULTIPART_BYTERANGES";
+        private const int DEFAULT_BUFFER_SIZE = 20480; // ..bytes = 20KB.
+        private const long DEFAULT_EXPIRE_TIME_SECONDS = 604800L; // ..seconds = 1 week.
+        private const string MULTIPART_BOUNDARY = "MULTIPART_BYTERANGES";
         private const string CrLf = "\r\n";
 
-        string filePath;
-        HttpRequest request;
-        HttpResponse response;
+        private string filePath;
 
-        public MultipartFileSender()
+        private MultipartFileSender(Stream fileStream, string contentType)
+            : base(fileStream, contentType)
         {
         }
-        public static MultipartFileSender FromFile(FileInfo file)
+
+        private MultipartFileSender(Stream fileStream, MediaTypeHeaderValue contentType)
+            : base(fileStream, contentType)
         {
-            return new MultipartFileSender().SetFilePath(file.FullName);
         }
 
-        public static MultipartFileSender FromFile(string filePath)
+        public static MultipartFileSender FromFile(FileInfo file, MediaTypeHeaderValue contentType)
         {
-            return new MultipartFileSender().SetFilePath(filePath);
+            // return new MultipartFileSender(new FileStream(file.FullName, FileMode.Open), contentType).SetFilePath(file.FullName);
+            return new MultipartFileSender(File.OpenRead(file.FullName), contentType).SetFilePath(file.FullName);
+        }
+
+        public static MultipartFileSender FromFile(string filePath, string contentType)
+        {
+            // return new MultipartFileSender(new FileStream(filePath, FileMode.Open), contentType).SetFilePath(filePath);
+            return new MultipartFileSender(File.OpenRead(filePath), contentType).SetFilePath(filePath);
+        }
+
+        public static MultipartFileSender FromStream(Stream stream, MediaTypeHeaderValue contentType)
+        {
+            return new MultipartFileSender(stream, contentType);
+        }
+
+        public static MultipartFileSender FromStream(Stream stream, string contentType)
+        {
+            return new MultipartFileSender(stream, contentType);
         }
 
         private MultipartFileSender SetFilePath(string filepath)
@@ -42,28 +63,51 @@ namespace FindSimilarClient
             return this;
         }
 
-        public MultipartFileSender With(HttpRequest httpRequest)
+        public override async Task ExecuteResultAsync(ActionContext context)
         {
-            request = httpRequest;
-            return this;
+            await ServeResource(context.HttpContext.Response);
         }
 
-        public MultipartFileSender With(HttpResponse httpResponse)
+        private void LogRequestHeaders(HttpResponse response)
         {
-            response = httpResponse;
-            return this;
+            if (Debugger.IsAttached)
+            {
+                string headers = String.Empty;
+                foreach (var key in response.HttpContext.Request.Headers.Keys)
+                {
+                    headers += key + "=" + response.HttpContext.Request.Headers[key] + Environment.NewLine;
+                }
+                Log.Verbose("----Request Headers----\n" + headers);
+            }
         }
 
-        public async Task ServeResource()
+        private void LogResponseHeaders(HttpResponse response)
         {
-            if (response == null || request == null)
+            if (Debugger.IsAttached)
+            {
+                Log.Verbose("----Response Headers----\n");
+                Log.Verbose("StatusCode: " + response.StatusCode.ToString());
+                string headers = String.Empty;
+                foreach (var key in response.Headers.Keys)
+                {
+                    headers += key + "=" + response.Headers[key] + Environment.NewLine;
+                }
+                Log.Verbose("Headers:\n" + headers);
+            }
+        }
+
+        public async Task ServeResource(HttpResponse response)
+        {
+            if (response == null)
             {
                 return;
             }
 
+            LogRequestHeaders(response);
+
             if (!File.Exists(filePath))
             {
-                Log.Error("FileInfo doesn't exist at URI : {}", filePath);
+                Log.Error("FileInfo doesn't exist at URI : {0}", filePath);
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
@@ -78,8 +122,18 @@ namespace FindSimilarClient
                 return;
             }
 
-            long lastModified = (long)DateUtils.ConvertToUnixTimestamp(lastModifiedObj);
+            DateTimeOffset? lastModifiedDTO = DateTime.SpecifyKind(lastModifiedObj, DateTimeKind.Utc);
+
+            // Since the 'Last-Modified' and other similar http date headers are rounded down to whole seconds, 
+            // round down current file's last modified to whole seconds for correct comparison. 
+            if (lastModifiedDTO.HasValue)
+            {
+                lastModifiedDTO = RoundDownToWholeSeconds(lastModifiedDTO.Value);
+            }
+            long lastModified = lastModifiedDTO.Value.ToUnixTimeSeconds();
+
             string contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
+
 
             // Validate request headers for caching ---------------------------------------------------
 
@@ -94,8 +148,7 @@ namespace FindSimilarClient
 
             // If-Modified-Since header should be greater than LastModified. If so, then return 304.
             // This header is ignored if any If-None-Match header is specified.
-            long ifModifiedSince = 0;
-            long.TryParse(response.HttpContext.Request.Headers["If-Modified-Since"].ToString(), out ifModifiedSince);
+            long ifModifiedSince = GetDateHeader(response, "If-Modified-Since");
             if (ifNoneMatch == null && ifModifiedSince != -1 && ifModifiedSince + 1000 > lastModified)
             {
                 response.Headers.Add("ETag", fileName); // Required in 304.
@@ -114,8 +167,7 @@ namespace FindSimilarClient
             }
 
             // If-Unmodified-Since header should be greater than LastModified. If not, then return 412.
-            long ifUnmodifiedSince = 0;
-            long.TryParse(response.HttpContext.Request.Headers["If-Unmodified-Since"].ToString(), out ifUnmodifiedSince);
+            long ifUnmodifiedSince = GetDateHeader(response, "If-Unmodified-Since");
             if (ifUnmodifiedSince != -1 && ifUnmodifiedSince + 1000 <= lastModified)
             {
                 response.StatusCode = (int)HttpStatusCode.PreconditionFailed;
@@ -129,7 +181,7 @@ namespace FindSimilarClient
             List<Range> ranges = new List<Range>();
 
             // Validate and process Range and If-Range headers.
-            Regex rangeRegex = new Regex(@"^bytes=\\d*-\\d*(,\\d*-\\d*)*$");
+            Regex rangeRegex = new Regex(@"^bytes=\d*-\d*(,\d*-\d*)*$");
             string range = response.HttpContext.Request.Headers["Range"];
             if (range != null)
             {
@@ -146,9 +198,7 @@ namespace FindSimilarClient
                 {
                     try
                     {
-                        long ifRangeTime = 0;
-                        long.TryParse(response.HttpContext.Request.Headers["If-Range"].ToString(), out ifRangeTime);
-
+                        long ifRangeTime = GetDateHeader(response, "If-Range");
                         // Throws IAE if invalid.
                         if (ifRangeTime != -1)
                         {
@@ -164,7 +214,11 @@ namespace FindSimilarClient
                 // If any valid If-Range header, then process each part of byte range.
                 if (ranges.Count == 0)
                 {
-                    foreach (string part in range.Substring(6).Split(","))
+                    // Remove "Ranges" and break up the ranges
+                    string[] rangeArray = range.Replace("bytes=", string.Empty)
+                                                 .Split(",".ToCharArray());
+
+                    foreach (string part in rangeArray)
                     {
                         // Assuming a file with length of 100, the following examples returns bytes at:
                         // 50-80 (50 to 80), 40- (40 to length=100), -20 (length-20=80 to length=100).
@@ -219,26 +273,33 @@ namespace FindSimilarClient
                 disposition = accept != null && HttpUtils.Accepts(accept, contentType) ? "inline" : "attachment";
             }
 
-            Log.Debug("Content-Type : {}", contentType);
+            Log.Debug("Content-Type : {0}", contentType);
 
             // Initialize response.
-            // response.Reset();
-            // response.SetBufferSize(DEFAULT_BUFFER_SIZE);
             response.Headers.Add("Content-Type", contentType);
             response.Headers.Add("Content-Disposition", disposition + ";filename=\"" + fileName + "\"");
 
-            Log.Debug("Content-Disposition : {}", disposition);
-            response.Headers.Add("Accept-Ranges", "bytes");
-            response.Headers.Add("ETag", fileName);
+            Log.Debug("Content-Disposition : {0}", disposition);
 
-            response.Headers.Add("Last-Modified", lastModified.ToString());
-            response.Headers.Add("Expires", (DateTime.UtcNow.Millisecond + DEFAULT_EXPIRE_TIME).ToString());
+            response.Headers.Add("Accept-Ranges", "bytes");
+
+            // Check SetLastModifiedAndEtagHeaders() in FileResultExecutorBase.cs
+            response.Headers.Add("ETag", fileName);
+            response.Headers.Add("Last-Modified", lastModifiedDTO.Value.ToString("r", CultureInfo.InvariantCulture));
+
+            // set expiration header (remove milliseconds)
+            var expiresValue = DateTimeOffset
+                            .UtcNow
+                            .AddSeconds(DEFAULT_EXPIRE_TIME_SECONDS)
+                            .ToString("r", CultureInfo.InvariantCulture);
+
+            response.Headers.Add("Expires", expiresValue);
+
 
             // Send requested file (part(s)) to client ------------------------------------------------
 
             // Prepare streams.
-
-            Stream input = new BufferedStream(File.OpenRead(filePath));
+            Stream input = FileStream;
             Stream output = response.Body;
 
             if (ranges.Count == 0 || ranges[0] == full)
@@ -249,20 +310,24 @@ namespace FindSimilarClient
                 response.Headers.Add("Content-Range", "bytes " + full.Start + "-" + full.End + "/" + full.Total);
                 response.Headers.Add("Content-Length", full.Length.ToString());
 
-                Range.Copy(input, output, length, full.Start, full.Length);
+                LogResponseHeaders(response);
+
+                await Range.Copy(input, output, length, full.Start, full.Length);
             }
             else if (ranges.Count == 1)
             {
                 // Return single part of file.
                 Range r = ranges[0];
-                Log.Information("Return 1 part of file : from ({}) to ({})", r.Start, r.End);
+                Log.Information("Return 1 part of file : from ({0}) to ({1})", r.Start, r.End);
                 response.ContentType = contentType;
                 response.Headers.Add("Content-Range", "bytes " + r.Start + "-" + r.End + "/" + r.Total);
                 response.Headers.Add("Content-Length", r.Length.ToString());
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
 
+                LogResponseHeaders(response);
+
                 // Copy single part range.
-                Range.Copy(input, output, length, r.Start, r.Length);
+                await Range.Copy(input, output, length, r.Start, r.Length);
             }
             else
             {
@@ -270,10 +335,12 @@ namespace FindSimilarClient
                 response.ContentType = "multipart/byteranges; boundary=" + MULTIPART_BOUNDARY;
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
 
+                LogResponseHeaders(response);
+
                 // Copy multi part range.
                 foreach (Range r in ranges)
                 {
-                    Log.Information("Return multi part of file : from ({}) to ({})", r.Start, r.End);
+                    Log.Information("Return multi part of file : from ({0}) to ({1})", r.Start, r.End);
 
                     // Add multipart boundary and header fields for every range.
                     await response.WriteAsync(CrLf);
@@ -285,7 +352,7 @@ namespace FindSimilarClient
                     await response.WriteAsync(CrLf);
 
                     // Copy single part range of multi part range.
-                    Range.Copy(input, output, length, r.Start, r.Length);
+                    await Range.Copy(input, output, length, r.Start, r.Length);
                 }
 
                 // End with multipart boundary.
@@ -293,6 +360,29 @@ namespace FindSimilarClient
                 await response.WriteAsync("--" + MULTIPART_BOUNDARY + "--");
                 await response.WriteAsync(CrLf);
             }
+        }
+
+        private static DateTimeOffset RoundDownToWholeSeconds(DateTimeOffset dateTimeOffset)
+        {
+            var ticksToRemove = dateTimeOffset.Ticks % TimeSpan.TicksPerSecond;
+            return dateTimeOffset.Subtract(TimeSpan.FromTicks(ticksToRemove));
+        }
+
+        private static long GetDateHeader(HttpResponse response, string header)
+        {
+            var headerValue = response.HttpContext.Request.Headers[header].ToString();
+
+            if (string.IsNullOrEmpty(headerValue)) return -1;
+
+            DateTimeOffset parsedDateOffset;
+            DateTimeOffset.TryParseExact(
+                                headerValue,
+                                "r",
+                                CultureInfo.InvariantCulture.DateTimeFormat,
+                                DateTimeStyles.AdjustToUniversal,
+                                out parsedDateOffset);
+
+            return parsedDateOffset.ToUnixTimeSeconds();
         }
 
         private class Range
@@ -318,8 +408,16 @@ namespace FindSimilarClient
 
             public static long SubLong(string value, int beginIndex, int endIndex)
             {
-                string substring = value.Substring(beginIndex, endIndex);
-                return (substring.Length > 0) ? long.Parse(substring) : -1;
+                string substring;
+                try
+                {
+                    substring = value.Substring(beginIndex, endIndex);
+                    return (substring.Length > 0) ? long.Parse(substring) : -1;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    return -1;
+                }
             }
 
             public static async Task Copy(Stream input, Stream output, long inputSize, long start, long length)
@@ -329,10 +427,20 @@ namespace FindSimilarClient
 
                 if (inputSize == length)
                 {
-                    // Write full range.
-                    while ((read = input.Read(buffer)) > 0)
+                    try
                     {
-                        await output.WriteAsync(buffer, 0, read);
+                        // Write full range.
+                        while ((read = input.Read(buffer)) > 0)
+                        {
+                            await output.WriteAsync(buffer, 0, read);
+                        }
+                    }
+                    catch (System.Exception e)
+                    {
+                        Log.Error(e.Message);
+                    }
+                    finally
+                    {
                         await output.FlushAsync();
                     }
                 }
@@ -340,20 +448,30 @@ namespace FindSimilarClient
                 {
                     input.Seek(start, SeekOrigin.Begin);
                     long toRead = length;
-
-                    while ((read = input.Read(buffer)) > 0)
+                    try
                     {
-                        if ((toRead -= read) > 0)
+                        while ((read = input.Read(buffer)) > 0)
                         {
-                            await output.WriteAsync(buffer, 0, read);
-                            await output.FlushAsync();
+                            if ((toRead -= read) > 0)
+                            {
+                                await output.WriteAsync(buffer, 0, read);
+                                await output.FlushAsync();
+                            }
+                            else
+                            {
+                                await output.WriteAsync(buffer, 0, (int)toRead + read);
+                                await output.FlushAsync();
+                                break;
+                            }
                         }
-                        else
-                        {
-                            await output.WriteAsync(buffer, 0, (int)toRead + read);
-                            await output.FlushAsync();
-                            break;
-                        }
+                    }
+                    catch (System.Exception e)
+                    {
+                        Log.Error(e.Message);
+                    }
+                    finally
+                    {
+                        await output.FlushAsync();
                     }
                 }
             }
@@ -368,7 +486,7 @@ namespace FindSimilarClient
             /// <returns>True if the given accept header accepts the given value.</returns>
             public static bool Accepts(string acceptHeader, string toAccept)
             {
-                string[] acceptValues = Regex.Split(acceptHeader, "\\s*(,|;)\\s*");
+                string[] acceptValues = Regex.Split(acceptHeader, @"\s*(,|;)\s*");
                 Array.Sort(acceptValues);
 
                 Regex rgx = new Regex(@"/.*$");
@@ -385,7 +503,7 @@ namespace FindSimilarClient
             /// <returns>True if the given match header matches the given value.</returns>
             public static bool Matches(string matchHeader, string toMatch)
             {
-                string[] matchValues = Regex.Split(matchHeader, "\\s*,\\s*");
+                string[] matchValues = Regex.Split(matchHeader, @"\s*,\s*");
                 Array.Sort(matchValues);
 
                 return Array.BinarySearch(matchValues, toMatch) > -1
