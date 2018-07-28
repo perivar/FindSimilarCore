@@ -37,14 +37,14 @@ namespace FindSimilarClient
 
         public static MultipartFileSender FromFile(FileInfo file, MediaTypeHeaderValue contentType)
         {
-            // return new MultipartFileSender(new FileStream(file.FullName, FileMode.Open), contentType).SetFilePath(file.FullName);
-            return new MultipartFileSender(File.OpenRead(file.FullName), contentType).SetFilePath(file.FullName);
+            return new MultipartFileSender(new FileStream(file.FullName, FileMode.Open, FileAccess.Read), contentType).SetFilePath(file.FullName);
+            // return new MultipartFileSender(File.OpenRead(file.FullName), contentType).SetFilePath(file.FullName);
         }
 
         public static MultipartFileSender FromFile(string filePath, string contentType)
         {
-            // return new MultipartFileSender(new FileStream(filePath, FileMode.Open), contentType).SetFilePath(filePath);
-            return new MultipartFileSender(File.OpenRead(filePath), contentType).SetFilePath(filePath);
+            return new MultipartFileSender(new FileStream(filePath, FileMode.Open, FileAccess.Read), contentType).SetFilePath(filePath);
+            // return new MultipartFileSender(File.OpenRead(filePath), contentType).SetFilePath(filePath);
         }
 
         public static MultipartFileSender FromStream(Stream stream, MediaTypeHeaderValue contentType)
@@ -77,7 +77,7 @@ namespace FindSimilarClient
                 {
                     headers += key + "=" + response.HttpContext.Request.Headers[key] + Environment.NewLine;
                 }
-                Log.Verbose("----Request Headers----\n" + headers);
+                Log.Debug("----Request Headers----\n" + headers);
             }
         }
 
@@ -85,14 +85,12 @@ namespace FindSimilarClient
         {
             if (Debugger.IsAttached)
             {
-                Log.Verbose("----Response Headers----\n");
-                Log.Verbose("StatusCode: " + response.StatusCode.ToString());
-                string headers = String.Empty;
+                string headers = "StatusCode: " + response.StatusCode.ToString() + Environment.NewLine;
                 foreach (var key in response.Headers.Keys)
                 {
                     headers += key + "=" + response.Headers[key] + Environment.NewLine;
                 }
-                Log.Verbose("Headers:\n" + headers);
+                Log.Debug("----Response Headers----\n" + headers);
             }
         }
 
@@ -104,6 +102,11 @@ namespace FindSimilarClient
             }
 
             LogRequestHeaders(response);
+
+
+            // Read all the file properties needed ---------------------------------------------------
+            // the file-name and last modified date
+            // and the content-type (mime mapping)
 
             if (!File.Exists(filePath))
             {
@@ -196,16 +199,8 @@ namespace FindSimilarClient
                 string ifRange = response.HttpContext.Request.Headers["If-Range"];
                 if (ifRange != null && !ifRange.Equals(fileName))
                 {
-                    try
-                    {
-                        long ifRangeTime = GetDateHeader(response, "If-Range");
-                        // Throws IAE if invalid.
-                        if (ifRangeTime != -1)
-                        {
-                            ranges.Add(full);
-                        }
-                    }
-                    catch (ArgumentException)
+                    long ifRangeTime = GetDateHeader(response, "If-Range");
+                    if (ifRangeTime != -1)
                     {
                         ranges.Add(full);
                     }
@@ -428,25 +423,22 @@ namespace FindSimilarClient
             public static async Task Copy(Stream input, Stream output, long inputSize, long start, long length)
             {
                 byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-                int read;
+                int bytesRead;
 
                 if (inputSize == length)
                 {
                     try
                     {
                         // Write full range.
-                        while ((read = input.Read(buffer)) > 0)
+                        while ((bytesRead = input.Read(buffer)) > 0)
                         {
-                            await output.WriteAsync(buffer, 0, read);
+                            await output.WriteAsync(buffer, 0, bytesRead);
+                            await output.FlushAsync();
                         }
                     }
                     catch (System.Exception e)
                     {
                         Log.Error(e.Message);
-                    }
-                    finally
-                    {
-                        await output.FlushAsync();
                     }
                 }
                 else
@@ -455,16 +447,16 @@ namespace FindSimilarClient
                     long toRead = length;
                     try
                     {
-                        while ((read = input.Read(buffer)) > 0)
+                        while ((bytesRead = input.Read(buffer)) > 0)
                         {
-                            if ((toRead -= read) > 0)
+                            if ((toRead -= bytesRead) > 0)
                             {
-                                await output.WriteAsync(buffer, 0, read);
+                                await output.WriteAsync(buffer, 0, bytesRead);
                                 await output.FlushAsync();
                             }
                             else
                             {
-                                await output.WriteAsync(buffer, 0, (int)toRead + read);
+                                await output.WriteAsync(buffer, 0, (int)toRead + bytesRead);
                                 await output.FlushAsync();
                                 break;
                             }
@@ -473,10 +465,6 @@ namespace FindSimilarClient
                     catch (System.Exception e)
                     {
                         Log.Error(e.Message);
-                    }
-                    finally
-                    {
-                        await output.FlushAsync();
                     }
                 }
             }
