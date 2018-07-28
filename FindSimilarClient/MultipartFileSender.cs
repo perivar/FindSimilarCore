@@ -113,7 +113,7 @@ namespace FindSimilarClient
             }
 
             long length = new FileInfo(filePath).Length;
-            string fileName = Path.GetFileName(filePath);
+            string fileName = StringUtils.HeaderEncode(Path.GetFileName(filePath));
             DateTime lastModifiedObj = File.GetLastWriteTime(filePath);
 
             if (string.IsNullOrEmpty(fileName) || lastModifiedObj == null)

@@ -240,6 +240,62 @@ namespace CommonUtils
             return Regex.Replace(name, invalidReStr, "_");
         }
 
+        private static readonly string[] _headerEncodingTable = new string[] {
+            "%00", "%01", "%02", "%03", "%04", "%05", "%06", "%07",
+            "%08", "%09", "%0a", "%0b", "%0c", "%0d", "%0e", "%0f",
+            "%10", "%11", "%12", "%13", "%14", "%15", "%16", "%17",
+            "%18", "%19", "%1a", "%1b", "%1c", "%1d", "%1e", "%1f"
+        };
+
+        // Returns true if the string contains a control character (other than horizontal tab) or the DEL character.
+        private static bool HeaderValueNeedsEncoding(string value)
+        {
+            foreach (char c in value)
+            {
+                if ((c < 32 && c != 9) || (c == 127))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Encode the header if it contains a CRLF pair
+        // VSWhidbey 257154
+        public static string HeaderEncode(string value)
+        {
+            string sanitizedHeader = value;
+
+            if (HeaderValueNeedsEncoding(value))
+            {
+                // DevDiv Bugs 146028
+                // Denial Of Service scenarios involving 
+                // control characters are possible.
+                // We are encoding the following characters:
+                // - All CTL characters except HT (horizontal tab)
+                // - DEL character (\x7f)
+                StringBuilder sb = new StringBuilder();
+                foreach (char c in value)
+                {
+                    if (c < 32 && c != 9)
+                    {
+                        sb.Append(_headerEncodingTable[c]);
+                    }
+                    else if (c == 127)
+                    {
+                        sb.Append("%7f");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                }
+                sanitizedHeader = sb.ToString();
+            }
+
+            return sanitizedHeader;
+        }
+
         /// <summary>
         /// Split string by length
         /// </summary>
