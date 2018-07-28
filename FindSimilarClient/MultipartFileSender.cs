@@ -80,41 +80,12 @@ namespace FindSimilarClient
             await ServeResource(context.HttpContext.Response);
         }
 
-        private void LogRequestHeaders(HttpRequest request)
-        {
-            if (Debugger.IsAttached)
-            {
-                string headers = String.Empty;
-                foreach (var key in request.Headers.Keys)
-                {
-                    headers += key + "=" + request.Headers[key] + Environment.NewLine;
-                }
-                Log.Debug("----Request Headers----\n" + headers);
-            }
-        }
-
-        private void LogResponseHeaders(HttpResponse response)
-        {
-            if (Debugger.IsAttached)
-            {
-                string headers = "StatusCode: " + response.StatusCode.ToString() + Environment.NewLine;
-                foreach (var key in response.Headers.Keys)
-                {
-                    headers += key + "=" + response.Headers[key] + Environment.NewLine;
-                }
-                Log.Debug("----Response Headers----\n" + headers);
-            }
-        }
-
         public async Task ServeResource(HttpResponse response)
         {
             if (response == null)
             {
                 return;
             }
-
-            LogRequestHeaders(response.HttpContext.Request);
-
 
             // Read all the file properties needed ---------------------------------------------------
             // the file-name and last modified date
@@ -129,23 +100,23 @@ namespace FindSimilarClient
 
             long length = new FileInfo(filePath).Length;
             string fileName = StringUtils.RemoveNonAsciiCharactersFast(Path.GetFileName(filePath));
-            DateTime lastModifiedObj = File.GetLastWriteTime(filePath);
+            DateTime lastModifiedDateTime = File.GetLastWriteTimeUtc(filePath);
 
-            if (string.IsNullOrEmpty(fileName) || lastModifiedObj == null)
+            if (string.IsNullOrEmpty(fileName) || lastModifiedDateTime == null)
             {
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return;
             }
 
-            DateTimeOffset? lastModifiedDTO = DateTime.SpecifyKind(lastModifiedObj, DateTimeKind.Utc);
+            // convert the datetime to date time offset 
+            DateTimeOffset lastModifiedDateTimeOffset = DateTime.SpecifyKind(lastModifiedDateTime, DateTimeKind.Utc);
 
             // Since the 'Last-Modified' and other similar http date headers are rounded down to whole seconds, 
             // round down current file's last modified to whole seconds for correct comparison. 
-            if (lastModifiedDTO.HasValue)
-            {
-                lastModifiedDTO = RoundDownToWholeSeconds(lastModifiedDTO.Value);
-            }
-            long lastModified = lastModifiedDTO.Value.ToUnixTimeMilliseconds();
+            lastModifiedDateTimeOffset = RoundDownToWholeSeconds(lastModifiedDateTimeOffset);
+
+            // compare date times using milliseconds since UNIX epoch (January 1, 1970 00:00:00 UTC)
+            long lastModified = lastModifiedDateTimeOffset.ToUnixTimeMilliseconds();
 
             // read in stored Content-Type
             string contentType = ContentType;
@@ -297,7 +268,7 @@ namespace FindSimilarClient
 
                 // Check SetLastModifiedAndEtagHeaders() in FileResultExecutorBase.cs for info about adding headers
                 response.Headers.Add(HeaderNames.ETag, fileName);
-                SetDateHeader(response, HeaderNames.LastModified, lastModifiedDTO.Value);
+                SetDateHeader(response, HeaderNames.LastModified, lastModifiedDateTimeOffset);
 
                 // set expiration header (remove milliseconds)
                 var expires = DateTimeOffset
@@ -326,8 +297,6 @@ namespace FindSimilarClient
                 response.Headers.Add(HeaderNames.ContentRange, $"bytes {full.Start}-{full.End}/{full.Total}");
                 response.Headers.Add(HeaderNames.ContentLength, full.Length.ToString());
 
-                LogResponseHeaders(response);
-
                 await Range.CopyStream(input, output, length, full.Start, full.Length);
             }
             else if (ranges.Count == 1)
@@ -342,8 +311,6 @@ namespace FindSimilarClient
                 response.Headers.Add(HeaderNames.ContentLength, r.Length.ToString());
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
 
-                LogResponseHeaders(response);
-
                 // Copy single part range.
                 await Range.CopyStream(input, output, length, r.Start, r.Length);
             }
@@ -354,8 +321,6 @@ namespace FindSimilarClient
                 // and https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html
                 response.ContentType = $"multipart/byteranges; boundary={MULTIPART_BOUNDARY}";
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
-
-                LogResponseHeaders(response);
 
                 // Copy multi part range.
                 foreach (Range r in ranges)
