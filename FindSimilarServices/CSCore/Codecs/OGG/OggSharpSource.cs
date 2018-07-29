@@ -240,27 +240,33 @@ namespace CSCore.Codecs.OGG
                     samplesRead = cnt;
                 }
 
-                while (remainingByteCount > 0 && _oggPCMChunkEnumerator.MoveNext())
+                try
                 {
-                    var curPCMChunk = _oggPCMChunkEnumerator.Current;
-
-                    // get samples from the current pcm chunk data
-                    var cnt = Math.Min(remainingByteCount, curPCMChunk.Length);
-                    Buffer.BlockCopy(curPCMChunk.Bytes, 0, buffer, offset, cnt);
-
-                    // if we have samples left over, rebuild the previous buffer array...
-                    if (cnt < curPCMChunk.Length)
+                    while (remainingByteCount > 0 && _oggPCMChunkEnumerator.MoveNext())
                     {
-                        int remainingBytesInChunk = curPCMChunk.Length - cnt;
-                        var buf = new byte[remainingBytesInChunk];
-                        Buffer.BlockCopy(curPCMChunk.Bytes, cnt, buf, 0, remainingBytesInChunk);
-                        _prevPCMChunkBuffer = buf;
-                    }
+                        var curPCMChunk = _oggPCMChunkEnumerator.Current;
 
-                    // reduce the desired sample count & increase the desired sample offset
-                    remainingByteCount -= cnt;
-                    offset += cnt;
-                    samplesRead += cnt;
+                        // get samples from the current pcm chunk data
+                        var cnt = Math.Min(remainingByteCount, curPCMChunk.Length);
+                        Buffer.BlockCopy(curPCMChunk.Bytes, 0, buffer, offset, cnt);
+
+                        // if we have samples left over, rebuild the previous buffer array...
+                        if (cnt < curPCMChunk.Length)
+                        {
+                            int remainingBytesInChunk = curPCMChunk.Length - cnt;
+                            var buf = new byte[remainingBytesInChunk];
+                            Buffer.BlockCopy(curPCMChunk.Bytes, cnt, buf, 0, remainingBytesInChunk);
+                            _prevPCMChunkBuffer = buf;
+                        }
+
+                        // reduce the desired sample count & increase the desired sample offset
+                        remainingByteCount -= cnt;
+                        offset += cnt;
+                        samplesRead += cnt;
+                    }
+                }
+                catch (System.Exception)
+                {
                 }
             }
 
@@ -304,7 +310,7 @@ namespace CSCore.Codecs.OGG
             {
                 if (!CanSeek)
                     throw new InvalidOperationException("OggSharpSource is not seekable.");
-                if (value < 0)
+                if (value < 0 || value > Length)
                     throw new ArgumentOutOfRangeException("value");
 
                 // _oggDecoder doesn't support seeking to 0

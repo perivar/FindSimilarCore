@@ -105,8 +105,7 @@ namespace FindSimilarClient
                 return;
             }
 
-            // calculate wave source length
-            long length = WaveSource.Length;
+            // get a cleaned version of the filename 
             string fileName = StringUtils.RemoveNonAsciiCharactersFast(Path.GetFileName(filePath));
             DateTime lastModifiedDateTime = File.GetLastWriteTimeUtc(filePath);
 
@@ -169,6 +168,22 @@ namespace FindSimilarClient
             }
 
             // Validate and process range -------------------------------------------------------------
+
+            // set input and output 
+            IWaveSource input = WaveSource;
+            Stream output = response.Body;
+
+            // get the byte length of the source
+            // since we are working with the headerless wave source
+            // we always need to add the length of the WAV header
+            byte[] headerBytes = SoundIOUtils.GetWaveHeaderBytes(
+                    input.WaveFormat.BitsPerSample == 32 ? true : false,
+                    (ushort)input.WaveFormat.Channels,
+                    (ushort)input.WaveFormat.BitsPerSample,
+                    input.WaveFormat.SampleRate,
+                    (int)input.Length);
+
+            long length = WaveSource.Length + headerBytes.Length;
 
             // Prepare some variables. The full Range represents the complete file.
             Range full = new Range(0, length - 1, length);
@@ -292,8 +307,6 @@ namespace FindSimilarClient
             // Send requested file (part(s)) to client ------------------------------------------------
 
             // Prepare streams.
-            IWaveSource input = WaveSource;
-            Stream output = response.Body;
 
             if (ranges.Count == 0 || ranges[0] == full)
             {
@@ -302,18 +315,10 @@ namespace FindSimilarClient
 
                 response.ContentType = contentType;
 
-                // check if the file requires a header
-                if (DoRequireHeader(full))
-                {
-                    await SendFileHeader(response, input, output, full);
-                }
-                else
-                {
-                    response.Headers.Add(HeaderNames.ContentRange, $"bytes {full.Start}-{full.End}/{full.Total}");
-                    response.Headers.Add(HeaderNames.ContentLength, full.Length.ToString());
-                }
+                response.Headers.Add(HeaderNames.ContentRange, $"bytes {full.Start}-{full.End}/{full.Total}");
+                response.Headers.Add(HeaderNames.ContentLength, full.Length.ToString());
 
-                await Range.CopyStream(input, output, length, full.Start, full.Length);
+                await Range.CopyStream(input, output, length, full.Start, full.Length, headerBytes);
             }
             else if (ranges.Count == 1)
             {
@@ -325,19 +330,10 @@ namespace FindSimilarClient
                 response.ContentType = contentType;
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
 
-                // check if the file requires a header
-                if (DoRequireHeader(r))
-                {
-                    await SendFileHeader(response, input, output, r);
-                }
-                else
-                {
-                    response.Headers.Add(HeaderNames.ContentRange, $"bytes {r.Start}-{r.End}/{r.Total}");
-                    response.Headers.Add(HeaderNames.ContentLength, r.Length.ToString());
-                }
+                response.Headers.Add(HeaderNames.ContentRange, $"bytes {r.Start}-{r.End}/{r.Total}");
+                response.Headers.Add(HeaderNames.ContentLength, r.Length.ToString());
 
-                // Copy single part range.
-                await Range.CopyStream(input, output, length, r.Start, r.Length);
+                await Range.CopyStream(input, output, length, r.Start, r.Length, headerBytes);
             }
             else
             {
@@ -362,7 +358,7 @@ namespace FindSimilarClient
                     await response.WriteAsync(CrLf);
 
                     // Copy single part range of multi part range.
-                    await Range.CopyStream(input, output, length, r.Start, r.Length);
+                    await Range.CopyStream(input, output, length, r.Start, r.Length, headerBytes);
                 }
 
                 // End with multipart boundary.
@@ -370,6 +366,33 @@ namespace FindSimilarClient
                 await response.WriteAsync($"--{MULTIPART_BOUNDARY}");
                 await response.WriteAsync(CrLf);
             }
+        }
+
+        private byte[] AddContentRangeAndLengthHeaders(HttpResponse response, IWaveSource input, Range range)
+        {
+            byte[] headerBytes = null;
+
+            // check if the file requires a header
+            if (DoRequireFileHeader(range))
+            {
+                // send header unless it's a two byte request IWaveSource cannot handle
+                headerBytes = SoundIOUtils.GetWaveHeaderBytes(
+                        input.WaveFormat.BitsPerSample == 32 ? true : false,
+                        (ushort)input.WaveFormat.Channels,
+                        (ushort)input.WaveFormat.BitsPerSample,
+                        input.WaveFormat.SampleRate,
+                        (int)input.Length);
+
+                response.Headers.Add(HeaderNames.ContentRange, $"bytes {range.Start}-{range.End + headerBytes.Length}/{range.Total + headerBytes.Length}");
+                response.Headers.Add(HeaderNames.ContentLength, (range.Length + headerBytes.Length).ToString());
+            }
+            else
+            {
+                response.Headers.Add(HeaderNames.ContentRange, $"bytes {range.Start}-{range.End}/{range.Total}");
+                response.Headers.Add(HeaderNames.ContentLength, range.Length.ToString());
+            }
+
+            return headerBytes;
         }
 
         private static DateTimeOffset RoundDownToWholeSeconds(DateTimeOffset dateTimeOffset)
@@ -408,7 +431,7 @@ namespace FindSimilarClient
             response.Headers.Add(header, date.ToString("r"));
         }
 
-        private static bool DoRequireHeader(Range range)
+        private static bool DoRequireFileHeader(Range range)
         {
             // the beginning of a file requires a header
             if (range.Start == 0 && range.Length > 2)
@@ -416,29 +439,6 @@ namespace FindSimilarClient
                 return true;
             }
             return false;
-        }
-
-        private static async Task SendFileHeader(HttpResponse response, IWaveSource input, Stream output, Range range)
-        {
-            try
-            {
-                // send header unless it's a two byte request IWaveSource cannot handle
-                var headerBytes = SoundIOUtils.GetWaveHeaderBytes(
-                        input.WaveFormat.BitsPerSample == 32 ? true : false,
-                        (ushort)input.WaveFormat.Channels,
-                        (ushort)input.WaveFormat.BitsPerSample,
-                        input.WaveFormat.SampleRate,
-                        (int)input.Length);
-
-                response.Headers.Add(HeaderNames.ContentRange, $"bytes {range.Start}-{range.End + headerBytes.Length}/{range.Total + headerBytes.Length}");
-                response.Headers.Add(HeaderNames.ContentLength, (range.Length + headerBytes.Length).ToString());
-
-                await output.WriteAsync(headerBytes, 0, headerBytes.Length);
-            }
-            finally
-            {
-                await output.FlushAsync();
-            }
         }
 
         private class Range
@@ -472,10 +472,24 @@ namespace FindSimilarClient
                 return (substring.Length > 0) ? long.Parse(substring) : -1;
             }
 
-            public static async Task CopyStream(IWaveSource input, Stream output, long inputSize, long start, long length)
+            public static async Task CopyStream(IWaveSource input, Stream output, long inputSize, long start, long length, byte[] headerBytes)
             {
                 byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
                 int bytesRead;
+
+                // a new file (except when requesting only two bytes) always requires the header
+                if (start == 0 && length > 2)
+                {
+                    try
+                    {
+                        await output.WriteAsync(headerBytes, 0, headerBytes.Length);
+                        await output.FlushAsync();
+                    }
+                    catch (System.Exception e)
+                    {
+                        _logger.LogError(e.Message);
+                    }
+                }
 
                 if (inputSize == length)
                 {
@@ -495,8 +509,8 @@ namespace FindSimilarClient
                 }
                 else
                 {
-                    // input.Seek(start, SeekOrigin.Begin);
-                    input.Position = start;
+                    // always pretend that we have a header
+                    input.Position = start - headerBytes.Length;
 
                     long toRead = length;
                     try
