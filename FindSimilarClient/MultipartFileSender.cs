@@ -11,28 +11,33 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using MimeMapping;
-using Serilog;
 using CommonUtils;
+using Microsoft.Extensions.Logging;
 
 namespace FindSimilarClient
 {
     public class MultipartFileSender : FileStreamResult
     {
-        private const int DEFAULT_BUFFER_SIZE = 20480; // ..bytes = 20KB.
+        private const int DEFAULT_BUFFER_SIZE = 64 * 1024; // copied buffer size from FileResultExecutorBase.cs
         private const long DEFAULT_EXPIRE_TIME_SECONDS = 604800L; // ..seconds = 1 week.
         private const string MULTIPART_BOUNDARY = "MULTIPART_BYTERANGES";
         private const string CrLf = "\r\n";
 
+        private static Regex RangeRegex = new Regex(@"^bytes=\d*-\d*(,\d*-\d*)*$", RegexOptions.Compiled);
+
         private string filePath;
+        private readonly ILogger _logger;
 
         private MultipartFileSender(Stream fileStream, string contentType)
             : base(fileStream, contentType)
         {
+            _logger = ApplicationLogging.CreateLogger<MultipartFileSender>();
         }
 
         private MultipartFileSender(Stream fileStream, MediaTypeHeaderValue contentType)
             : base(fileStream, contentType)
         {
+            _logger = ApplicationLogging.CreateLogger<MultipartFileSender>();
         }
 
         public static MultipartFileSender FromFile(FileInfo file)
@@ -93,7 +98,7 @@ namespace FindSimilarClient
 
             if (!File.Exists(filePath))
             {
-                Log.Error("FileInfo doesn't exist at URI : {0}", filePath);
+                _logger.LogError("FileInfo doesn't exist at URI : {0}", filePath);
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
@@ -167,12 +172,11 @@ namespace FindSimilarClient
             List<Range> ranges = new List<Range>();
 
             // Validate and process Range and If-Range headers.
-            Regex rangeRegex = new Regex(@"^bytes=\d*-\d*(,\d*-\d*)*$");
             string range = response.HttpContext.Request.Headers["Range"];
             if (range != null)
             {
                 // Range header should match format "bytes=n-n,n-n,n-n...". If not, then return 416.
-                if (!rangeRegex.IsMatch(range))
+                if (!RangeRegex.IsMatch(range))
                 {
                     response.Headers.Add(HeaderNames.ContentRange, $"bytes */{length}"); // Required in 416.
                     response.StatusCode = (int)HttpStatusCode.RequestedRangeNotSatisfiable;
@@ -200,8 +204,8 @@ namespace FindSimilarClient
                     {
                         // Assuming a file with length of 100, the following examples returns bytes at:
                         // 50-80 (50 to 80), 40- (40 to length=100), -20 (length-20=80 to length=100).
-                        long start = Range.SubLong(part, 0, part.IndexOf("-"));
-                        long end = Range.SubLong(part, part.IndexOf("-") + 1, part.Length);
+                        long start = Range.SubstringLong(part, 0, part.IndexOf("-"));
+                        long end = Range.SubstringLong(part, part.IndexOf("-") + 1, part.Length);
 
                         if (start == -1)
                         {
@@ -255,14 +259,14 @@ namespace FindSimilarClient
                 disposition = accept != null && HttpUtils.Accepts(accept, contentType) ? "inline" : "attachment";
             }
 
-            Log.Debug("Content-Type : {0}", contentType);
-
             // Initialize response.
             try
             {
                 response.Headers.Add(HeaderNames.ContentType, contentType);
                 response.Headers.Add(HeaderNames.ContentDisposition, disposition + $";filename=\"{fileName}\"");
-                Log.Debug("{0} : {1}", HeaderNames.ContentDisposition, disposition);
+
+                _logger.LogDebug($"{HeaderNames.ContentType} : {contentType}");
+                _logger.LogDebug($"{HeaderNames.ContentDisposition} : {disposition}");
 
                 response.Headers.Add(HeaderNames.AcceptRanges, "bytes");
 
@@ -279,7 +283,7 @@ namespace FindSimilarClient
             }
             catch (System.Exception e)
             {
-                Log.Error("Failed adding response headers: {0}", e.Message);
+                _logger.LogError("Failed adding response headers: {0}", e.Message);
             }
 
             // Send requested file (part(s)) to client ------------------------------------------------
@@ -291,7 +295,7 @@ namespace FindSimilarClient
             if (ranges.Count == 0 || ranges[0] == full)
             {
                 // Return full file.
-                Log.Information("Return full file : from ({0}) to ({1}) of ({2})", full.Start, full.End, full.Total);
+                _logger.LogInformation("Return full file : from ({0}) to ({1}) of ({2})", full.Start, full.End, full.Total);
                 response.ContentType = contentType;
 
                 response.Headers.Add(HeaderNames.ContentRange, $"bytes {full.Start}-{full.End}/{full.Total}");
@@ -304,7 +308,7 @@ namespace FindSimilarClient
                 // Return single part of file.
                 Range r = ranges[0];
 
-                Log.Information("Return 1 part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
+                _logger.LogInformation("Return 1 part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
                 response.ContentType = contentType;
 
                 response.Headers.Add(HeaderNames.ContentRange, $"bytes {r.Start}-{r.End}/{r.Total}");
@@ -325,7 +329,7 @@ namespace FindSimilarClient
                 // Copy multi part range.
                 foreach (Range r in ranges)
                 {
-                    Log.Information("Return multi part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
+                    _logger.LogInformation("Return multi part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
 
                     // Add multipart boundary and header fields for every range.
                     await response.WriteAsync(CrLf);
@@ -390,6 +394,8 @@ namespace FindSimilarClient
             public long Length;
             public long Total;
 
+            private static ILogger _logger = ApplicationLogging.CreateLogger("MultipartFileSender:Range");
+
             /// <summary>
             /// Construct a byte range.
             /// </summary>
@@ -404,21 +410,12 @@ namespace FindSimilarClient
                 this.Total = total;
             }
 
-            public static long SubLong(string value, int beginIndex, int endIndex)
+            public static long SubstringLong(string value, int beginIndex, int endIndex)
             {
-                string substring;
-                try
-                {
-                    // simulates Java substring function
-                    int len = endIndex - beginIndex;
-                    substring = value.Substring(beginIndex, len);
-                    return (substring.Length > 0) ? long.Parse(substring) : -1;
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    Log.Verbose("No substring range found. Returning -1.");
-                    return -1;
-                }
+                // simulates Java substring function
+                int len = endIndex - beginIndex;
+                string substring = value.Substring(beginIndex, len);
+                return (substring.Length > 0) ? long.Parse(substring) : -1;
             }
 
             public static async Task CopyStream(Stream input, Stream output, long inputSize, long start, long length)
@@ -430,16 +427,20 @@ namespace FindSimilarClient
                 {
                     try
                     {
-                        // Write full range.
-                        while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            await output.WriteAsync(buffer, 0, bytesRead);
-                            await output.FlushAsync();
-                        }
+                        /* 
+                            // Write full range.
+                            while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                await output.WriteAsync(buffer, 0, bytesRead);
+                                await output.FlushAsync();
+                            }
+
+                         */
+                        await input.CopyToAsync(output, DEFAULT_BUFFER_SIZE);
                     }
                     catch (System.Exception e)
                     {
-                        Log.Error(e.Message);
+                        _logger.LogError(e.Message);
                     }
                 }
                 else
@@ -465,13 +466,17 @@ namespace FindSimilarClient
                     }
                     catch (System.Exception e)
                     {
-                        Log.Error(e.Message);
+                        _logger.LogError(e.Message);
                     }
                 }
             }
         }
         private static class HttpUtils
         {
+            private static Regex AcceptHeaderRegex = new Regex(@"\s*(,|;)\s*", RegexOptions.Compiled);
+            private static Regex MatchHeaderRegex = new Regex(@"\s*,\s*", RegexOptions.Compiled);
+
+
             /// <summary>
             /// Returns true if the given accept header accepts the given value.
             /// </summary>
@@ -480,7 +485,9 @@ namespace FindSimilarClient
             /// <returns>True if the given accept header accepts the given value.</returns>
             public static bool Accepts(string acceptHeader, string toAccept)
             {
-                string[] acceptValues = Regex.Split(acceptHeader, @"\s*(,|;)\s*");
+                // string[] acceptValues = Regex.Split(acceptHeader, @"\s*(,|;)\s*");
+                string[] acceptValues = AcceptHeaderRegex.Split(acceptHeader);
+
                 Array.Sort(acceptValues);
 
                 Regex rgx = new Regex(@"/.*$");
@@ -497,7 +504,8 @@ namespace FindSimilarClient
             /// <returns>True if the given match header matches the given value.</returns>
             public static bool Matches(string matchHeader, string toMatch)
             {
-                string[] matchValues = Regex.Split(matchHeader, @"\s*,\s*");
+                // string[] matchValues = Regex.Split(matchHeader, @"\s*,\s*");
+                string[] matchValues = MatchHeaderRegex.Split(matchHeader);
                 Array.Sort(matchValues);
 
                 return Array.BinarySearch(matchValues, toMatch) > -1

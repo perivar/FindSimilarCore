@@ -1,11 +1,20 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using Serilog;
 
 namespace FindSimilarClient
 {
     public static class StreamExtensions
     {
+        private static ILogger _logger = ApplicationLogging.CreateLogger("StreamExtensions");
+
+        /// <summary>
+        /// Parse the Range header: bytes=x,y
+        /// Usage: var range = response.HttpContext.GetRanges(lengthInBytes);
+        /// </summary>
+        /// <param name="context">HttpContext</param>
+        /// <param name="contentSize">length in bytes</param>
+        /// <returns>A rangeheadervalue containing the list of ranges found</returns>
         public static RangeHeaderValue GetRanges(this HttpContext context, long contentSize)
         {
             // see http://www.mintydog.com/2014/01/serving-video-from-sitecore-for-iphones/
@@ -16,7 +25,7 @@ namespace FindSimilarClient
 
             if (!string.IsNullOrEmpty(rangeHeader))
             {
-                Log.Verbose("Parsing Range Header: {0}", rangeHeader);
+                _logger.LogTrace("Parsing Range Header: {0}", rangeHeader);
 
                 // rangeHeader contains the value of the Range HTTP Header and can have values like:
                 //      Range: bytes=0-1            * Get bytes 0 and 1, inclusive
@@ -70,7 +79,7 @@ namespace FindSimilarClient
                         endByte = contentSize - 1;
                     }
 
-                    Log.Verbose("Found Byte Range: {0}-{1} / {2}", startByte, endByte, contentSize);
+                    _logger.LogTrace("Found Byte Range: {0}-{1} / {2}", startByte, endByte, contentSize);
 
                     rangesResult.Ranges.Add(new RangeItemHeaderValue(startByte, endByte));
                 }

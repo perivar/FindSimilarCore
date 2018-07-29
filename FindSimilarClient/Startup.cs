@@ -55,12 +55,14 @@ namespace FindSimilarClient
                 app.UseHsts();
             }
 
+            // Enable logging
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
-            loggerFactory.AddFile("Logs/ts-{Date}.log");
+            loggerFactory.AddFile(Configuration.GetSection("Logging"));
+            FindSimilarClient.ApplicationLogging.LoggerFactory = loggerFactory;
             app.UseRequestResponseLogging();
 
-            // app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
 
