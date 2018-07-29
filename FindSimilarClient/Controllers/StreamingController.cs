@@ -45,7 +45,8 @@ namespace FindSimilarClient.Controllers
                 // return StreamAudioSampleSource(filePath);
                 // return StreamAudioBuiltIn(filePath);
 
-                return MultipartFileSender.FromFile(filePath);
+                // return MultipartFileSender.FromFile(filePath);
+                return WaveSourceSender.FromFile(filePath);
                 // return File(System.IO.File.OpenRead(filePath), "audio/wav", true);
             }
             else
