@@ -427,16 +427,15 @@ namespace FindSimilarClient
                 {
                     try
                     {
-                        /* 
-                            // Write full range.
-                            while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                await output.WriteAsync(buffer, 0, bytesRead);
-                                await output.FlushAsync();
-                            }
+                        // Write full range.
+                        while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            await output.WriteAsync(buffer, 0, bytesRead);
+                            await output.FlushAsync();
+                        }
 
-                         */
-                        await input.CopyToAsync(output, DEFAULT_BUFFER_SIZE);
+                        // this doesn't seem to work?
+                        // await input.CopyToAsync(output, DEFAULT_BUFFER_SIZE);
                     }
                     catch (System.Exception e)
                     {
