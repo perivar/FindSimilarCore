@@ -4,10 +4,11 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using CommonUtils;
 using CommonUtils.Audio;
 using CSCore.Codecs.WAV;
+using Microsoft.Extensions.Logging;
 using OggSharp;
-using Serilog;
 
 namespace CSCore.Codecs.OGG
 {
@@ -21,6 +22,7 @@ namespace CSCore.Codecs.OGG
         private readonly Stream _stream;
         private readonly long _length;
         private bool _disposed;
+        private readonly ILogger _logger;
         private Stream _oggDecodedMemoryStream; // not used by the PCM chunk reader
 
         public OggSharpSource(Stream stream) : this(stream, null, null)
@@ -39,6 +41,8 @@ namespace CSCore.Codecs.OGG
                 throw new ArgumentNullException("stream");
             if (!stream.CanRead)
                 throw new ArgumentException("stream is not readable", "stream");
+
+            _logger = ApplicationLogging.CreateLogger<OggSharpSource>();
 
             // format checking if the ogg is within a wav container
             if (waveFormat != null)
@@ -107,7 +111,7 @@ namespace CSCore.Codecs.OGG
                     throw new ArgumentException("The specified stream does not contain any data chunks.");
                 }
 
-                Log.Verbose(audioFormat.ToString());
+                _logger.LogDebug(audioFormat.ToString());
             }
 
             // set stream
@@ -135,9 +139,9 @@ namespace CSCore.Codecs.OGG
             int channels = _oggDecoder.Channels;
             int sampleRate = _oggDecoder.SampleRate;
 
-            Log.Verbose(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
-            Log.Verbose(string.Format("Comment: {0}", _oggDecoder.Comment));
-            Log.Verbose(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
+            _logger.LogDebug(string.Format("Ogg Vorbis bitstream is {0} channel, {1} Hz", channels, sampleRate));
+            _logger.LogDebug(string.Format("Comment: {0}", _oggDecoder.Comment));
+            _logger.LogDebug(string.Format("Encoded by: {0}", _oggDecoder.Vendor));
 
             _waveFormat = new WaveFormat(sampleRate, 16, channels, AudioEncoding.Pcm);
 

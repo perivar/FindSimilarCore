@@ -4,10 +4,11 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using CommonUtils;
 using CommonUtils.Audio;
 using CSCore;
 using CSCore.Codecs.WAV;
-using Serilog;
+using Microsoft.Extensions.Logging;
 
 namespace CSCore.Codecs.LAW
 {
@@ -21,6 +22,7 @@ namespace CSCore.Codecs.LAW
         private bool _disposed;
         private Stream _stream;
         private readonly long _length;
+        private readonly ILogger _logger;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="LawSource" /> class.
@@ -35,6 +37,8 @@ namespace CSCore.Codecs.LAW
                 throw new ArgumentNullException("waveFormat");
             if (!stream.CanRead)
                 throw new ArgumentException("stream is not readable", "stream");
+
+            _logger = ApplicationLogging.CreateLogger<LawSource>();
 
             if (waveFormat.WaveFormatTag != AudioEncoding.MuLaw && waveFormat.WaveFormatTag != AudioEncoding.ALaw)
             {
@@ -91,7 +95,7 @@ namespace CSCore.Codecs.LAW
                 throw new ArgumentException("The specified stream does not contain any data chunks.");
             }
 
-            Log.Verbose(audioFormat.ToString());
+            _logger.LogDebug(audioFormat.ToString());
 
             // set the format identifiers to what this class returns
             waveFormat.BitsPerSample = 16; // originally 4

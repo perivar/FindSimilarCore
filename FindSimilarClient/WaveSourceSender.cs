@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using CSCore;
 using CSCore.Codecs;
 using CommonUtils.Audio;
+using FindSimilarServices;
 
 namespace FindSimilarClient
 {
@@ -510,7 +511,27 @@ namespace FindSimilarClient
                 else
                 {
                     // always pretend that we have a header
-                    input.Position = start - headerBytes.Length;
+                    // except when the requested bytes are less than the header length
+                    if (length < headerBytes.Length)
+                    {
+                        // only send the first bytes from the header
+                        try
+                        {
+                            await output.WriteAsync(headerBytes, 0, (int)length);
+                            await output.FlushAsync();
+                        }
+                        catch (System.Exception e)
+                        {
+                            _logger.LogError(e.Message);
+                        }
+
+                        return;
+                    }
+                    else
+                    {
+                        // set position in the actual stream
+                        input.Position = start - headerBytes.Length;
+                    }
 
                     long toRead = length;
                     try

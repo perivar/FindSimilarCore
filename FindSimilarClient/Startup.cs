@@ -14,6 +14,7 @@ using FindSimilarServices.Fingerprinting;
 using SoundFingerprinting;
 using FindSimilarServices;
 using Microsoft.Extensions.Logging;
+using CommonUtils;
 
 namespace FindSimilarClient
 {
@@ -59,7 +60,7 @@ namespace FindSimilarClient
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
             loggerFactory.AddFile(Configuration.GetSection("Logging"));
-            FindSimilarClient.ApplicationLogging.LoggerFactory = loggerFactory;
+            ApplicationLogging.LoggerFactory = loggerFactory;
             app.UseRequestResponseLogging();
 
             app.UseHttpsRedirection();
