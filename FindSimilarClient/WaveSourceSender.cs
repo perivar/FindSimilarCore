@@ -369,33 +369,6 @@ namespace FindSimilarClient
             }
         }
 
-        private byte[] AddContentRangeAndLengthHeaders(HttpResponse response, IWaveSource input, Range range)
-        {
-            byte[] headerBytes = null;
-
-            // check if the file requires a header
-            if (DoRequireFileHeader(range))
-            {
-                // send header unless it's a two byte request IWaveSource cannot handle
-                headerBytes = SoundIOUtils.GetWaveHeaderBytes(
-                        input.WaveFormat.BitsPerSample == 32 ? true : false,
-                        (ushort)input.WaveFormat.Channels,
-                        (ushort)input.WaveFormat.BitsPerSample,
-                        input.WaveFormat.SampleRate,
-                        (int)input.Length);
-
-                response.Headers.Add(HeaderNames.ContentRange, $"bytes {range.Start}-{range.End + headerBytes.Length}/{range.Total + headerBytes.Length}");
-                response.Headers.Add(HeaderNames.ContentLength, (range.Length + headerBytes.Length).ToString());
-            }
-            else
-            {
-                response.Headers.Add(HeaderNames.ContentRange, $"bytes {range.Start}-{range.End}/{range.Total}");
-                response.Headers.Add(HeaderNames.ContentLength, range.Length.ToString());
-            }
-
-            return headerBytes;
-        }
-
         private static DateTimeOffset RoundDownToWholeSeconds(DateTimeOffset dateTimeOffset)
         {
             var ticksToRemove = dateTimeOffset.Ticks % TimeSpan.TicksPerSecond;
@@ -430,16 +403,6 @@ namespace FindSimilarClient
             // When this standard format specifier is used, the formatting or parsing operation 
             // always uses the invariant culture.
             response.Headers.Add(header, date.ToString("r"));
-        }
-
-        private static bool DoRequireFileHeader(Range range)
-        {
-            // the beginning of a file requires a header
-            if (range.Start == 0 && range.Length > 2)
-            {
-                return true;
-            }
-            return false;
         }
 
         private class Range
