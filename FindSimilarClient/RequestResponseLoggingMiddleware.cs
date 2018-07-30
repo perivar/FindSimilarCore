@@ -26,12 +26,12 @@ namespace FindSimilarClient
         public async Task Invoke(HttpContext context)
         {
 
-            _logger.LogInformation(GetRequestInformation(context.Request));
+            _logger.LogDebug(GetRequestInformation(context.Request));
 
             // Call the _next delegate/middleware in the pipeline
             await _next(context);
 
-            _logger.LogInformation(GetResponseInformation(context.Response));
+            _logger.LogDebug(GetResponseInformation(context.Response));
 
 
             /* 

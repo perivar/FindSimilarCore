@@ -8,7 +8,7 @@ using CommonUtils;
 using CommonUtils.Audio;
 using CSCore;
 using CSCore.Codecs.WAV;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace CSCore.Codecs.ADPCM
 {
@@ -20,11 +20,9 @@ namespace CSCore.Codecs.ADPCM
         private readonly AudioFormat _audioFormat;
         private readonly ReadOnlyCollection<WaveFileChunk> _chunks;
         private readonly Adpcm.Decoder _decoder;
-
         private bool _disposed;
         private Stream _stream;
         private readonly long _length;
-        private readonly ILogger _logger;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AdpcmSource" /> class.
@@ -39,8 +37,6 @@ namespace CSCore.Codecs.ADPCM
                 throw new ArgumentNullException("waveFormat");
             if (!stream.CanRead)
                 throw new ArgumentException("stream is not readable", "stream");
-
-            _logger = ApplicationLogging.CreateLogger<AdpcmSource>();
 
             if (waveFormat.WaveFormatTag != AudioEncoding.Adpcm && waveFormat.WaveFormatTag != AudioEncoding.ImaAdpcm)
             {
@@ -151,7 +147,7 @@ namespace CSCore.Codecs.ADPCM
                 throw new ArgumentException("The specified stream does not contain any data chunks.");
             }
 
-            _logger.LogDebug(audioFormat.ToString());
+            Log.Verbose(audioFormat.ToString());
 
             var decoder = new Adpcm.Decoder();
             decoder.AudioFormat = audioFormat;

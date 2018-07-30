@@ -11,11 +11,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using CommonUtils;
-using Microsoft.Extensions.Logging;
 using CSCore;
 using CSCore.Codecs;
 using CommonUtils.Audio;
 using FindSimilarServices;
+using Serilog;
 
 namespace FindSimilarClient
 {
@@ -29,13 +29,10 @@ namespace FindSimilarClient
 
         private IWaveSource WaveSource { get; set; }
         private string filePath;
-        private readonly ILogger _logger;
 
         private WaveSourceSender(IWaveSource waveSource, string contentType)
             : base(new MemoryStream(), contentType)
         {
-            _logger = ApplicationLogging.CreateLogger<WaveSourceSender>();
-
             if (waveSource == null)
                 throw new ArgumentNullException("waveSource");
 
@@ -45,8 +42,6 @@ namespace FindSimilarClient
         private WaveSourceSender(IWaveSource waveSource, MediaTypeHeaderValue contentType)
             : base(new MemoryStream(), contentType)
         {
-            _logger = ApplicationLogging.CreateLogger<WaveSourceSender>();
-
             if (waveSource == null)
                 throw new ArgumentNullException("waveSource");
 
@@ -101,7 +96,7 @@ namespace FindSimilarClient
 
             if (!File.Exists(filePath))
             {
-                _logger.LogError("FileInfo doesn't exist at URI : {0}", filePath);
+                Log.Error("FileInfo doesn't exist at URI : {0}", filePath);
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
@@ -284,8 +279,8 @@ namespace FindSimilarClient
                 response.Headers.Add(HeaderNames.ContentType, contentType);
                 response.Headers.Add(HeaderNames.ContentDisposition, disposition + $";filename=\"{fileName}\"");
 
-                _logger.LogDebug($"{HeaderNames.ContentType} : {contentType}");
-                _logger.LogDebug($"{HeaderNames.ContentDisposition} : {disposition}");
+                Log.Debug($"{HeaderNames.ContentType} : {contentType}");
+                Log.Debug($"{HeaderNames.ContentDisposition} : {disposition}");
 
                 response.Headers.Add(HeaderNames.AcceptRanges, "bytes");
 
@@ -302,7 +297,7 @@ namespace FindSimilarClient
             }
             catch (System.Exception e)
             {
-                _logger.LogError("Failed adding response headers: {0}", e.Message);
+                Log.Error("Failed adding response headers: {0}", e.Message);
             }
 
             // Send requested file (part(s)) to client ------------------------------------------------
@@ -312,7 +307,7 @@ namespace FindSimilarClient
             if (ranges.Count == 0 || ranges[0] == full)
             {
                 // Return full file.
-                _logger.LogInformation("Return full file : from ({0}) to ({1}) of ({2})", full.Start, full.End, full.Total);
+                Log.Information("Return full file : from ({0}) to ({1}) of ({2})", full.Start, full.End, full.Total);
 
                 response.ContentType = contentType;
 
@@ -326,7 +321,7 @@ namespace FindSimilarClient
                 // Return single part of file.
                 Range r = ranges[0];
 
-                _logger.LogInformation("Return 1 part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
+                Log.Information("Return 1 part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
 
                 response.ContentType = contentType;
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
@@ -347,7 +342,7 @@ namespace FindSimilarClient
                 // Copy multi part range.
                 foreach (Range r in ranges)
                 {
-                    _logger.LogInformation("Return multi part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
+                    Log.Information("Return multi part of file : from ({0}) to ({1}) of ({2})", r.Start, r.End, r.Total);
 
                     // Add multipart boundary and header fields for every range.
                     await response.WriteAsync(CrLf);
@@ -412,7 +407,6 @@ namespace FindSimilarClient
             public long Length;
             public long Total;
 
-            private static ILogger _logger = ApplicationLogging.CreateLogger("WaveSourceSender:Range");
 
             /// <summary>
             /// Construct a byte range.
@@ -451,7 +445,7 @@ namespace FindSimilarClient
                     }
                     catch (System.Exception e)
                     {
-                        _logger.LogError(e.Message);
+                        Log.Error(e.Message);
                     }
                 }
 
@@ -468,7 +462,7 @@ namespace FindSimilarClient
                     }
                     catch (System.Exception e)
                     {
-                        _logger.LogError(e.Message);
+                        Log.Error(e.Message);
                     }
                 }
                 else
@@ -485,7 +479,7 @@ namespace FindSimilarClient
                         }
                         catch (System.Exception e)
                         {
-                            _logger.LogError(e.Message);
+                            Log.Error(e.Message);
                         }
 
                         return;
@@ -516,7 +510,7 @@ namespace FindSimilarClient
                     }
                     catch (System.Exception e)
                     {
-                        _logger.LogError(e.Message);
+                        Log.Error(e.Message);
                     }
                 }
             }

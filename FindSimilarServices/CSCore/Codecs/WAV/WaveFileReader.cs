@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using CommonUtils;
 using CommonUtils.Audio;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace CSCore.Codecs.WAV
 {
@@ -24,8 +24,6 @@ namespace CSCore.Codecs.WAV
         private WaveFormat _waveFormat;
         private readonly DataChunk _dataChunk;
         private readonly bool _closeStream;
-        private readonly ILogger _logger;
-
         public DataChunk DataChunk { get { return _dataChunk; } }
 
         /// <summary>
@@ -49,8 +47,6 @@ namespace CSCore.Codecs.WAV
             if (!stream.CanRead)
                 throw new ArgumentException("stream is not readable");
 
-            _logger = ApplicationLogging.CreateLogger<WaveFileReader>();
-
             _stream = stream;
 
             var reader = new BinaryReader(stream);
@@ -62,11 +58,11 @@ namespace CSCore.Codecs.WAV
                 // read form-type (WAVE etc)
                 var field = new string(reader.ReadChars(4));
 
-                _logger.LogDebug("Processing RIFF. Data size: {0}, field: {1}", chunkSize, field);
+                Log.Verbose("Processing RIFF. Data size: {0}, field: {1}", chunkSize, field);
             }
 
             _chunks = ReadChunks(stream);
-            _logger.LogDebug(GetWaveFileChunkInformation(Chunks));
+            Log.Verbose(GetWaveFileChunkInformation(Chunks));
 
             _dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
             if (_dataChunk == null)

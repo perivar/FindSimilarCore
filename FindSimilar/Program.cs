@@ -118,7 +118,7 @@ namespace FindSimilar
 
         public static int Main(string[] args)
         {
-            /* 
+
             // sox command to test failed audio files
             // sox --i -V6 "FILE"
 
@@ -132,8 +132,6 @@ namespace FindSimilar
             // mp3 file that fails due to frame errors (quantization error)
             var data20 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Britney Spears - 3\03 Britney Spears - 3 (Acapella).mp3", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data20-mp3.wav", data20.Samples, sampleRate);
-
-            return 0;
 
             // wav files with LIST chunk            
             var data18 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Poker Face\FPC_Crash_G16InLite_05.wav", sampleRate, 0, 0);
@@ -149,7 +147,6 @@ namespace FindSimilar
             var data17 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Lynda EDM Drums\Crash.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data17-pad-chunk.wav", data17.Samples, sampleRate);
 
-
             // OGG test files
             var data00 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Avicii - Silhouettes (Melody Remake by EtasDj)\Sweep 1.ogg", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data00-ogg.wav", data00.Samples, sampleRate);
@@ -164,10 +161,11 @@ namespace FindSimilar
             var data03 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\Yeah fxvoice afrpck 16.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data03-adpcm.wav", data03.Samples, sampleRate);
 
-            // @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\clap afrpck 5.wav"
-
             var data04 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data04-adpcm.wav", data04.Samples, sampleRate);
+
+            var data04b = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\clap afrpck 5.wav", sampleRate, 0, 0);
+            SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data04b-adpcm.wav", data04b.Samples, sampleRate);
 
             var data05 = testAudioService.ReadMonoSamplesFromFile(@"C:\Users\pnerseth\Documents\Audacity\bass afrpck 8 - fix.wav", sampleRate, 0, 0);
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data05-adpcm.wav", data05.Samples, sampleRate);
@@ -209,7 +207,6 @@ namespace FindSimilar
             SoundIO.WriteWaveFile(@"C:\Users\pnerseth\My Projects\data15-24bit.wav", data15.Samples, sampleRate);
 
             return 0;
-             */
 
             var app = new CommandLineApplication();
             app.Name = "FindSimilar";
