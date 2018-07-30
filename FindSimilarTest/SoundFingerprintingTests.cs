@@ -8,6 +8,7 @@ using SoundFingerprinting;
 using SoundFingerprinting.Audio;
 using SoundFingerprinting.SoundTools.DrawingTool;
 using CommonUtils.Audio;
+using System.IO;
 
 namespace SoundFingerprinting
 {
@@ -20,19 +21,20 @@ namespace SoundFingerprinting
 
             string pathToSourceFile = @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\!PERIVAR\Clean Bandit - Rather Be Programming\Clean Bandit - Region 1 Slow.wav";
             const int sampleRate = 32000;
+            string DirectoryPath = @"C:\Users\pnerseth\My Projects\test-output";
 
             var audioService = new FindSimilarAudioService();
             AudioSamples data = audioService.ReadMonoSamplesFromFile(pathToSourceFile, sampleRate, 2, 5);
 
-            /*
-            var imageService = new ImageService();
+/* 
+            var imageService = new FindSimilarImageService();
             using (Image image = imageService.GetSignalImage(data.Samples, 2000, 500))
             {
-                image.Save(pathToSourceFile + "_downsampled.png", ImageFormat.Jpeg);
+                image.Save(Path.Combine(DirectoryPath, "_downsampled.png"), ImageFormat.Jpeg);
             }
-            */
 
-            SoundIO.WriteWaveFile(pathToSourceFile + "_resampled.wav", data.Samples, sampleRate);
+ */
+            SoundIO.WriteWaveFile(Path.Combine(DirectoryPath, "_resampled.wav"), data.Samples, sampleRate);
 
         }
     }

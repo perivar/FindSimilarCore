@@ -266,12 +266,13 @@ namespace CSCore.Codecs.OGG
                         samplesRead += cnt;
                     }
                 }
-                catch (System.Exception)
+                catch (System.Exception e)
                 {
+                    Log.Verbose("OggSharpSource: {0}", e.Message);
                 }
             }
 
-            return samplesRead + remainingByteCount;
+            return samplesRead;
         }
 
         /// <summary>
