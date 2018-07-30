@@ -143,7 +143,7 @@ namespace FindSimilarServices
 
             // Get all already processed files stored in the database and store in memory
             // It seems to work well with huge volumes of files (200k)
-            IEnumerable<string> filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.ISRC);
+            IEnumerable<string> filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.Title);
             Log.Information("Database contains {0} already processed files.", filesAlreadyProcessed.Count());
 
             // find the files that has not already been added to the database
