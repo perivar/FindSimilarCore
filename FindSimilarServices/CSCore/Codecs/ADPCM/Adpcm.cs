@@ -273,8 +273,19 @@ namespace CSCore.Codecs.ADPCM
         private static void DecodeAllBlocks(Decoder decoder, int bytesDataSize, BinaryReader reader, BinaryWriter writer)
         {
             // determine total number of blocks
+            int numberOfBlocks = 0;
             double blocksFraction = (double)bytesDataSize / (double)decoder.AudioFormat.BytesPerBlock;
-            int numberOfBlocks = (int)blocksFraction;
+
+            if (blocksFraction < 1)
+            {
+                // we have a partial block
+                // hopefully this gets handled in the decode block methods
+                numberOfBlocks = 1;
+            }
+            else
+            {
+                numberOfBlocks = (int)blocksFraction;
+            }
 
             for (int i = 0; i < numberOfBlocks; i++)
             {
@@ -392,9 +403,17 @@ namespace CSCore.Codecs.ADPCM
             // decode the rest of the samples
             for (int index = 0; index < totalSamples; index += 2)
             {
-                byte nibble = reader.ReadByte();
-                writer.Write(AdpcmMsExpandNibble(ref channel[0], (byte)(nibble >> 4)));
-                writer.Write(AdpcmMsExpandNibble(ref channel[isStereo ? 1 : 0], (byte)(nibble & 0x0f)));
+                try
+                {
+                    byte nibble = reader.ReadByte();
+                    writer.Write(AdpcmMsExpandNibble(ref channel[0], (byte)(nibble >> 4)));
+                    writer.Write(AdpcmMsExpandNibble(ref channel[isStereo ? 1 : 0], (byte)(nibble & 0x0f)));
+                }
+                catch (System.IO.EndOfStreamException)
+                {
+                    Log.Verbose("DecodeAdpcmMs: Reached end of stream - returning.");
+                    break;
+                }
             }
         }
 
@@ -509,18 +528,26 @@ namespace CSCore.Codecs.ADPCM
                     nibbles > 0;
                     nibbles -= 16)
                 {
-                    for (int i = 0; i < 4; i++)
+                    try
                     {
-                        byte buffer = reader.ReadByte();
-                        sample[offset + i * 4 + 0] = AdpcmImaWavExpandNibble(ref channel[0], buffer & 0x0f);
-                        sample[offset + i * 4 + 2] = AdpcmImaWavExpandNibble(ref channel[0], buffer >> 4);
-                    }
+                        for (int i = 0; i < 4; i++)
+                        {
+                            byte buffer = reader.ReadByte();
+                            sample[offset + i * 4 + 0] = AdpcmImaWavExpandNibble(ref channel[0], buffer & 0x0f);
+                            sample[offset + i * 4 + 2] = AdpcmImaWavExpandNibble(ref channel[0], buffer >> 4);
+                        }
 
-                    for (int i = 0; i < 4; i++)
+                        for (int i = 0; i < 4; i++)
+                        {
+                            byte buffer = reader.ReadByte();
+                            sample[offset + i * 4 + 1] = AdpcmImaWavExpandNibble(ref channel[1], buffer & 0x0f);
+                            sample[offset + i * 4 + 3] = AdpcmImaWavExpandNibble(ref channel[1], buffer >> 4);
+                        }
+                    }
+                    catch (System.IO.EndOfStreamException)
                     {
-                        byte buffer = reader.ReadByte();
-                        sample[offset + i * 4 + 1] = AdpcmImaWavExpandNibble(ref channel[1], buffer & 0x0f);
-                        sample[offset + i * 4 + 3] = AdpcmImaWavExpandNibble(ref channel[1], buffer >> 4);
+                        Log.Verbose("DecodeAdpcmImaWav: Reached end of stream - returning.");
+                        break;
                     }
 
                     offset += 16;
@@ -537,9 +564,17 @@ namespace CSCore.Codecs.ADPCM
                     nibbles > 0;
                     nibbles -= 2)
                 {
-                    byte buffer = reader.ReadByte();
-                    writer.Write(AdpcmImaWavExpandNibble(ref channel[0], (buffer) & 0x0f));
-                    writer.Write(AdpcmImaWavExpandNibble(ref channel[0], (buffer) >> 4));
+                    try
+                    {
+                        byte buffer = reader.ReadByte();
+                        writer.Write(AdpcmImaWavExpandNibble(ref channel[0], (buffer) & 0x0f));
+                        writer.Write(AdpcmImaWavExpandNibble(ref channel[0], (buffer) >> 4));
+                    }
+                    catch (System.IO.EndOfStreamException)
+                    {
+                        Log.Verbose("DecodeAdpcmImaWav: Reached end of stream - returning.");
+                        break;
+                    }
                 }
             }
         }

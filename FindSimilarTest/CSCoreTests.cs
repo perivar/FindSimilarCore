@@ -162,6 +162,10 @@ namespace FindSimilarTest
             @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav",
             Path.Combine(fixture.DirectoryPath, "wav-adpcm-2.wav"));
 
+            fixture.FindSimilarAudioService.ConvertToPCM16Bit(
+                @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\bass afrpck 8.wav",
+                Path.Combine(fixture.DirectoryPath, "wav-adpcm-2-original.wav"));
+
             ReadAndWrite("WAV ADPCM files",
             @"C:\Users\pnerseth\Amazon Drive\Documents\Audio\FL Projects\Lady Gaga - Marry The Night (Afrojack Remix) Leo Villagra Remake\clap afrpck 5.wav",
             Path.Combine(fixture.DirectoryPath, "wav-adpcm-3.wav"));

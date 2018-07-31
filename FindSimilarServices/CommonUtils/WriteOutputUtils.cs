@@ -162,6 +162,22 @@ namespace CommonUtils
         }
 
         /// <summary>
+        /// Write matrix to file using CSV formatting
+        /// </summary>
+        /// <param name="data">data</param>
+        /// <param name="filename">filename</param>
+        public static void WriteCSV(byte[] data, string filename)
+        {
+            TextWriter pw = File.CreateText(filename);
+            for (int i = 0; i < data.Length; i++)
+            {
+                pw.Write("{0}", data[i].ToString("F6", CultureInfo.CurrentCulture));
+                pw.Write("\r");
+            }
+            pw.Close();
+        }
+
+        /// <summary>
         /// Writes the Matrix to a comma separated file
         /// </summary>
         /// <param name="filename">the name of the csv file to create, e.g. "C:\\temp\\matrix.csv"</param>

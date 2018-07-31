@@ -166,8 +166,10 @@ namespace CSCore.Codecs.ADPCM
             _waveFormat = waveFormat;
 
             // calculate byte length when 16 bits per sample
-            double duration = ((double)audioFormat.SamplesPerChannel / (double)audioFormat.SampleRate);
-            _length = WaveFormat.SecondsToBytes(duration);
+            // double duration = ((double)audioFormat.SamplesPerChannel / (double)audioFormat.SampleRate);
+            // long length = WaveFormat.SecondsToBytes(duration);
+            // calculating byte length via duration will sometimes be 1 byte off
+            _length = (long)(audioFormat.SamplesPerChannel * waveFormat.Channels * (waveFormat.BitsPerSample / 8));
 
             _stream = stream;
         }
@@ -191,20 +193,45 @@ namespace CSCore.Codecs.ADPCM
         {
             lock (_lockObj)
             {
+                if (buffer == null)
+                    throw new ArgumentNullException("buffer");
+                if (offset < 0)
+                    throw new ArgumentOutOfRangeException("offset");
+                if (count < 0)
+                    throw new ArgumentOutOfRangeException("count");
+
                 CheckForDisposed();
 
-                // check that we are reading the maximum amount of bytes left 
-                // which is a multiple of the blockalign count 
-                // count = (int)Math.Min(count, _audioFormat.DataEndPosition - _stream.Position);
-                // // however the returned buffer need to fit within the passed buffer length
+                // ensure we are comparing apples with apples
+                // Length is byte position in the _resulting_ stream which is almost 4 times 
+                // as large as the actual data length (_audioFormat.DataEndPosition)
+                long remainingBytes = _audioFormat.DataEndPosition - _stream.Position;
+                count = (int)Math.Min(count, remainingBytes);
+
+                if (count <= 0)
+                {
+                    return 0;
+                }
+
+                // however the returned buffer need to fit within the passed buffer length
                 // since adpcm returns approx. 4 times the length of the original stream
                 if (count * 4 > buffer.Length)
                 {
                     count /= 4;
                 }
-                count -= count % _audioFormat.BlockAlign;
-                if (count <= 0)
-                    return 0;
+
+                if (count < _audioFormat.BlockAlign)
+                {
+                    // we have a partial block
+                    Log.Verbose("Partial block found: {0} < block-size {1}", count, _audioFormat.BlockAlign);
+                    // return 0; // Only for testing seeking - must be removed
+                }
+                else
+                {
+                    // check that we are reading the maximum amount of bytes left 
+                    // which is a multiple of the blockalign count 
+                    count -= count % _audioFormat.BlockAlign;
+                }
 
                 var inBuffer = new byte[count];
                 int readCount = _stream.Read(inBuffer, 0, count);
@@ -241,45 +268,24 @@ namespace CSCore.Codecs.ADPCM
         {
             get
             {
-                if (CanSeek)
-                {
-                    long streamBytePos = _stream.Position * WaveFormat.BitsPerSample;
-
-                    /* 
-                    long samplesPerChannel = 0;
-                    switch (WaveFormat.WaveFormatTag)
-                    {
-                        case AudioEncoding.Adpcm:
-                            samplesPerChannel = MSSamplesLength(streamBytePos, _audioFormat.Channels, _audioFormat.BlockAlign, _audioFormat.SamplesPerBlock);
-                            break;
-                        case AudioEncoding.ImaAdpcm:
-                            samplesPerChannel = ImaSamplesLength(streamBytePos, _audioFormat.Channels, _audioFormat.BlockAlign, _audioFormat.SamplesPerBlock);
-                            break;
-                    }
-                    */
-
-                    return streamBytePos;
-                }
-                else
-                {
+                if (_disposed)
                     return 0;
-                }
+                return _stream.Position - _audioFormat.DataStartPosition;
             }
             set
             {
-                lock (_lockObj)
-                {
-                    CheckForDisposed();
+                CheckForDisposed();
 
-                    if (!CanSeek)
-                        throw new InvalidOperationException("AdpcmSource is not seekable.");
-                    if (value > Length || value < 0)
-                        throw new ArgumentOutOfRangeException("value", "The position must not be bigger than the length or less than zero.");
+                if (value > Length || value < 0)
+                    throw new ArgumentOutOfRangeException("value", "The position must not be bigger than the length or less than zero.");
 
-                    long streamBytePos = value / WaveFormat.BitsPerSample;
+                double numBytes = (double)value / (double)_waveFormat.Channels / (double)(_waveFormat.BitsPerSample / 8);
+                double blockNum = numBytes / (double)_audioFormat.SamplesPerBlock;
+                double blockRelativePos = blockNum * (double)_audioFormat.BlockAlign;
+                blockRelativePos -= blockRelativePos % _audioFormat.BlockAlign;
+                double blockActualPos = blockRelativePos + _audioFormat.DataStartPosition;
 
-                    _stream.Position = streamBytePos;
-                }
+                _stream.Position = (long)blockActualPos;
             }
         }
 
