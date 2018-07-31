@@ -143,28 +143,7 @@ namespace CSCore.Codecs.OGG
             _waveFormat = new WaveFormat(sampleRate, 16, channels, AudioEncoding.Pcm);
 
             // store length in bytes according to the new waveformat
-            _length = SecondsToBytes(_oggDecoder.Length);
-        }
-
-        /// <summary>
-        /// Convert position in seconds to byte position according to the new wave format
-        /// </summary>
-        /// <param name="positionInSeconds">position</param>
-        /// <returns>the raw byte position</returns>
-        private long SecondsToBytes(float positionInSeconds)
-        {
-            // 2 bytes per sample
-            return (long)(positionInSeconds * _waveFormat.SampleRate * _waveFormat.Channels * _waveFormat.BytesPerSample);
-        }
-
-        /// <summary>
-        /// Convert byte position to position in seconds according to the new wave format
-        /// </summary>
-        /// <param name="positionInBytes">the raw byte position</param>
-        /// <returns>position in seconds</returns>
-        private float BytesToSeconds(long positionInBytes)
-        {
-            return (float)TimeSpan.FromSeconds((double)positionInBytes / _waveFormat.SampleRate / _waveFormat.Channels / _waveFormat.BytesPerSample).TotalSeconds;
+            _length = WaveFormat.SecondsToBytes(_oggDecoder.Length);
         }
 
         #region Memory Stream methods (not used)
@@ -306,19 +285,19 @@ namespace CSCore.Codecs.OGG
         {
             get
             {
-                return CanSeek ? SecondsToBytes(_oggDecoder.Position) : 0;
+                return CanSeek ? WaveFormat.SecondsToBytes(_oggDecoder.Position) : 0;
             }
             set
             {
                 if (!CanSeek)
                     throw new InvalidOperationException("OggSharpSource is not seekable.");
-                if (value < 0 || value > Length)
-                    throw new ArgumentOutOfRangeException("value");
+                if (value > Length || value < 0)
+                    throw new ArgumentOutOfRangeException("value", "The position must not be bigger than the length or less than zero.");
 
                 // _oggDecoder doesn't support seeking to 0
                 if (value > 0)
                 {
-                    float seconds = BytesToSeconds(value);
+                    float seconds = (float)WaveFormat.BytesToSeconds(value);
                     seconds = Math.Min(seconds, _oggDecoder.Length);
                     _oggDecoder.Position = seconds;
                 }

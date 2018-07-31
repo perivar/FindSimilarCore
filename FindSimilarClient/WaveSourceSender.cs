@@ -172,17 +172,20 @@ namespace FindSimilarClient
             // get the byte length of the source
             // since we are working with the headerless wave source
             // we always need to add the length of the WAV header
+
+            // calculate the excpected total sample count as the header byte method expects this
+            int totalSampleCount = (int) input.Length / (input.WaveFormat.BitsPerSample / 8);
             byte[] headerBytes = SoundIOUtils.GetWaveHeaderBytes(
                     input.WaveFormat.BitsPerSample == 32 ? true : false,
                     (ushort)input.WaveFormat.Channels,
                     (ushort)input.WaveFormat.BitsPerSample,
                     input.WaveFormat.SampleRate,
-                    (int)input.Length);
+                    totalSampleCount);
 
-            long length = WaveSource.Length + headerBytes.Length;
+            long byteLength = WaveSource.Length + headerBytes.Length;
 
             // Prepare some variables. The full Range represents the complete file.
-            Range full = new Range(0, length - 1, length);
+            Range full = new Range(0, byteLength - 1, byteLength);
             List<Range> ranges = new List<Range>();
 
             // Validate and process Range and If-Range headers.
@@ -192,7 +195,7 @@ namespace FindSimilarClient
                 // Range header should match format "bytes=n-n,n-n,n-n...". If not, then return 416.
                 if (!RangeRegex.IsMatch(range))
                 {
-                    response.Headers.Add(HeaderNames.ContentRange, $"bytes */{length}"); // Required in 416.
+                    response.Headers.Add(HeaderNames.ContentRange, $"bytes */{byteLength}"); // Required in 416.
                     response.StatusCode = (int)HttpStatusCode.RequestedRangeNotSatisfiable;
                     return;
                 }
@@ -223,12 +226,12 @@ namespace FindSimilarClient
 
                         if (start == -1)
                         {
-                            start = length - end;
-                            end = length - 1;
+                            start = byteLength - end;
+                            end = byteLength - 1;
                         }
-                        else if (end == -1 || end > length - 1)
+                        else if (end == -1 || end > byteLength - 1)
                         {
-                            end = length - 1;
+                            end = byteLength - 1;
                         }
 
                         // Check if Range is syntactically valid. If not, then return 416.
@@ -238,13 +241,13 @@ namespace FindSimilarClient
                             // 14.16 Content-Range - A server sending a response with status code 416 (Requested range not satisfiable)
                             // SHOULD include a Content-Range field with a byte-range-resp-spec of "*". The instance-length specifies
                             // the current length of the selected resource.  e.g. */length
-                            response.Headers.Add(HeaderNames.ContentRange, $"bytes */{length}"); // Required in 416.
+                            response.Headers.Add(HeaderNames.ContentRange, $"bytes */{byteLength}"); // Required in 416.
                             response.StatusCode = (int)HttpStatusCode.RequestedRangeNotSatisfiable;
                             return;
                         }
 
                         // Add range.                    
-                        ranges.Add(new Range(start, end, length));
+                        ranges.Add(new Range(start, end, byteLength));
                     }
                 }
             }
@@ -314,7 +317,7 @@ namespace FindSimilarClient
                 response.Headers.Add(HeaderNames.ContentRange, $"bytes {full.Start}-{full.End}/{full.Total}");
                 response.Headers.Add(HeaderNames.ContentLength, full.Length.ToString());
 
-                await Range.CopyStream(input, output, length, full.Start, full.Length, headerBytes);
+                await Range.CopyStream(input, output, byteLength, full.Start, full.Length, headerBytes);
             }
             else if (ranges.Count == 1)
             {
@@ -329,7 +332,7 @@ namespace FindSimilarClient
                 response.Headers.Add(HeaderNames.ContentRange, $"bytes {r.Start}-{r.End}/{r.Total}");
                 response.Headers.Add(HeaderNames.ContentLength, r.Length.ToString());
 
-                await Range.CopyStream(input, output, length, r.Start, r.Length, headerBytes);
+                await Range.CopyStream(input, output, byteLength, r.Start, r.Length, headerBytes);
             }
             else
             {
@@ -354,7 +357,7 @@ namespace FindSimilarClient
                     await response.WriteAsync(CrLf);
 
                     // Copy single part range of multi part range.
-                    await Range.CopyStream(input, output, length, r.Start, r.Length, headerBytes);
+                    await Range.CopyStream(input, output, byteLength, r.Start, r.Length, headerBytes);
                 }
 
                 // End with multipart boundary.

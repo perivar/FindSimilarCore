@@ -97,6 +97,5 @@ namespace CommonUtils.Audio
             // Sub-chunk 2 size.
             stream.Write(BitConverter.GetBytes((bitDepth / 8) * totalSampleCount), 0, 4);
         }
-
     }
 }

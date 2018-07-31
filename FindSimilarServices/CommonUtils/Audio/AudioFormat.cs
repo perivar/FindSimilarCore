@@ -17,7 +17,7 @@ namespace CommonUtils.Audio
         private int _samplesPerBlock;
         private int _bytesPerBlock;
         private short _coefficients;
-        private int _samplesPerChannel;
+        private long _samplesPerChannel;
         private long _dataChunkSize;
         private long _dataStartPosition;
         private long _dataEndPosition;
@@ -145,7 +145,7 @@ namespace CommonUtils.Audio
         /// Get number of samples per channel
         /// Used by ADPCM formats
         /// </summary>
-        public virtual int SamplesPerChannel
+        public virtual long SamplesPerChannel
         {
             get { return _samplesPerChannel; }
             protected internal set

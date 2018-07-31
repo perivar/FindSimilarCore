@@ -50,7 +50,6 @@ namespace FindSimilarClient
 
             if (IsMultipartRequest(range))
             {
-                // check https://github.com/aspnet/Mvc/blob/a67d9363e22be8ef63a1a62539991e1da3a6e30e/src/Microsoft.AspNetCore.Mvc.Core/Infrastructure/FileResultExecutorBase.cs
                 response.ContentType = $"multipart/byteranges; boundary={MultipartBoundary}";
             }
             else
@@ -60,17 +59,12 @@ namespace FindSimilarClient
 
             response.Headers.Add("Accept-Ranges", "bytes");
 
-            // check https://github.com/aspnet/Mvc/blob/a67d9363e22be8ef63a1a62539991e1da3a6e30e/src/Microsoft.AspNetCore.Mvc.Core/Infrastructure/FileResultExecutorBase.cs
             if (IsRangeRequest(range))
             {
                 response.StatusCode = (int)HttpStatusCode.PartialContent;
 
                 if (!IsMultipartRequest(range))
                 {
-                    // check https://github.com/dotnet/corefx/blob/master/src/System.Net.Http/src/System/Net/Http/Headers/ContentRangeHeaderValue.cs
-                    // 14.16 Content-Range - A server sending a response with status code 416 (Requested range not satisfiable)
-                    // SHOULD include a Content-Range field with a byte-range-resp-spec of "*". The instance-length specifies
-                    // the current length of the selected resource.  e.g. */length
                     response.Headers.Add("Content-Range", $"bytes {range.Ranges.First().From}-{range.Ranges.First().To}/{length}");
                 }
 

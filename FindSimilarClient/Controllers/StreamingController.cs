@@ -84,27 +84,6 @@ namespace FindSimilarClient.Controllers
              */
         }
 
-        private FileStreamResult StreamAudioV5(string filePath)
-        {
-            IWaveSource waveSource = CodecFactory.Instance.GetCodec(filePath);
-            ISampleSource sampleSource = waveSource.ToSampleSource();
-            IWaveSource ieeeFloatSource = sampleSource.ToWaveSource();
-            return new WaveSourceStreamResult(ieeeFloatSource, new MediaTypeHeaderValue("audio/wav"));
-        }
-
-        private FileStreamResult StreamAudioSampleSource(string filePath)
-        {
-            IWaveSource waveSource = CodecFactory.Instance.GetCodec(filePath);
-            ISampleSource sampleSource = waveSource.ToSampleSource();
-            return new SampleSourceStreamResult(sampleSource, new MediaTypeHeaderValue("audio/wav"));
-        }
-
-        private FileStreamResult StreamAudioWaveSource(string filePath)
-        {
-            IWaveSource waveSource = CodecFactory.Instance.GetCodec(filePath);
-            return new WaveSourceStreamResult(waveSource, new MediaTypeHeaderValue("audio/wav"));
-        }
-
         private FileStreamResult StreamAudioV2(string filePath)
         {
             MemoryStream outputStream = new MemoryStream();
@@ -121,7 +100,7 @@ namespace FindSimilarClient.Controllers
             outputStream.Seek(0, SeekOrigin.Begin);
 
             string contentType = "audio/wav";
-            // return new StreamResult(stream, new MediaTypeHeaderValue(contentType));
+
             return new FileStreamResult(outputStream, new MediaTypeHeaderValue(contentType))
             {
                 EnableRangeProcessing = true
@@ -149,7 +128,6 @@ namespace FindSimilarClient.Controllers
             outputStream.Seek(0, SeekOrigin.Begin);
 
             string contentType = "audio/wav";
-            // return new StreamResult(stream, new MediaTypeHeaderValue(contentType));
             // return new FileStreamResult(outputStream, new MediaTypeHeaderValue(contentType));
             return File(outputStream, contentType, true);
         }
