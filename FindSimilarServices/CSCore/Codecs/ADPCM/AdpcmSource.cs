@@ -224,7 +224,7 @@ namespace CSCore.Codecs.ADPCM
                 {
                     // we have a partial block
                     Log.Verbose("Partial block found: {0} < block-size {1}", count, _audioFormat.BlockAlign);
-                    // return 0; // Only for testing seeking - must be removed
+                    // return 0; // Only for testing seeking - must be commented out
                 }
                 else
                 {
@@ -262,7 +262,7 @@ namespace CSCore.Codecs.ADPCM
         }
 
         /// <summary>
-        ///     Gets or sets the position of the <see cref="RawDataReader" /> in bytes.
+        ///     Gets or sets the position of the resulting stream in bytes.
         /// </summary>
         public long Position
         {
@@ -270,7 +270,15 @@ namespace CSCore.Codecs.ADPCM
             {
                 if (_disposed)
                     return 0;
-                return _stream.Position - _audioFormat.DataStartPosition;
+
+                double actualPosition = _stream.Position - _audioFormat.DataStartPosition;
+
+                double blockActualPos = actualPosition;
+                blockActualPos -= blockActualPos % _audioFormat.BlockAlign;
+                double blockNum = blockActualPos / (double)_audioFormat.BlockAlign;
+                double numSamples = blockNum * (double)_audioFormat.SamplesPerBlock;
+                double numBytes = numSamples * (double)_waveFormat.Channels * (double)(_waveFormat.BitsPerSample / 8);
+                return (long)numBytes;
             }
             set
             {
