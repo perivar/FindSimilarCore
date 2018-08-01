@@ -17,7 +17,7 @@ content-type: application/json
 {
     "name": "sample",
     "time": "Wed, 21 Oct 2015 18:27:50 GMT",
-    "value": "this is the value"
+    "key": "this is the value"
 }
 
 
@@ -26,9 +26,9 @@ PUT http://{{host}}/api/values/5 HTTP/1.1
 content-type: application/json
 
 {
-    "name": "sample",
-    "time": "Wed, 21 Oct 2015 18:27:50 GMT",
-    "value": "this is the value"
+    "name": "sample2",
+    "time": "Thu, 22 Oct 2015 18:27:50 GMT",
+    "key": "this is another value"
 }
 
 

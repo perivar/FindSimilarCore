@@ -29,40 +29,24 @@ namespace FindSimilarClient.Controllers
 
         // POST api/values
         [HttpPost]
-        public HttpResponseMessage Post([FromBody] JObject data)
+        public string Post([FromBody] JObject data)
         {
-            if (data == null)
-                return new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.BadRequest,
-                    ReasonPhrase = "POST body is null"
-                };
+            var name = (string)data["name"];
+            var time = (string)data["time"];
+            var key = (string)data["key"];
 
-            return new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                ReasonPhrase = "Received POST",
-                Content = new StringContent(data.GetValue("value").ToString())
-            };
+            return $"name: {name}, time: {time}, key: {key}";
         }
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public HttpResponseMessage Put(int id, [FromBody] JObject data)
+        public string Put(int id, [FromBody] JObject data)
         {
-            if (data == null)
-                return new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.BadRequest,
-                    ReasonPhrase = "PUT body is null"
-                };
+            var name = (string)data["name"];
+            var time = (string)data["time"];
+            var key = (string)data["key"];
 
-            return new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                ReasonPhrase = "Received PUT",
-                Content = new StringContent(data.GetValue("value").ToString())
-            };
+            return $"name: {name}, time: {time}, key: {key}";
         }
 
         // DELETE api/values/5
