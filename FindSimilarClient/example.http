@@ -1,0 +1,37 @@
+
+@host = localhost:9999
+
+### TEST GET api/values
+GET http://{{host}}/api/values/
+
+
+### TEST GET api/values/5
+
+GET http://{{host}}/api/values/5
+
+
+### TEST POST api/values
+POST http://{{host}}/api/values HTTP/1.1
+content-type: application/json
+
+{
+    "name": "sample",
+    "time": "Wed, 21 Oct 2015 18:27:50 GMT",
+    "value": "this is the value"
+}
+
+
+### TEST PUT api/values/5
+PUT http://{{host}}/api/values/5 HTTP/1.1
+content-type: application/json
+
+{
+    "name": "sample",
+    "time": "Wed, 21 Oct 2015 18:27:50 GMT",
+    "value": "this is the value"
+}
+
+
+### TEST DELETE api/values/5
+DELETE http://{{host}}/api/values/5 HTTP/1.1
+

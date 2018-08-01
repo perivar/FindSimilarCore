@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CommonUtils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.Extensions.Logging;
@@ -25,37 +26,34 @@ namespace FindSimilarClient
 
         public async Task Invoke(HttpContext context)
         {
+            _logger.LogDebug(await FormatRequest(context.Request));
 
-            _logger.LogDebug(GetRequestInformation(context.Request));
+            // Copy a pointer to the original response body stream
+            var originalBodyStream = context.Response.Body;
 
-            // Call the _next delegate/middleware in the pipeline
-            await _next(context);
+            // Create a new memory stream...
+            using (var responseBody = new MemoryStream())
+            {
+                // ...and use that for the temporary response body
+                context.Response.Body = responseBody;
 
-            _logger.LogDebug(GetResponseInformation(context.Response));
+                // Continue down the Middleware pipeline, eventually returning to this class
+                await _next(context);
 
+                // Format the response from the server
+                _logger.LogDebug(await FormatResponse(context.Response));
 
-            /* 
-                _logger.LogInformation(await FormatRequest(context.Request));
-
-                var originalBodyStream = context.Response.Body;
-
-                using (var responseBody = new MemoryStream())
-                {
-                    context.Response.Body = responseBody;
-
-                    await _next(context);
-
-                    _logger.LogInformation(await FormatResponse(context.Response));
-
-                    //Because you change the response body which is not allowed on a 204.
-                    if (context.Response.StatusCode != 204)
-                        await responseBody.CopyToAsync(originalBodyStream);
-                }
-             */
+                // Changing the response body is not allowed on a 204 ?!
+                // if (context.Response.StatusCode != 204)
+                await responseBody.CopyToAsync(originalBodyStream);
+            }
         }
 
-        private string GetRequestInformation(HttpRequest request)
+        private async Task<string> FormatRequest(HttpRequest request)
         {
+            // This line allows us to set the reader for the request back at the beginning of its stream.
+            request.EnableRewind();
+
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("-------HTTP REQUEST INFORMATION-------");
             sb.AppendLine($"{request.Scheme} {request.Host}{request.Path} {request.QueryString}");
@@ -66,10 +64,37 @@ namespace FindSimilarClient
                 sb.AppendLine($"{key}={request.Headers[key]}");
             }
 
+            // We now need to read the request stream. 
+            // First, we create a new byte[] with the same length as the request stream...
+            // interestingly enough I first didnt get the tutorials solution working. 
+            // I had the POST problems like a lot of others. Then stumbled upon your comment. 
+            // I already had your proposal
+            //    var buffer = new byte[Convert.ToInt32(request.Body.Length)];
+            // implemented, but it didnt work for me. Instead the “old” way worked for POST requests
+            //    var buffer = new byte[Convert.ToInt32(request.ContentLength)];
+            var buffer = new byte[Convert.ToInt32(request.ContentLength)];
+
+            // ...Then we copy the entire request stream into the new buffer.
+            await request.Body.ReadAsync(buffer, 0, buffer.Length);
+
+            // We convert the byte[] into a string using UTF8 encoding...
+            var bodyAsText = Encoding.UTF8.GetString(buffer);
+
+            // We need to reset the reader for the request so that we can read it later.
+            // i.e. request.Body.Position = 0;
+            // request.Body.Seek(0, SeekOrigin.Begin);
+            request.Body.Position = 0;
+
+            if (!string.IsNullOrEmpty(bodyAsText))
+            {
+                sb.AppendLine("-------HTTP REQUEST BODY -------");
+                sb.AppendLine($"{bodyAsText}");
+            }
+
             return sb.ToString();
         }
 
-        private string GetResponseInformation(HttpResponse response)
+        private async Task<string> FormatResponse(HttpResponse response)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("-------HTTP RESPONSE INFORMATION-------");
@@ -81,28 +106,47 @@ namespace FindSimilarClient
                 sb.AppendLine($"{key}={response.Headers[key]}");
             }
 
+            // We need to read the response stream from the beginning...
+            response.Body.Seek(0, SeekOrigin.Begin);
+
+            // ...and copy it
+            const int MAX_BYTES_TO_READ = 50;
+            byte[] buffer = new byte[MAX_BYTES_TO_READ];
+            int bytesRead;
+            using (var memStream = new MemoryStream())
+            {
+                // await response.Body.CopyToAsync(memStream);
+
+                // only read the first bytes
+                if ((bytesRead = await response.Body.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await memStream.WriteAsync(buffer, 0, bytesRead);
+                    await memStream.FlushAsync();
+                }
+
+                buffer = memStream.ToArray();
+            }
+
+            // var bodyAsText = await new StreamReader(response.Body).ReadToEndAsync();
+            // dump the first bytes as a hex editor output
+            // see http://illegalargumentexception.blogspot.com/2008/04/c-file-hex-dump-application.html
+
+            var bodyAsText = (buffer.Length > 0) ? StringUtils.ToHexAndAsciiString(buffer, false) : null;
+
+            // get the body byte length
+            long byteLength = response.Body.Length;
+
+            // We need to reset the reader for the response so that the client can read it.
+            response.Body.Seek(0, SeekOrigin.Begin);
+
+            if (!string.IsNullOrEmpty(bodyAsText))
+            {
+                sb.AppendLine("-------HTTP RESPONSE BODY -------");
+                sb.AppendLine($"Showing first {MAX_BYTES_TO_READ} of total {byteLength} bytes.");
+                sb.AppendLine($"{bodyAsText}");
+            }
+
             return sb.ToString();
-        }
-
-        private async Task<string> FormatRequest(HttpRequest request)
-        {
-            var body = request.Body;
-            request.EnableRewind();
-
-            var buffer = new byte[Convert.ToInt32(request.ContentLength)];
-            await request.Body.ReadAsync(buffer, 0, buffer.Length);
-            var bodyAsText = Encoding.UTF8.GetString(buffer);
-            request.Body.Position = 0;
-            return $"{request.Scheme} {request.Host}{request.Path} {request.QueryString} {bodyAsText}";
-        }
-
-        private async Task<string> FormatResponse(HttpResponse response)
-        {
-            response.Body.Seek(0, SeekOrigin.Begin);
-            var text = await new StreamReader(response.Body).ReadToEndAsync();
-            response.Body.Seek(0, SeekOrigin.Begin);
-
-            return $"Response {text}";
         }
     }
 }
