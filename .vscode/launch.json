@@ -115,14 +115,64 @@
                 "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects",
                 "-v",
                 "5",
-                // "-s",
-                // "30",
+                "-s",
+                "30",
                 "-l",
                 "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
                 "-d",
                 "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
                 "--debug",
                 "C:\\Users\\pnerseth\\My Projects\\tmp-images"
+            ],
+            "cwd": "${workspaceFolder}/FindSimilar",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "DAW FindSimilar (FULL SCAN)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "args": [
+                "scan",
+                "H:\\SAMPLES\\ACID LOOPS & SAMPLES",
+                // "-s",
+                // "30",
+                "-l",
+                "D:\\Development Projects\\Own Projects\\findsimilar.log",
+                "-d",
+                "D:\\Development Projects\\Own Projects\\fingerprint.db"
+            ],
+            "cwd": "${workspaceFolder}/FindSimilar",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "DAW FindSimilar (FULL SCAN) DEBUG",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "args": [
+                "scan",
+                "H:\\SAMPLES\\ACID LOOPS & SAMPLES",
+                "-v",
+                "5",
+                // "-s",
+                // "30",
+                "-l",
+                "D:\\Development Projects\\Own Projects\\findsimilar.log",
+                "-d",
+                "D:\\Development Projects\\Own Projects\\fingerprint.db",
+                "--debug",
+                "D:\\Development Projects\\Own Projects\\tmp-images"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
