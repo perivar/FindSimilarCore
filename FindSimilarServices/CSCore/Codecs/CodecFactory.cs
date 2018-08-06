@@ -55,6 +55,10 @@ namespace CSCore.Codecs
                          res.Dispose();
                          res = new LawSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
                          break;
+                     case 0x0055: // MpegLayer3
+                         res.Dispose();
+                         res = new NLayerSource(s).ToWaveSource();
+                         break;
                      case 0x674f: // OGG_VORBIS_MODE_1 "Og" Original stream compatible
                      case 0x676f: // OGG_VORBIS_MODE_1_PLUS "og" Original stream compatible
                      case 0x6750: // OGG_VORBIS_MODE_2 "Pg" Have independent header
@@ -69,8 +73,8 @@ namespace CSCore.Codecs
                  }
              }
              return res;
-         },
-             "wav", "wave"));
+         }, "wav", "wave", "aiff", "aif" // some aiff files have the wrong extension, so try riff container for them as well 
+             ));
             Register("flac", new CodecFactoryEntry(s => new FlacFile(s),
                 "flac", "fla"));
             Register("aiff", new CodecFactoryEntry(s => new AiffReader(s),

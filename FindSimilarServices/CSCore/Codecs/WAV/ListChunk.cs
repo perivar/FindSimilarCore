@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using CommonUtils;
 
 namespace CSCore.Codecs.WAV
@@ -56,7 +57,11 @@ namespace CSCore.Codecs.WAV
                         // ensure the text size is word aligned (2 bytes)
                         infoValueChunkSize += infoValueChunkSize % 2;
 
-                        var infoValue = new String(reader.ReadChars((int)infoValueChunkSize));
+                        // always read binary text as bytes and then create a string
+                        // otherwise (e.g. by using reader.ReadChars() you can get a error like:
+                        // The output char buffer is too small to contain the decoded characters, encoding 'Unicode (UTF-8)'
+                        var bytes = reader.ReadBytes((int)infoValueChunkSize);
+                        var infoValue = ASCIIEncoding.ASCII.GetString(bytes);
 
                         // remove the non printable characters
                         infoValue = StringUtils.RemoveNonAsciiCharactersFast(infoValue);

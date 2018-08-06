@@ -142,8 +142,8 @@ namespace SoundFingerprinting
                     var mapper = BsonMapper.Global;
                     mapper.Entity<SubFingerprintDTO>()
                     .Id(x => x.SubFingerprintId) // set your POCO document Id                 
-                    // .Ignore(x => x.HashBins); // don't use the hashbin element,rather a separate table
-                    .Ignore(x => x.Hashes) // don't use the hashes dictionary
+                    // .Ignore(x => x.HashBins) // don't use the hashbin element,rather a separate table
+                    // .Ignore(x => x.Hashes) // don't use the hashes dictionary
                     ;
                 }
                 catch (System.Exception e)
@@ -194,13 +194,11 @@ namespace SoundFingerprinting
 
             // then insert the HashBin property into a separate table 
             // note: this makes the database significantly larger
-            /*
             foreach (var dto in dtos)
             {
                 // insert each hash as a separate object
-                InsertHashBins(dto.HashBins, dto.SubFingerprintId, (string)trackReference.Id);
+                InsertHashBinsToSeparateTable(dto.HashBins, dto.SubFingerprintId, (string)trackReference.Id);
             }
-            */
         }
 
         public IModelReference InsertTrack(TrackData track)
@@ -231,11 +229,19 @@ namespace SoundFingerprinting
             return results.Select(TrackDataDTO.CopyToTrackData).ToList();
         }
 
+        public IEnumerable<string> ReadAllTrackFilePaths()
+        {
+            // get track collection
+            var col = db.GetCollection<TrackDataDTO>("tracks");
+            var results = col.Find(LiteDB.Query.All()).Select(x => x.Title);
+            return results;
+        }
+
         public IList<TrackData> ReadAllTracks(int skip, int limit)
         {
             // get track collection
             var col = db.GetCollection<TrackDataDTO>("tracks");
-            
+
             // get last added X objects of the collection
             var results = col.Find(LiteDB.Query.All(LiteDB.Query.Descending), skip, limit);
 
@@ -274,11 +280,11 @@ namespace SoundFingerprinting
             // return ReadSubFingerprintDataByUniqueMatches(hashBins);
 
             // return matches using the threshold, ignoring the hashtable position
-            return ReadSubFingerprintDataByHashBucketsWithThreshold(hashBins, config.ThresholdVotes);
+            // return ReadSubFingerprintDataByHashBucketsWithThreshold(hashBins, config.ThresholdVotes);
 
             // return matches using the threshold, ignoring or using the hashtable position
-            // bool ignoreHashTableIndex = false;
-            // return ReadSubFingerprintDataByHashBucketsWithThresholdSeparateTable(hashBins, config.ThresholdVotes, ignoreHashTableIndex);
+            bool ignoreHashTableIndex = true;
+            return ReadSubFingerprintDataByHashBucketsWithThresholdSeparateTable(hashBins, config.ThresholdVotes, ignoreHashTableIndex);
         }
 
         public ISet<SubFingerprintData> ReadSubFingerprints(IEnumerable<int[]> hashes, QueryConfiguration config)

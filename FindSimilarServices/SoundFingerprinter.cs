@@ -139,19 +139,31 @@ namespace FindSimilarServices
                 Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
                 .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()));
 
-            Log.Information("Found {0} files in scan directory.", filesAll.Count());
+            int filesAllTotalCount = filesAll.Count();
+            Log.Information("Found {0} files in scan directory.", filesAllTotalCount);
 
+            Log.Information("Please wait while we are reading the tracks from the database ...");
             // Get all already processed files stored in the database and store in memory
             // It seems to work well with huge volumes of files (200k)
-            IEnumerable<string> filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.Title);
-            Log.Information("Database contains {0} already processed files.", filesAlreadyProcessed.Count());
+            IEnumerable<string> filesAlreadyProcessed = null;
+            if (modelService is FindSimilarLiteDBService)
+            {
+                filesAlreadyProcessed = ((FindSimilarLiteDBService)modelService).ReadAllTrackFilePaths();
+            }
+            else
+            {
+                filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.Title);
+            }
 
-            // find the files that has not already been added to the database
-            List<string> filesRemaining = filesAll.Except(filesAlreadyProcessed).ToList();
-            Log.Information("Found {0} files remaining in scan directory to be processed.", filesRemaining.Count);
 
-            int filesCounter = 0;
             int filesAllCounter = filesAlreadyProcessed.Count();
+            Log.Information("Database contains {0} already processed files.", filesAllCounter);
+
+            Log.Information("Please wait while we are finding tracks that has not already been added to the database ...");
+            // find the files that has not already been added to the database
+            IEnumerable<string> filesRemaining = filesAll.Except(filesAlreadyProcessed);
+            int filesRemainingTotalCount = filesRemaining.Count();
+            Log.Information("Found {0} files remaining in scan directory to be processed.", filesRemainingTotalCount);
 
             var options = new ParallelOptions();
 #if DEBUG
@@ -159,6 +171,7 @@ namespace FindSimilarServices
             options.MaxDegreeOfParallelism = 1;
             Log.Debug("Running in single-threaded mode!");
 #endif
+            int filesRemainingCounter = 0;
             Parallel.ForEach(filesRemaining, options, file =>
             {
                 var fileInfo = new FileInfo(file);
@@ -193,9 +206,9 @@ namespace FindSimilarServices
                     {
                         // Threadsafe increment
                         // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
-                        var filesCounterNow = Interlocked.Increment(ref filesCounter);
+                        var filesCounterNow = Interlocked.Increment(ref filesRemainingCounter);
                         var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
-                        Log.Information("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesCounter, filesRemaining.Count, filesAllCounter, filesAll.Count(), Thread.CurrentThread.ManagedThreadId);
+                        Log.Information("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesRemainingCounter, filesRemainingTotalCount, filesAllCounter, filesAllTotalCount, Thread.CurrentThread.ManagedThreadId);
                     }
                 }
                 else
