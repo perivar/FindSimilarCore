@@ -135,9 +135,12 @@ namespace FindSimilarServices
             var stopWatch = new DebugTimer();
             stopWatch.Start();
 
-            IEnumerable<string> filesAll =
+            // use List<string> instead of IEnumerable<string> to force iteration
+            // and avoid iterating twice due to the count() and the foreach
+
+            List<string> filesAll =
                 Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
-                .Where(f => extensions.Contains(Path.GetExtension(f).ToLower()));
+                .Where(f => extensions.Contains(Path.GetExtension(f).ToLower())).ToList();
 
             int filesAllTotalCount = filesAll.Count();
             Log.Information("Found {0} files in scan directory.", filesAllTotalCount);
@@ -145,14 +148,14 @@ namespace FindSimilarServices
             Log.Information("Please wait while we are reading the tracks from the database ...");
             // Get all already processed files stored in the database and store in memory
             // It seems to work well with huge volumes of files (200k)
-            IEnumerable<string> filesAlreadyProcessed = null;
+            List<string> filesAlreadyProcessed = null;
             if (modelService is FindSimilarLiteDBService)
             {
-                filesAlreadyProcessed = ((FindSimilarLiteDBService)modelService).ReadAllTrackFilePaths();
+                filesAlreadyProcessed = ((FindSimilarLiteDBService)modelService).ReadAllTrackFilePaths().ToList();
             }
             else
             {
-                filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.Title);
+                filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.Title).ToList();
             }
 
 
@@ -161,7 +164,7 @@ namespace FindSimilarServices
 
             Log.Information("Please wait while we are finding tracks that has not already been added to the database ...");
             // find the files that has not already been added to the database
-            IEnumerable<string> filesRemaining = filesAll.Except(filesAlreadyProcessed);
+            List<string> filesRemaining = filesAll.Except(filesAlreadyProcessed).ToList();
             int filesRemainingTotalCount = filesRemaining.Count();
             Log.Information("Found {0} files remaining in scan directory to be processed.", filesRemainingTotalCount);
 
