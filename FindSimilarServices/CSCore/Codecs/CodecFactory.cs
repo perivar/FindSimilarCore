@@ -73,7 +73,7 @@ namespace CSCore.Codecs
                  }
              }
              return res;
-         }, "wav", "wave", "aiff", "aif" // some aiff files have the wrong extension, so try riff container for them as well 
+         }, "wav", "wave" //, "aiff", "aif" // some aiff files have the wrong extension, so try riff container for them as well 
              ));
             Register("flac", new CodecFactoryEntry(s => new FlacFile(s),
                 "flac", "fla"));
