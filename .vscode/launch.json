@@ -31,6 +31,33 @@
             }
         },
         {
+            "name": "DAW .NET Core Launch (Chrome)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-webclient",
+            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.1/win-x64/FindSimilarClient.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/FindSimilarClient",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "launchBrowser": {
+                "enabled": true,
+                "args": "${auto-detect-url}",
+                "windows": {
+                    "command": "cmd.exe",
+                    "args": "/C start \"\" \"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe\" \"http://localhost:9999\""
+                }
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://*:9999",
+                "FingerprintDatabase": "D:\\Development Projects\\Own Projects\\fingerprint.db"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
             "name": "FindSimilar (SCAN)",
             "type": "coreclr",
             "request": "launch",
