@@ -263,5 +263,5 @@ __pycache__/
 node_modules
 solution-explorer
 debug
-/Logs
-/wwwroot/files
+**/Logs/
+**/wwwroot/files/

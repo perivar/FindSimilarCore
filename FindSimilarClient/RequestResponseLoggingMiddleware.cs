@@ -13,6 +13,8 @@ namespace FindSimilarClient
 {
     public class RequestResponseLoggingMiddleware
     {
+        const int MAX_BYTES_TO_READ = 50;
+
         private readonly RequestDelegate _next;
         private readonly ILogger _logger;
 
@@ -72,15 +74,18 @@ namespace FindSimilarClient
             //    var buffer = new byte[Convert.ToInt32(request.Body.Length)];
             // implemented, but it didnt work for me. Instead the “old” way worked for POST requests
             //    var buffer = new byte[Convert.ToInt32(request.ContentLength)];
-            var buffer = new byte[Convert.ToInt32(request.ContentLength)];
 
-            // ...Then we copy the entire request stream into the new buffer.
+            // var buffer = new byte[Convert.ToInt32(request.ContentLength)];
+            int length = Math.Min(Convert.ToInt32(request.ContentLength), MAX_BYTES_TO_READ);
+            var buffer = new byte[length];
+
+            // ... copy the request stream into the new buffer.
             await request.Body.ReadAsync(buffer, 0, buffer.Length);
 
-            // We convert the byte[] into a string using UTF8 encoding...
+            // we convert the byte[] into a string using UTF8 encoding...
             var bodyAsText = Encoding.UTF8.GetString(buffer);
 
-            // We need to reset the reader for the request so that we can read it later.
+            // we need to reset the reader for the request so that we can read it later.
             // i.e. request.Body.Position = 0;
             // request.Body.Seek(0, SeekOrigin.Begin);
             request.Body.Position = 0;
@@ -106,11 +111,10 @@ namespace FindSimilarClient
                 sb.AppendLine($"{key}={response.Headers[key]}");
             }
 
-            // We need to read the response stream from the beginning...
+            // we need to read the response stream from the beginning...
             response.Body.Seek(0, SeekOrigin.Begin);
 
             // ...and copy it
-            const int MAX_BYTES_TO_READ = 50;
             byte[] buffer = new byte[MAX_BYTES_TO_READ];
             int bytesRead;
             using (var memStream = new MemoryStream())
@@ -136,7 +140,7 @@ namespace FindSimilarClient
             // get the body byte length
             long byteLength = response.Body.Length;
 
-            // We need to reset the reader for the response so that the client can read it.
+            // we need to reset the reader for the response so that the client can read it.
             response.Body.Seek(0, SeekOrigin.Begin);
 
             if (!string.IsNullOrEmpty(bodyAsText))

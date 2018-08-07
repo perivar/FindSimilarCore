@@ -48,7 +48,8 @@ namespace FindSimilarClient.Controllers
                 }
             }
 
-            return this.Ok();
+            // return this.Ok();
+            return Json("Success.");
         }
     }
 }

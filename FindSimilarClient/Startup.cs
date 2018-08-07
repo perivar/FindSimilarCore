@@ -60,6 +60,8 @@ namespace FindSimilarClient
             app.UseStaticFiles();
             app.UseCookiePolicy();
 
+            app.UseCors(builder => builder.AllowAnyOrigin().AllowCredentials().AllowAnyHeader().AllowAnyMethod());
+
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
