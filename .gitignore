@@ -263,4 +263,5 @@ __pycache__/
 node_modules
 solution-explorer
 debug
-/FindSimilarClient/Logs
+/Logs
+/wwwroot/files

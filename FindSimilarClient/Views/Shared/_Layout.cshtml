@@ -32,11 +32,26 @@
                 <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Home" asp-action="About">About</a></li>
                 <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Home" asp-action="Contact">Contact</a></li>
             </ul>
+            <ul class="nav navbar-nav flex-row mr-auto">
+                <li class="nav-item">
+                    <form class="form-inline my-2 my-lg-0" asp-area="" asp-controller="Home" asp-action="Index" method="get">
+                        <input id="Query" name="Query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                    </form>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav flex-row mr-auto">
+                <li class="nav-item">
+                    <div class="form-group inputDnD my-sm-0">
+                        <label class="sr-only" for="inputFile">File Upload</label>
+                        <input type="file" class="form-control-file text-muted" id="inputFile" accept="audio/*" onchange="readUrl(this)" data-title="Drag and drop audio file">
+                    </div>
+                </li>                    
+                <li class="nav-item">
+                    <button type="button" class="btn btn-outline-secondary ml-2 my-2 my-sm-0" onclick="document.getElementById('inputFile').click()">Add File</button>
+                </li>                    
+            </ul>
         </div>   
-            <form class="form-inline my-2 my-lg-0" asp-area="" asp-controller="Home" asp-action="Index" method="get">
-                <input id="Query" name="Query" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-            </form>
     </nav>
 
     <partial name="_CookieConsentPartial" />
