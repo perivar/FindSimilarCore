@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FindSimilarClient.Controllers
 {
     [Produces("application/json")]
-    [Route("api/files")]
+    [Route("api/[controller]")]
     public class FilesController : Controller
     {
         private readonly IHostingEnvironment _hostingEnvironment;
@@ -20,6 +20,7 @@ namespace FindSimilarClient.Controllers
             this._hostingEnvironment = hostingEnvironment;
         }
 
+        // POST /api/files/upload
         [HttpPost]
         [Route("upload")]
         public async Task<IActionResult> UploadFilesAsyncActionResult(List<IFormFile> files)

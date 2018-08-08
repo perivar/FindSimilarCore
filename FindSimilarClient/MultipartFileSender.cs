@@ -478,7 +478,6 @@ namespace FindSimilarClient
             /// <returns>True if the given accept header accepts the given value.</returns>
             public static bool Accepts(string acceptHeader, string toAccept)
             {
-                // string[] acceptValues = Regex.Split(acceptHeader, @"\s*(,|;)\s*");
                 string[] acceptValues = AcceptHeaderRegex.Split(acceptHeader);
 
                 Array.Sort(acceptValues);
@@ -497,7 +496,6 @@ namespace FindSimilarClient
             /// <returns>True if the given match header matches the given value.</returns>
             public static bool Matches(string matchHeader, string toMatch)
             {
-                // string[] matchValues = Regex.Split(matchHeader, @"\s*,\s*");
                 string[] matchValues = MatchHeaderRegex.Split(matchHeader);
                 Array.Sort(matchValues);
 
