@@ -48,8 +48,23 @@ namespace FindSimilarClient.Controllers
                 }
             }
 
-            // return this.Ok();
-            return Json("Success.");
+            // if we are calling this methods from a jquery $.ajax call, specifying dataType: "json" 
+            // and using the deferred execution method .done() and.fail(),  
+            // we need to ensure this methods returns what the ajax call expect of dataType,
+            // otherwise it will fail, even if this method returns OK().
+            // So if the ajax code contains:
+            // dataType: "json"
+            // In this case jQuery:
+            // Evaluates the response as JSON and returns a JavaScript object. […] 
+            // The JSON data is parsed in a strict manner; any malformed JSON is rejected 
+            // and a parse error is thrown. 
+            // […] an empty response is also rejected; 
+            // the server should return a response of null or {} instead.
+
+            // therefore force the whole controller to always use json 
+            // [Produces("application/json")]
+            // and return some text
+            return Ok("Success");
         }
     }
 }
