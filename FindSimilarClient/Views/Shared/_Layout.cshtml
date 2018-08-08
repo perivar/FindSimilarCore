@@ -18,7 +18,7 @@
     @RenderSection("Head", false)
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light">
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
         <div class="navbar-header">
             <button type="button" class="navbar-toggler" data-toggle="collapse" data-target=".navbar-collapse">
                 <span class="sr-only">Toggle navigation</span>
@@ -44,25 +44,21 @@
                 <li class="nav-item">
                     <div class="form-group inputDnD my-sm-0">
                         <label class="sr-only" for="inputFile">File Upload</label>
-                        <input type="file" class="form-control-file text-muted" id="inputFile" accept="audio/*" onchange="readUrl(this)" data-title="Drag and drop audio file">
+                        <input type="file" class="form-control-file text-success" id="inputFile" accept="audio/*" onchange="readUrl(this)" data-title="Drag and drop audio file">
                     </div>
                 </li>                    
                 <li class="nav-item">
-                    <button type="button" class="btn btn-outline-secondary ml-2 my-2 my-sm-0" onclick="document.getElementById('inputFile').click()">Add File</button>
+                    <button type="button" class="btn btn-outline-success ml-2 my-2 my-sm-0" onclick="document.getElementById('inputFile').click()">Add File</button>
                 </li>                    
             </ul>
         </div>   
     </nav>
 
     <partial name="_CookieConsentPartial" />
-        
-    <div class="container body-content">
+    
+    <main role="main" class="container mt-4 pt-4">
         @RenderBody()
-        <hr />
-        <footer>
-            <p>&copy; 2018 - FindSimilarClient</p>
-        </footer>
-    </div>
+    </main>
 
     <environment include="Development">
         <script src="~/js/vendor.min.js"></script>

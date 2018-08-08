@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="/css/stickyaudioplayer.css">  
 }
 
-<div class="table-responsive-xl">  
+<div class="table-responsive-sm">  
 <table id="data" class="table table-sm">
-    <thead class="thead-light">
+    <thead>
         <tr>
             <th scope="col">#</th>
             <th scope="col">File</th>
@@ -60,10 +60,27 @@
     </form>
 </div>
 
-<input type="button" id="goto_first" class="btn btn-primary btn-sm" value="first">
+<!-- <input type="button" id="goto_first" class="btn btn-primary btn-sm" value="first">
 <input type="button" id="goto_prev" class="btn btn-primary btn-sm" value="prev">
 <input type="button" id="goto_next" class="btn btn-primary btn-sm" value="next">
-<input type="button" id="goto_last" class="btn btn-primary btn-sm" value="last">
+<input type="button" id="goto_last" class="btn btn-primary btn-sm" value="last"> -->
+
+<!-- <nav class="navbar navbar-dark bg-dark">
+    <div class="card text-white bg-dark fixed-bottom">
+        <div class="card-header" id="headingOne" style="cursor: pointer" data-toggle="collapse" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            <div class="card-title">
+                <i class="fas fa-headphones-alt"></i>&nbsp;&nbsp;Audio Player
+            </div>
+        </div>
+        <div id="collapseOne" class="collapse" aria-labelledby="headingOne">
+            <div class="card-body">
+                <div id="waveform"></div>
+            </div>
+        </div>
+    </div>
+</nav> -->
+
+<div class="bg-dark fixed-bottom" id="waveform"></div>
 
 
 @section Scripts { 
@@ -71,7 +88,7 @@
     Javascripts section
     *@
 
-<script src="/js/stickyaudioplayer.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/2.0.6/wavesurfer.min.js"></script>
 <script type="text/javascript">
 
 // hide edit area
@@ -84,19 +101,21 @@ var tableRows = $('#data tbody tr');
 // variable that holds the window object
 var w = $(window);
 
-var stickyAudioPlayer; // declare it outside to use methods after
-$(document).ready(function()
-{
-    stickyAudioPlayer = $('body').stickyAudioPlayer(
-    {
-        url:       '',
-        position:  'bottom', //'bottom'|'top'|'inline'
-        text:      'No Sounds Loaded',
-        image:     '',
-        volume:    40,
-        repeat:    false,
-    }
-    );
+var wavesurfer = WaveSurfer.create({
+    container: '#waveform',
+    // barWidth: 1,
+    waveColor: '#aecfe3',
+    progressColor: '#f48a23',
+    cursorColor: '#f27d0c',
+    // cursorWidth: 2,
+    height: 50,
+    hideScrollbar: true,
+    // minPxPerSec: 1,
+    // normalize: true
+});
+
+wavesurfer.on('ready', function () {
+    wavesurfer.play();
 });
 
 function highlightRow(tableRowIndex) 
@@ -150,16 +169,21 @@ function playRow(tableRowIndex)
 
         // and play
         if (audioPlayer.paused) {
+            wavesurfer.load(audioPlayer.src);
             // audioPlayer.play();
             SetAudioPlayerIcon(audioPlayerIcon, true);
-
+            
             // and add to sticky audio player as well            
-            stickyAudioPlayer.stop();
-            stickyAudioPlayer.changeAudio(audioPlayer.src, audioPlayer.title);
-            stickyAudioPlayer.play();
+            // stickyAudioPlayer.stop();
+            // stickyAudioPlayer.changeAudio(audioPlayer.src, audioPlayer.title);
+            // stickyAudioPlayer.play();
 
             // add event listener for the ended event
-            stickyAudioPlayer.player.on('ended', function() {
+            // stickyAudioPlayer.player.on('ended', function() {
+                // SetAudioPlayerIcon(audioPlayerIcon, false);
+            // });
+
+            wavesurfer.on('finish', function () {
                 SetAudioPlayerIcon(audioPlayerIcon, false);
             });
         }
@@ -254,17 +278,22 @@ $(document).keydown(function (e) {
             case 38:
                 // up arrow
                 e.preventDefault();
-                $('#goto_prev').trigger('click');
+                // $('#goto_prev').trigger('click');
+                highlightRow($('#data tbody tr.table-active').index() - 1);
                 break;
             case 40:
                 // down Arrow
                 e.preventDefault();
-                $('#goto_next').trigger('click');
+                // $('#goto_next').trigger('click');
+                highlightRow($('#data tbody tr.table-active').index() + 1);
                 break;
             // case 13:
                 // enter
-            // case 32:
+            case 32:
                 // spacebar
+                e.preventDefault();
+                wavesurfer.playPause();
+                break;
             case 113:
                 // F2
                 e.preventDefault();
@@ -277,6 +306,7 @@ $(document).keydown(function (e) {
 // attach an onclick event handler to the table rows 
 tableRows.click( function(e) {
     if ( !$( e.target ).is( ":button" ) ) {
+        e.stopPropagation();
         editing = false;
         $('#editForm').hide();
         highlightRow(($(this).index()));
