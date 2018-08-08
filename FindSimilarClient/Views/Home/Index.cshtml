@@ -51,37 +51,31 @@
 </table>
 </div>
 
-<div id="editForm">
+<div class="modal" id="editForm" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
     <form>
-        <div class="form-inline mb-2">
-            <input type="text" class="form-control mr-2" id="editRowText" placeholder="To edit...">
-            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCenterTitle">Edit</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-inline mb-2">
+                        <input type="text" class="form-control mr-2" id="editRowText" placeholder="To edit...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
         </div>
     </form>
 </div>
 
-<!-- <input type="button" id="goto_first" class="btn btn-primary btn-sm" value="first">
-<input type="button" id="goto_prev" class="btn btn-primary btn-sm" value="prev">
-<input type="button" id="goto_next" class="btn btn-primary btn-sm" value="next">
-<input type="button" id="goto_last" class="btn btn-primary btn-sm" value="last"> -->
-
-<!-- <nav class="navbar navbar-dark bg-dark">
-    <div class="card text-white bg-dark fixed-bottom">
-        <div class="card-header" id="headingOne" style="cursor: pointer" data-toggle="collapse" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-            <div class="card-title">
-                <i class="fas fa-headphones-alt"></i>&nbsp;&nbsp;Audio Player
-            </div>
-        </div>
-        <div id="collapseOne" class="collapse" aria-labelledby="headingOne">
-            <div class="card-body">
-                <div id="waveform"></div>
-            </div>
-        </div>
-    </div>
-</nav> -->
-
 <div class="bg-dark fixed-bottom" id="waveform"></div>
-
 
 @section Scripts { 
     @* 
@@ -151,10 +145,6 @@ function playRow(tableRowIndex)
         // first ensure all audio stops playing
         $('audio').each(function() 
         {
-            // var audioPlayer = $(this)[0];
-            // audioPlayer.pause();
-            // audioPlayer.currentTime = 0;
-
             // find audio icon and set it to not playing
             var audioPlayerIcon = $(this).siblings('i');
             SetAudioPlayerIcon(audioPlayerIcon, false);
@@ -170,19 +160,9 @@ function playRow(tableRowIndex)
         // and play
         if (audioPlayer.paused) {
             wavesurfer.load(audioPlayer.src);
-            // audioPlayer.play();
             SetAudioPlayerIcon(audioPlayerIcon, true);
-            
-            // and add to sticky audio player as well            
-            // stickyAudioPlayer.stop();
-            // stickyAudioPlayer.changeAudio(audioPlayer.src, audioPlayer.title);
-            // stickyAudioPlayer.play();
 
             // add event listener for the ended event
-            // stickyAudioPlayer.player.on('ended', function() {
-                // SetAudioPlayerIcon(audioPlayerIcon, false);
-            // });
-
             wavesurfer.on('finish', function () {
                 SetAudioPlayerIcon(audioPlayerIcon, false);
             });
@@ -192,11 +172,6 @@ function playRow(tableRowIndex)
             // audioPlayer.currentTime = 0;
             // SetAudioPlayerIcon(audioPlayerIcon, false);
         }
-
-        // add event listener for the ended event
-        // selectedTableRow.find('audio').on('ended', function() {
-            // SetAudioPlayerIcon(audioPlayerIcon, false);
-        // });
     }
 }
 
@@ -269,6 +244,11 @@ $('#editForm').keydown(function (e) {
     }
 });
 
+// for some reason we need to re-add the way jquery closes modals
+$('[data-dismiss="modal"]').on('click', function() {
+    $('#editForm').hide();
+});
+
 // handle key presses
 $(document).keydown(function (e) {
     
@@ -287,8 +267,9 @@ $(document).keydown(function (e) {
                 // $('#goto_next').trigger('click');
                 highlightRow($('#data tbody tr.table-active').index() + 1);
                 break;
-            // case 13:
+            case 13:
                 // enter
+                break;
             case 32:
                 // spacebar
                 e.preventDefault();
