@@ -23,17 +23,17 @@
 @foreach (TrackData track in ViewBag.Tracks) {
         <tr>
             <th scope="row">
-                <i class="far fa-play-circle"></i>
+                <i class="far fa-play-circle" id="playPauseIcon"></i>
                 <audio preload="none" src="/api/streaming/@track.TrackReference.Id" title="@track.Title"></audio>
             </th>            
             <td><small>@track.Title</small></td>
             <td><small>@track.Length.ToString("N")</small></td>
             <td>
                 <div class="dropdown">
-                <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" id="dropdownRowMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Action
                 </button>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <div class="dropdown-menu" aria-labelledby="dropdownRowMenuButton">
                     <a class="dropdown-item" asp-controller="Home" asp-action="FindSimilar" asp-route-id="@track.TrackReference.Id">Find Similar</a>                    
                     <a class="dropdown-item" asp-controller="Home" asp-action="OpenDirectory" asp-route-id="@track.TrackReference.Id">Open Directory</a>                    
                     @{
@@ -97,6 +97,7 @@ var w = $(window);
 
 var wavesurfer = WaveSurfer.create({
     container: '#waveform',
+    backend: 'MediaElement',
     // barWidth: 1,
     waveColor: '#aecfe3',
     progressColor: '#f48a23',
@@ -105,19 +106,49 @@ var wavesurfer = WaveSurfer.create({
     height: 50,
     hideScrollbar: true,
     // minPxPerSec: 1,
-    // normalize: true
+    normalize: true
 });
 
 wavesurfer.on('ready', function () {
     wavesurfer.play();
 });
 
+wavesurfer.on('pause', function() {
+    setPlayPauseIcon();
+});
+
+wavesurfer.on('play', function() {
+    setPlayPauseIcon();
+});
+
+function setPlayPauseIcon() 
+{
+    // find currently selected row index
+    var tableRowIndex = $('#data tbody tr.table-active').index();
+    
+    // check there is a row selected
+    if(tableRowIndex >= 0 && tableRowIndex < tableRows.length)
+    {
+        // find audio icon and set it to not playing
+        var selectedTableRow = $('#data tbody tr:eq('+tableRowIndex+')');
+        if(selectedTableRow.length > 0)
+        {
+            var audioPlayerIcon = selectedTableRow.find('i');
+            SetAudioPlayerIcon(audioPlayerIcon, wavesurfer.isPlaying());
+        }        
+    }
+}
+
 function highlightRow(tableRowIndex) 
 {
     // if .table-active has reached the last, start again
-    if (tableRowIndex < 0  || (tableRowIndex + 1) > tableRows.length )
+    if ((tableRowIndex + 1) > tableRows.length )
         tableRowIndex = 0;    
     
+    // if .table-active has reached the furst, start from the end
+    if ((tableRowIndex < 0))
+       tableRowIndex = tableRows.length - 1;
+
     // check if element exists
     var selectedTableRow = $('#data tbody tr:eq('+tableRowIndex+')');
     if(selectedTableRow.length > 0)
@@ -142,10 +173,9 @@ function playRow(tableRowIndex)
     var selectedTableRow = $('#data tbody tr:eq('+tableRowIndex+')');
     if(selectedTableRow.length > 0)
     {
-        // first ensure all audio stops playing
+        // find all audio icons and set it to not playing
         $('audio').each(function() 
         {
-            // find audio icon and set it to not playing
             var audioPlayerIcon = $(this).siblings('i');
             SetAudioPlayerIcon(audioPlayerIcon, false);
         });
@@ -154,24 +184,9 @@ function playRow(tableRowIndex)
         var audioObject = selectedTableRow.find('audio');
         var audioPlayer = audioObject[0];
 
-        // get the correct audio player icons
-        var audioPlayerIcon = selectedTableRow.find('i');
-
-        // and play
-        if (audioPlayer.paused) {
-            wavesurfer.load(audioPlayer.src);
-            SetAudioPlayerIcon(audioPlayerIcon, true);
-
-            // add event listener for the ended event
-            wavesurfer.on('finish', function () {
-                SetAudioPlayerIcon(audioPlayerIcon, false);
-            });
-        }
-        else {
-            // audioPlayer.pause();
-            // audioPlayer.currentTime = 0;
-            // SetAudioPlayerIcon(audioPlayerIcon, false);
-        }
+        // load the audio source
+        wavesurfer.stop();
+        wavesurfer.load(audioPlayer.src);
     }
 }
 
@@ -285,14 +300,43 @@ $(document).keydown(function (e) {
  });
 
 // attach an onclick event handler to the table rows 
+// except the playPauseIcon and the dropdown menu
 tableRows.click( function(e) {
-    if ( !$( e.target ).is( ":button" ) ) {
+    if ( !$(e.target).is("#dropdownRowMenuButton") 
+        && !$(e.target).is("#playPauseIcon") ) {
         e.stopPropagation();
         editing = false;
         $('#editForm').hide();
         highlightRow(($(this).index()));
     }
 });
+
+// if clicking on the play icon, either highlight (e.g. play a row)
+// or pause the audio
+tableRows.click( function(e) {
+    if ( $(e.target).is("#playPauseIcon") ) {
+        editing = false;
+        $('#editForm').hide();
+
+        // find clicked row index
+        var clickedRowIndex = $(this).index();
+
+        // find currently selected row index
+        var tableRowIndex = $('#data tbody tr.table-active').index();
+    
+        // check there is a row selected
+        if(tableRowIndex >= 0 && tableRowIndex < tableRows.length)
+        {    
+            if (tableRowIndex == clickedRowIndex) {
+                wavesurfer.playPause();
+                return;
+            }
+        }
+
+        highlightRow(clickedRowIndex);
+    }
+});
+
 
 </script>
 }
