@@ -30,7 +30,7 @@
             <td><small>@track.Length.ToString("N")</small></td>
             <td>
                 <div class="dropdown">
-                <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" id="dropdownRowMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Action
                 </button>
                 <div class="dropdown-menu" aria-labelledby="dropdownRowMenuButton">
@@ -302,7 +302,7 @@ $(document).keydown(function (e) {
 // attach an onclick event handler to the table rows 
 // except the playPauseIcon and the dropdown menu
 tableRows.click( function(e) {
-    if ( !$(e.target).is("#dropdownRowMenuButton") 
+    if ( !$(e.target).is('[class*="dropdown"]')
         && !$(e.target).is("#playPauseIcon") ) {
         e.stopPropagation();
         editing = false;
