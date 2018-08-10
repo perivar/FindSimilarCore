@@ -17,6 +17,7 @@ namespace FindSimilar
     class Program
     {
         const string DEFAULT_LOG_PATH = "findsimilar.log";
+        const string DEFAULT_ERROR_LOG_PATH = "findsimilar_error.log";
         const string DEFAULT_DATABASE_PATH = "fingerprint.db";
         const string DEFAULT_DEBUG_PATH = "debug";
 
@@ -74,7 +75,7 @@ namespace FindSimilar
             return debugDirectoryPath;
         }
 
-        static void DefineLogger(CommandOption logFilePathOption, Verbosity verbosity)
+        static void DefineLogger(CommandOption logFilePathOption, CommandOption errorLogFilePathOption, Verbosity verbosity)
         {
             string logFilePath = DEFAULT_LOG_PATH;
             if (logFilePathOption.HasValue())
@@ -87,10 +88,22 @@ namespace FindSimilar
                 }
             }
 
+            string errorLogFilePath = DEFAULT_ERROR_LOG_PATH;
+            if (errorLogFilePathOption.HasValue())
+            {
+                // if the directory for the log file exists, we can create it later if it doesn't exist
+                var errorLogFilePathValue = errorLogFilePathOption.Value();
+                if (Directory.Exists(Path.GetDirectoryName(errorLogFilePathValue)))
+                {
+                    errorLogFilePath = errorLogFilePathValue;
+                }
+            }
+
             // https://github.com/serilog/serilog/wiki/Configuration-Basics
             var logConfig = new LoggerConfiguration()
                 .WriteTo.File(logFilePath)
-                .WriteTo.Console(); // .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+                .WriteTo.Console() // .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+                .WriteTo.Logger(l => l.Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Fatal).WriteTo.File(errorLogFilePath));
 
             switch (verbosity)
             {
@@ -135,6 +148,7 @@ namespace FindSimilar
                     var skipDurationOption = command.Option("-s|--skipduration <NUMBER>", "Skip files longer than x seconds", CommandOptionType.SingleValue);
                     var verboseOption = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for silent mode, 3 for normal output, 4 for debug and 5 for the most verbose setting", CommandOptionType.SingleValue);
                     var logDirOption = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
+                    var errorLogDirOption = command.Option("-e|--elog <path>", "Path to error log-file", CommandOptionType.SingleValue);
                     var dbDirOption = command.Option("-d|--db <path>", "Override the default path to database-file: " + DEFAULT_DATABASE_PATH, CommandOptionType.SingleValue);
                     var debugDirOption = command.Option("--debug <path>", "If verbose = 5, override the default path to the debug directory: " + DEFAULT_DEBUG_PATH, CommandOptionType.SingleValue);
 
@@ -144,7 +158,7 @@ namespace FindSimilar
                             {
                                 var skipDurationAboveSeconds = GetSkipDuration(skipDurationOption);
                                 var verbosity = GetVerbosity(verboseOption);
-                                DefineLogger(logDirOption, verbosity);
+                                DefineLogger(logDirOption, errorLogDirOption, verbosity);
                                 var dbPath = GetDatabaseFilePath(dbDirOption);
                                 var debugPath = GetDebugDirectoryPath(debugDirOption);
 
@@ -173,6 +187,7 @@ namespace FindSimilar
                     var dbDirOption = command.Option("-d|--db <path>", "Override the default path to database-file: " + DEFAULT_DATABASE_PATH, CommandOptionType.SingleValue);
                     var verboseOption = command.Option("-v|--verbose <NUMBER>", "Increase the verbosity of messages: 0 for silent mode, 3 for normal output, 4 for debug and 5 for the most verbose setting", CommandOptionType.SingleValue);
                     var logDirOption = command.Option("-l|--log <path>", "Path to log-file", CommandOptionType.SingleValue);
+                    var errorLogDirOption = command.Option("-e|--elog <path>", "Path to error log-file", CommandOptionType.SingleValue);
                     var debugDirOption = command.Option("--debug <path>", "If verbose = 5, override the default path to the debug directory: " + DEFAULT_DEBUG_PATH, CommandOptionType.SingleValue);
 
                     command.OnExecute(() =>
@@ -191,7 +206,7 @@ namespace FindSimilar
                                 }
 
                                 var verbosity = GetVerbosity(verboseOption);
-                                DefineLogger(logDirOption, verbosity);
+                                DefineLogger(logDirOption, errorLogDirOption, verbosity);
                                 var dbPath = GetDatabaseFilePath(dbDirOption);
                                 var debugPath = GetDebugDirectoryPath(debugDirOption);
 
