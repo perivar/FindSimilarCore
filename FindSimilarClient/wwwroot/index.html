@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+  .axis--x path {
+    display: none;
+  }
+
+  .line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+  }
+</style>
+<svg width="960" height="500"></svg>
+<script src="//d3js.org/d3.v5.min.js"></script>
+<script>
+
+  var svg = d3.select("svg"),
+    margin = { top: 20, right: 80, bottom: 30, left: 50 },
+    width = svg.attr("width") - margin.left - margin.right,
+    height = svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var parseTime = d3.timeParse("%Y%m%d");
+
+  // set scales
+  var xScale = d3
+    .scaleTime() // input
+    .range([0, width]); // output
+  var yScale = d3
+    .scaleLinear() // input
+    .range([height, 0]); // output
+
+  // set color scheme
+  var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+  // d3's line generator
+  var line = d3.line()
+    .curve(d3.curveBasis)
+    .x(function (d) { return xScale(d.date); })
+    .y(function (d) { return yScale(d.temperature); });
+
+  // load data using the v5 built-in promise
+  // d3.dsv(delimiter, input[, init][, row])
+  // Fetches the DSV file at the specified input URL. 
+  // If init is specified, it is passed along to the underlying call to fetch
+  // An optional row conversion function may be specified to map and filter row objects 
+  // to a more-specific representation
+  d3.dsv("\t", "data.tsv", type).then(function (data) {
+
+    // build a data object from the incoming data 
+    // slice out all columns names except the first (i.e from index 1)
+    var cities = data.columns.slice(1).map(function (id) {
+      return {
+        // and build a new map with cityname as key 
+        id: id,
+        // and a new map as values 
+        values: data.map(function (d) {
+          return {
+            date: d.date,
+            temperature: d[id]
+          };
+        })
+      };
+    });
+
+    // Compute the x scale domain
+    xScale.domain(d3.extent(data, function (d) { return d.date; }));
+
+    // Compute the y scale domain
+    yScale.domain([
+      d3.min(cities, function (c) { return d3.min(c.values, function (d) { return d.temperature; }); }),
+      d3.max(cities, function (c) { return d3.max(c.values, function (d) { return d.temperature; }); })
+    ]);
+
+    // this maps our city names to colors
+    colorScale.domain(cities.map(function (c) { return c.id; }));
+
+    // Add the x-axis
+    g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(xScale));
+
+    // Add the y-axis
+    g.append("g")
+      .attr("class", "axis axis--y")
+      .call(d3.axisLeft(yScale))
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("fill", "#000")
+      .text("Temperature, ºF");
+
+    // set city
+    var city = g.selectAll(".city")
+      .data(cities)
+      .enter().append("g")
+      .attr("class", "city");
+
+    // add the lines
+    city.append("path")
+      .attr("class", "line")
+      .attr("d", function (d) { return line(d.values); })
+      .style("stroke", function (d) { return colorScale(d.id); });
+
+    // append legend
+    city.append("text")
+      // datum() is different from data()
+      // https://github.com/d3/d3-selection/blob/master/README.md#selection_datum
+      // it does not create enter/update/exit selections
+      // our "data" is each city name and the *last* value    
+      .datum(function (d) { return { id: d.id, value: d.values[d.values.length - 1] }; })
+      // we will shift our label text based on the last date and last temperature value
+      .attr("transform", function (d) { return "translate(" + xScale(d.value.date) + "," + yScale(d.value.temperature) + ")"; })
+      .attr("x", 3)
+      .attr("dy", "0.35em")
+      .style("font", "10px sans-serif")
+      .text(function (d) { return d.id; });
+  });
+
+  // this is our row accessor function
+  function type(d, _, columns) {
+
+    // first column is a date
+    d.date = parseTime(d.date);
+
+    // convert the rest of the columns to number
+    for (var i = 1, n = columns.length, c; i < n; ++i) {
+      d[c = columns[i]] = +d[c];
+    }
+    return d;
+  }
+
+</script>
