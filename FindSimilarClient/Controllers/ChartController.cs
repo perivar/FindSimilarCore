@@ -8,7 +8,7 @@ namespace FindSimilarClient.Controllers
     {
         public async Task<IActionResult> Chart([FromServices] INodeServices nodeServices)
         {
-            var data = new int[3, 6, 2, 7, 5, 2, 0, 3, 8, 9, 2, 5, 9, 3, 6, 3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 9, 2, 7];
+            var data = new int[] { 3, 6, 2, 7, 5, 2, 0, 3, 8, 9, 2, 5, 9, 3, 6, 3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 9, 2, 7 };
 
             var options = new { width = 1000, height = 400 };
 

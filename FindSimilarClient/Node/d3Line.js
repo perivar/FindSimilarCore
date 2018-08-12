@@ -6,11 +6,10 @@ const d3 = require("d3");
 module.exports = function (callback, options, data) {
 
     var dom = new JSDOM(
-        `<!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8" />
-            /* tell the SVG path to be a thin blue line without any area fill */
-            <style type="text/css">
+        `<html>
+        <head>
+            &nbsp;
+            <style>
                 path {
                     stroke: steelblue;
                     stroke-width: 1.5;
@@ -43,7 +42,7 @@ module.exports = function (callback, options, data) {
     );
 
     // Create disconnected HTML DOM and attach it to D3
-    // var dom = new JSDOM('<html><body><div id="chart"></div></html>');
+    // var dom = new JSDOM('<html><body><div id="chart"></div></body></html>');
     dom.window.d3 = d3.select(dom.window.document);
 
     // define dimensions of graph
@@ -52,9 +51,6 @@ module.exports = function (callback, options, data) {
     var m = [80, 80, 80, 80]; // margins
     var w = width - m[1] - m[3]; // width
     var h = height - m[0] - m[2]; // height
-
-    // create a simple data array that we'll plot with a line (this array represents only the Y values, X will just be the index location)
-    // var data = [3, 6, 2, 7, 5, 2, 0, 3, 8, 9, 2, 5, 9, 3, 6, 3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 9, 2, 7];
 
     // X scale will fit all values from data[] within pixels 0-w
     var x = d3.scaleLinear().domain([0, data.length]).range([0, w]);
@@ -109,8 +105,8 @@ module.exports = function (callback, options, data) {
 
     // Convert SVG to PNG and return it to controller
     // var svgText = dom.window.document.body.outerHTML;
-    // var svgText = dom.window.document.body.innerHTML;
-    var svgText = dom.window.d3.select("#chart").html();
+    var svgText = dom.window.document.body.innerHTML;
+    // var svgText = dom.window.d3.select("#chart").html();
     // callback(null, svgText);
 
     svg2png(Buffer.from(svgText), { width: width, height: height })
