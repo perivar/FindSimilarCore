@@ -5,41 +5,41 @@ const d3 = require("d3");
 
 module.exports = function (callback, options, data) {
 
-    var dom = new JSDOM(`<!DOCTYPE html>
-            <meta charset="UTF-8">
-            <div></div>
-            <style>
-                path {
-                    stroke: steelblue;
-                    stroke-width: 1.5;
-                    fill: none;
-                }
-        
-                .axis {
-                    shape-rendering: crispEdges;
-                }
-        
-                .x.axis line {
-                    stroke: lightgrey;
-                }
-        
-                .x.axis path {
-                    display: none;
-                }
-        
-                .y.axis line,
-                .y.axis path {
-                    fill: none;
-                    stroke: #000;
-                }    
-            </style>
-            <body>
-                <div id="chart"></div>
-            </body>
-        `);
+    // var dom = new JSDOM(`<!DOCTYPE html>
+    //         <meta charset="UTF-8">
+    //         <div></div>
+    //         <style>
+    //             path {
+    //                 stroke: steelblue;
+    //                 stroke-width: 1.5;
+    //                 fill: none;
+    //             }
+
+    //             .axis {
+    //                 shape-rendering: crispEdges;
+    //             }
+
+    //             .x.axis line {
+    //                 stroke: lightgrey;
+    //             }
+
+    //             .x.axis path {
+    //                 display: none;
+    //             }
+
+    //             .y.axis line,
+    //             .y.axis path {
+    //                 fill: none;
+    //                 stroke: #000;
+    //             }    
+    //         </style>
+    //         <body>
+    //             <div id="chart"></div>
+    //         </body>
+    //     `);
 
     // Create disconnected HTML DOM and attach it to D3
-    // var dom = new JSDOM('<html><body><div id="chart"></div></body></html>');
+    var dom = new JSDOM('<html><body><div id="chart"></div></body></html>');
     dom.window.d3 = d3.select(dom.window.document);
 
     // define dimensions of graph
@@ -89,22 +89,42 @@ module.exports = function (callback, options, data) {
     // create bottom xAxis
     var xAxis = d3.axisBottom(x).tickSize(-h);
     // Add the x-axis.
-    graph.append("svg:g")
+    var xg = graph.append("svg:g")
         .attr("class", "x axis")
+        .style("shape-rendering", "crispEdges")
         .attr("transform", "translate(0," + h + ")")
         .call(xAxis);
+
+    xg.selectAll("line")
+        .style("stroke", "lightgrey");
+
+    xg.selectAll("path")
+        .style("display", "none");
 
     // create left yAxis
     var yAxisLeft = d3.axisLeft(y).ticks(4);
     // Add the y-axis to the left
-    graph.append("svg:g")
+    var yg = graph.append("svg:g")
         .attr("class", "y axis")
+        // .style("shape-rendering", "crispEdges")
         // .attr("transform", "translate(-25,0)")
         .call(yAxisLeft);
 
+    // yg.selectAll("line")
+    //     .style("fill", "none")
+    //     .style("stroke", "#000");
+
+    // yg.selectAll("path")
+    //     .style("fill", "none")
+    //     .style("stroke", "#000");
+
     // Add the line by appending an svg:path element with the data line we created above
     // do this AFTER the axes above so that the line is above the tick-lines
-    graph.append("svg:path").attr("d", line(data));
+    graph.append("svg:path")
+        .attr("d", line(data))
+        .style("fill", "none")
+        .style("stroke", "steelblue")
+        .style("stroke-width", "1.5");
 
     // Convert SVG to PNG and return it to controller
     // var svgText = dom.window.document.body.outerHTML; // the html, including styles, including the body tags
@@ -112,7 +132,17 @@ module.exports = function (callback, options, data) {
     // var svgText = dom.window.d3.select("#chart").html();
     // callback(null, svgText);
 
-    svg2png(Buffer.from(svgText), { width: width, height: height })
-        .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
-        .then(buffer => callback(null, buffer));
+    // return as base64 encoded PNG
+    // svg2png(Buffer.from(svgText), { width: width, height: height })
+    //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
+    //     .then(buffer => callback(null, buffer));
+
+    // return as base64 encoded SVG
+    var html = dom.window.d3.select("#chart svg")
+        .attr("version", 1.1)
+        .attr("xmlns", "http://www.w3.org/2000/svg")
+        .node().parentNode.innerHTML;
+
+    var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
+    callback(null, imgSrc);
 }
