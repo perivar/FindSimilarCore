@@ -5,18 +5,53 @@ const d3 = require("d3");
 
 module.exports = function (callback, options, data) {
 
-    var dom = new JSDOM('<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body><svg width="960" height="500"></svg></body></html>');
-    var document = dom.window.document;
+    var dom = new JSDOM(
+        `<!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8" />
+            /* tell the SVG path to be a thin blue line without any area fill */
+            <style type="text/css">
+                path {
+                    stroke: steelblue;
+                    stroke-width: 1.5;
+                    fill: none;
+                }
+
+                .axis {
+                    shape-rendering: crispEdges;
+                }
+
+                .x.axis line {
+                    stroke: lightgrey;
+                }
+
+                .x.axis path {
+                    display: none;
+                }
+
+                .y.axis line,
+                .y.axis path {
+                    fill: none;
+                    stroke: #000;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="chart"></div>
+        </body>
+        </html>`
+    );
+
+    // Create disconnected HTML DOM and attach it to D3
+    // var dom = new JSDOM('<html><body><div id="chart"></div></html>');
     dom.window.d3 = d3.select(dom.window.document);
 
-    callback(null, dom.window.document.body.innerHTML);
-    // callback(null, dom.window.document.body.outerHTML);
-    // callback(null, dom.window.document.body.querySelector("svg").outerHTML);
-
     // define dimensions of graph
+    var width = options.width || 1000;
+    var height = options.height || 400;
     var m = [80, 80, 80, 80]; // margins
-    var w = 1000 - m[1] - m[3]; // width
-    var h = 400 - m[0] - m[2]; // height
+    var w = width - m[1] - m[3]; // width
+    var h = height - m[0] - m[2]; // height
 
     // create a simple data array that we'll plot with a line (this array represents only the Y values, X will just be the index location)
     // var data = [3, 6, 2, 7, 5, 2, 0, 3, 8, 9, 2, 5, 9, 3, 6, 3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 9, 2, 7];
@@ -45,15 +80,17 @@ module.exports = function (callback, options, data) {
         })
 
     // Add an SVG element with the desired dimensions and margin.
-    var svg = dom.window.d3.select("svg"),
-        width = +svg.attr("width"),
-        height = +svg.attr("height"),
-        graph = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+    var graph = dom.window.d3.select("#chart")
+        .append("svg:svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("svg:g")
+        .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
     // create bottom xAxis
     var xAxis = d3.axisBottom(x).tickSize(-h);
     // Add the x-axis.
-    graph.append("g")
+    graph.append("svg:g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + h + ")")
         .call(xAxis);
@@ -61,16 +98,22 @@ module.exports = function (callback, options, data) {
     // create left yAxis
     var yAxisLeft = d3.axisLeft(y).ticks(4);
     // Add the y-axis to the left
-    graph.append("g")
+    graph.append("svg:g")
         .attr("class", "y axis")
         // .attr("transform", "translate(-25,0)")
         .call(yAxisLeft);
 
     // Add the line by appending an svg:path element with the data line we created above
     // do this AFTER the axes above so that the line is above the tick-lines
-    graph.append("path").attr("d", line(data));
+    graph.append("svg:path").attr("d", line(data));
+
+    // Convert SVG to PNG and return it to controller
+    // var svgText = dom.window.document.body.outerHTML;
+    // var svgText = dom.window.document.body.innerHTML;
+    var svgText = dom.window.d3.select("#chart").html();
+    // callback(null, svgText);
 
     svg2png(Buffer.from(svgText), { width: width, height: height })
-        .then(buffer => 'data:image/png;base64,' + buffer.toString('base64'))
+        .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
         .then(buffer => callback(null, buffer));
 }
