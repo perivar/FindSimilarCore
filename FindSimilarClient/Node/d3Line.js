@@ -5,41 +5,38 @@ const d3 = require("d3");
 
 module.exports = function (callback, options, data) {
 
-    var dom = new JSDOM(
-        `<html>
-        <head>
-            &nbsp;
+    var dom = new JSDOM(`<!DOCTYPE html>
+            <meta charset="UTF-8">
+            <div></div>
             <style>
                 path {
                     stroke: steelblue;
                     stroke-width: 1.5;
                     fill: none;
                 }
-
+        
                 .axis {
                     shape-rendering: crispEdges;
                 }
-
+        
                 .x.axis line {
                     stroke: lightgrey;
                 }
-
+        
                 .x.axis path {
                     display: none;
                 }
-
+        
                 .y.axis line,
                 .y.axis path {
                     fill: none;
                     stroke: #000;
-                }
+                }    
             </style>
-        </head>
-        <body>
-            <div id="chart"></div>
-        </body>
-        </html>`
-    );
+            <body>
+                <div id="chart"></div>
+            </body>
+        `);
 
     // Create disconnected HTML DOM and attach it to D3
     // var dom = new JSDOM('<html><body><div id="chart"></div></body></html>');
@@ -48,14 +45,20 @@ module.exports = function (callback, options, data) {
     // define dimensions of graph
     var width = options.width || 1000;
     var height = options.height || 400;
-    var m = [80, 80, 80, 80]; // margins
-    var w = width - m[1] - m[3]; // width
-    var h = height - m[0] - m[2]; // height
+
+    var margin = {
+        top: 80,
+        right: 80,
+        bottom: 80,
+        left: 80
+    },
+        w = width - margin.left - margin.right,
+        h = height - margin.top - margin.bottom;
 
     // X scale will fit all values from data[] within pixels 0-w
     var x = d3.scaleLinear().domain([0, data.length]).range([0, w]);
+
     // Y scale will fit values from 0-10 within pixels h-0 (Note the inverted domain for the y-scale: bigger is up!)
-    // var y = d3.scaleLinear().domain([0, 10]).range([h, 0]);
     // automatically determining max range can work something like this
     var y = d3.scaleLinear().domain([0, d3.max(data)]).range([h, 0]);
 
@@ -81,7 +84,7 @@ module.exports = function (callback, options, data) {
         .attr("width", width)
         .attr("height", height)
         .append("svg:g")
-        .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+        .attr("transform", "translate(" + margin.right + "," + margin.top + ")");
 
     // create bottom xAxis
     var xAxis = d3.axisBottom(x).tickSize(-h);
