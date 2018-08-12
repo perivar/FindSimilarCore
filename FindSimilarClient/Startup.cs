@@ -37,6 +37,11 @@ namespace FindSimilarClient
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
+            services.AddNodeServices(options =>
+            {
+                // options.DebuggingPort 
+            });
+
             services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
             services.AddSingleton<ISoundFingerprinter>(new SoundFingerprinter(Configuration["FingerprintDatabase"]));
         }
