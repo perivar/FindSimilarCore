@@ -104,8 +104,8 @@ module.exports = function (callback, options, data) {
     graph.append("svg:path").attr("d", line(data));
 
     // Convert SVG to PNG and return it to controller
-    // var svgText = dom.window.document.body.outerHTML;
-    var svgText = dom.window.document.body.innerHTML;
+    // var svgText = dom.window.document.body.outerHTML; // the html, including styles, including the body tags
+    var svgText = dom.window.document.body.innerHTML; // the html, including styles, excluding the body tags
     // var svgText = dom.window.d3.select("#chart").html();
     // callback(null, svgText);
 
