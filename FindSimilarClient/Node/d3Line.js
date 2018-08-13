@@ -97,76 +97,88 @@ module.exports = function (callback, options, data) {
         .style("stroke", "steelblue")
         .style("stroke-width", "1.5");
 
-    // Convert SVG to PNG and return it to controller
+    // get the svg text
     // var svgText = dom.window.document.body.outerHTML; // the html, including styles, including the body tags
     var svgText = dom.window.document.body.innerHTML; // the html, including styles, excluding the body tags
     // var svgText = dom.window.d3.select("#chart").html();
     // callback(null, svgText);
 
-    // return as base64 encoded PNG
-    // converting SVG to PNG using the headless browser PhantomJS.
+
+    // converting SVG to PNG using the headless browser PhantomJS (using svg2png)
+    // return base64 encoded PNG data-uri
     // svg2png(Buffer.from(svgText), { width: width, height: height })
     //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
     //     .then(buffer => callback(null, buffer));
 
+
+    // converting SVG to PNG using Chromium (using puppeteer)
+    // return base64 encoded PNG
+    // the page.goto method requires a propertly formatted svg with version and xml namespace 
     var html = dom.window.d3.select("#chart svg")
         .attr("version", 1.1)
         .attr("xmlns", "http://www.w3.org/2000/svg")
         .node().parentNode.innerHTML;
 
-    (async () => {
-        const browser = await puppeteer.launch({
-            // headless: false, // The browser is visible
-            // slowMo: 250, // slow down by 250ms        
-            // ignoreHTTPSErrors: true,
-            // args: [`--window-size=1920,1080 --force-device-scale-factor=2`]
-        });
-        const page = await browser.newPage();
-        await page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
+    puppeteer.launch({
+        // headless: false, // The browser is visible
+        // slowMo: 250, // slow down by 250ms        
+        // ignoreHTTPSErrors: true
+    }).then(browser => {
+        browser.newPage()
+            .then(page => {
 
-        // page.on('console', msg => console.log('PAGE LOG:', msg.text()))
-        // await page.evaluate(() => console.log(`url is ${location.href}`));
+                // to ensure crisp screenshots we need to set the device factor to 2
+                page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
 
-        // await page.goto('https://example.com');
-        await page.goto(
-            `data:image/svg+xml;base64,${new Buffer(html).toString(
-                'base64',
-            )}`,
-            {
-                timeout: 120000,
-            },
-        )
-        await page.screenshot({ path: 'C:/Users/pnerseth/My Projects/example.png' });
+                // set debug 
+                // page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
-        await browser.close();
-    })();
-    callback(null, "nothing");
-    return;
+                // build svg content
+                page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
+                    {
+                        waitUntil: 'networkidle0',
+                        timeout: 15000
+                    }
+                )
+                    .then(resp => page.screenshot({ type: 'png' }))
+                    .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
+                    .then(buffer => callback(null, buffer))
+                    .then(buffer => browser.close());
+            });
+    });
 
-    // return as base64 encoded PNG
-    // converting SVG to PNG using headless Chromium.
-    // convert(Buffer.from(svgText), {
-    //     width: width,
-    //     height: height,
-    //     puppeteer:
+
+    // converting SVG to PNG using headless Chromium (using convert-svg-to-png)
+    // return base64 encoded PNG
+    // Note! Cannot get this to work properly with double scale (for crisp fonts)
+    // convert(Buffer.from(svgText),
     //     {
-    //         headless: false,
-    //         slowMo: 250, // slow down by 250ms 
-    //         ignoreHTTPSErrors: true,
-    //         args: [`--window-size=${width},${height} --force-device-scale-factor=2`]
-    //     }
-    // })
+    //         width: width,
+    //         height: height,
+    //         puppeteer:
+    //         {
+    //             headless: false,
+    //             slowMo: 250, // slow down by 250ms 
+    //             ignoreHTTPSErrors: true,
+    //             args: ['--force-device-scale-factor=2', `--window-size=${width},${height}`],
+    //             // defaultViewport: {
+    //             //     width: width,
+    //             //     height: height,
+    //             //     deviceScaleFactor: 2
+    //             // }
+    //         }
+    //     })
     //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
     //     .then(buffer => callback(null, buffer));
+
 
     // return as SVG
     // var html = dom.window.d3.select("#chart svg")
     //     .attr("version", 1.1)
     //     .attr("xmlns", "http://www.w3.org/2000/svg")
     //     .node().parentNode.innerHTML;
-    // var imgSrc = "data:image/svg+xml;utf8," + html;
 
-    // return as base64 encoded SVG
+    // // return as base64 encoded SVG data-uri
     // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
     // callback(null, imgSrc);
 }
