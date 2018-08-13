@@ -3,7 +3,28 @@
     // Use hover for the description of the existing attributes
     // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
     "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "ASP.Net Core & Node.js",
+            "configurations": [
+                ".NET Core Launch (Chrome)",
+                "Node.js Attach"
+            ]
+        }
+    ],
     "configurations": [
+        {
+            "name": "Node.js Attach",
+            "type": "node",
+            "request": "attach",
+            "port": 9229
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        },
         {
             "name": ".NET Core Launch (Chrome)",
             "type": "coreclr",
