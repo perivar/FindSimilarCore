@@ -21,7 +21,8 @@
     "popper.js": "^1.14.3",
     "svg2png": "^4.1.1",
     "jsdom": "^11.12.0",
-    "d3": "^5.5.0"
+    "d3": "^5.5.0",
+    "convert-svg-to-png": "^0.4.0"
   },
   "devDependencies": {}
 }

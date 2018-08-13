@@ -21,7 +21,7 @@ namespace FindSimilarClient.Controllers
             string html = @"<!DOCTYPE html>
 <html>
 <body>
-    <img src='" + markup + @"' />
+    <img src='" + markup + $"' height='{options.height}' width='{options.width}'" + @" />
 </body>
 </html>";
 

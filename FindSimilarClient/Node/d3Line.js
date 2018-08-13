@@ -2,6 +2,8 @@
 const svg2png = require("svg2png");
 const { JSDOM } = require("jsdom");
 const d3 = require("d3");
+const { convert } = require("convert-svg-to-png");
+const puppeteer = require('puppeteer');
 
 module.exports = function (callback, options, data) {
 
@@ -102,19 +104,69 @@ module.exports = function (callback, options, data) {
     // callback(null, svgText);
 
     // return as base64 encoded PNG
+    // converting SVG to PNG using the headless browser PhantomJS.
     // svg2png(Buffer.from(svgText), { width: width, height: height })
     //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
     //     .then(buffer => callback(null, buffer));
 
-    // return as SVG
     var html = dom.window.d3.select("#chart svg")
         .attr("version", 1.1)
         .attr("xmlns", "http://www.w3.org/2000/svg")
         .node().parentNode.innerHTML;
 
-    var imgSrc = "data:image/svg+xml;utf8," + html;
+    (async () => {
+        const browser = await puppeteer.launch({
+            // headless: false, // The browser is visible
+            // slowMo: 250, // slow down by 250ms        
+            // ignoreHTTPSErrors: true,
+            // args: [`--window-size=1920,1080 --force-device-scale-factor=2`]
+        });
+        const page = await browser.newPage();
+        await page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
+
+        // page.on('console', msg => console.log('PAGE LOG:', msg.text()))
+        // await page.evaluate(() => console.log(`url is ${location.href}`));
+
+        // await page.goto('https://example.com');
+        await page.goto(
+            `data:image/svg+xml;base64,${new Buffer(html).toString(
+                'base64',
+            )}`,
+            {
+                timeout: 120000,
+            },
+        )
+        await page.screenshot({ path: 'C:/Users/pnerseth/My Projects/example.png' });
+
+        await browser.close();
+    })();
+    callback(null, "nothing");
+    return;
+
+    // return as base64 encoded PNG
+    // converting SVG to PNG using headless Chromium.
+    // convert(Buffer.from(svgText), {
+    //     width: width,
+    //     height: height,
+    //     puppeteer:
+    //     {
+    //         headless: false,
+    //         slowMo: 250, // slow down by 250ms 
+    //         ignoreHTTPSErrors: true,
+    //         args: [`--window-size=${width},${height} --force-device-scale-factor=2`]
+    //     }
+    // })
+    //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
+    //     .then(buffer => callback(null, buffer));
+
+    // return as SVG
+    // var html = dom.window.d3.select("#chart svg")
+    //     .attr("version", 1.1)
+    //     .attr("xmlns", "http://www.w3.org/2000/svg")
+    //     .node().parentNode.innerHTML;
+    // var imgSrc = "data:image/svg+xml;utf8," + html;
 
     // return as base64 encoded SVG
     // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
-    callback(null, imgSrc);
+    // callback(null, imgSrc);
 }
