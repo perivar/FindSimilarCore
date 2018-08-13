@@ -5,41 +5,9 @@ const d3 = require("d3");
 
 module.exports = function (callback, options, data) {
 
-    // var dom = new JSDOM(`<!DOCTYPE html>
-    //         <meta charset="UTF-8">
-    //         <div></div>
-    //         <style>
-    //             path {
-    //                 stroke: steelblue;
-    //                 stroke-width: 1.5;
-    //                 fill: none;
-    //             }
-
-    //             .axis {
-    //                 shape-rendering: crispEdges;
-    //             }
-
-    //             .x.axis line {
-    //                 stroke: lightgrey;
-    //             }
-
-    //             .x.axis path {
-    //                 display: none;
-    //             }
-
-    //             .y.axis line,
-    //             .y.axis path {
-    //                 fill: none;
-    //                 stroke: #000;
-    //             }    
-    //         </style>
-    //         <body>
-    //             <div id="chart"></div>
-    //         </body>
-    //     `);
-
     // Create disconnected HTML DOM and attach it to D3
-    var dom = new JSDOM('<html><body><div id="chart"></div></body></html>');
+    // note: multi-line html can be enclosed in `
+    var dom = new JSDOM(`<html><body><div id="chart"></div></body></html>`);
     dom.window.d3 = d3.select(dom.window.document);
 
     // define dimensions of graph
@@ -58,7 +26,7 @@ module.exports = function (callback, options, data) {
     // X scale will fit all values from data[] within pixels 0-w
     var x = d3.scaleLinear().domain([0, data.length]).range([0, w]);
 
-    // Y scale will fit values from 0-10 within pixels h-0 (Note the inverted domain for the y-scale: bigger is up!)
+    // Y scale will fit values within pixels h-0 (Note the inverted domain for the y-scale: bigger is up!)
     // automatically determining max range can work something like this
     var y = d3.scaleLinear().domain([0, d3.max(data)]).range([h, 0]);
 
@@ -106,17 +74,18 @@ module.exports = function (callback, options, data) {
     // Add the y-axis to the left
     var yg = graph.append("svg:g")
         .attr("class", "y axis")
-        // .style("shape-rendering", "crispEdges")
+        .style("shape-rendering", "crispEdges")
         // .attr("transform", "translate(-25,0)")
         .call(yAxisLeft);
 
-    // yg.selectAll("line")
-    //     .style("fill", "none")
-    //     .style("stroke", "#000");
+    yg.selectAll("path")
+        .style("fill", "none")
+        .style("stroke", "#000")
+        .style("stroke-width", "1.5");
 
-    // yg.selectAll("path")
-    //     .style("fill", "none")
-    //     .style("stroke", "#000");
+    yg.selectAll("path")
+        .style("fill", "none")
+        .style("stroke", "#000");
 
     // Add the line by appending an svg:path element with the data line we created above
     // do this AFTER the axes above so that the line is above the tick-lines
@@ -137,12 +106,15 @@ module.exports = function (callback, options, data) {
     //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
     //     .then(buffer => callback(null, buffer));
 
-    // return as base64 encoded SVG
+    // return as SVG
     var html = dom.window.d3.select("#chart svg")
         .attr("version", 1.1)
         .attr("xmlns", "http://www.w3.org/2000/svg")
         .node().parentNode.innerHTML;
 
-    var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
+    var imgSrc = "data:image/svg+xml;utf8," + html;
+
+    // return as base64 encoded SVG
+    // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
     callback(null, imgSrc);
 }

@@ -16,7 +16,16 @@ namespace FindSimilarClient.Controllers
 
             ViewData["ChartImage"] = markup;
 
-            return View();
+            // return View(); // if we want the chart within the website
+
+            string html = @"<!DOCTYPE html>
+<html>
+<body>
+    <img src='" + markup + @"' />
+</body>
+</html>";
+
+            return Content(html, "text/html"); // if we want "plain" html 
         }
     }
 }

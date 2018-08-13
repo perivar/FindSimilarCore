@@ -3,30 +3,4 @@
 }
 <h2>@ViewData["Title"]</h2>
 
-<style>
-    path {
-        stroke: steelblue;
-        stroke-width: 1.5;
-        fill: none;
-    }
-
-    .axis {
-        shape-rendering: crispEdges;
-    }
-
-    .x.axis line {
-        stroke: lightgrey;
-    }
-
-    .x.axis path {
-        display: none;
-    }
-
-    .y.axis line,
-    .y.axis path {
-        fill: none;
-        stroke: #000;
-    }    
-</style>
- 
 <p><img src="@Html.Raw(ViewData["ChartImage"])" /></p>
