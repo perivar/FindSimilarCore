@@ -43,11 +43,11 @@ namespace FindSimilarClient
 
             services.AddNodeServices(options =>
             {
-                // if (Environment.IsDevelopment())
-                // {
-                //     options.LaunchWithDebugging = true;
-                //     options.DebuggingPort = 9229;
-                // }
+                if (Environment.IsDevelopment())
+                {
+                    options.LaunchWithDebugging = true;
+                    options.DebuggingPort = 9229;
+                }
             });
 
             services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
@@ -60,7 +60,7 @@ namespace FindSimilarClient
             if (Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                // app.UseRequestResponseLogging();
+                app.UseRequestResponseLogging();
             }
             else
             {
