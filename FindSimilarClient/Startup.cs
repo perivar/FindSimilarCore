@@ -18,12 +18,16 @@ namespace FindSimilarClient
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IHostingEnvironment environment)
         {
             Configuration = configuration;
+            Environment = environment;
         }
 
         public IConfiguration Configuration { get; }
+
+        public IHostingEnvironment Environment { get; }
+
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -39,10 +43,11 @@ namespace FindSimilarClient
 
             services.AddNodeServices(options =>
             {
-#if DEBUG
-                options.LaunchWithDebugging = true;
-                options.DebuggingPort = 9229;
-#endif
+                if (Environment.IsDevelopment())
+                {
+                    options.LaunchWithDebugging = true;
+                    options.DebuggingPort = 9229;
+                }
             });
 
             services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
@@ -50,11 +55,12 @@ namespace FindSimilarClient
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
-            if (env.IsDevelopment())
+            if (Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseRequestResponseLogging();
             }
             else
             {
@@ -62,15 +68,15 @@ namespace FindSimilarClient
                 app.UseHsts();
             }
 
-#if DEBUG
-            app.UseRequestResponseLogging();
-#endif
-
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
 
-            app.UseCors(builder => builder.AllowAnyOrigin().AllowCredentials().AllowAnyHeader().AllowAnyMethod());
+            app.UseCors(builder => builder
+                        .AllowAnyOrigin()
+                        .AllowCredentials()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod());
 
             app.UseMvc(routes =>
             {
