@@ -108,31 +108,33 @@ module.exports = function (callback, options, data) {
     // callback(null, imgSrc);
     // return;        
 
-    puppeteer.launch({
-        // headless: false, // The browser is visible
-        // slowMo: 250, // slow down by 250ms        
-        // ignoreHTTPSErrors: true
-    }).then(browser => {
-        browser.newPage()
-            .then(page => {
+    (async () => {
 
-                // to ensure crisp screenshots we need to set the device factor to 2
-                page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
+        const browser = await puppeteer.launch({
+            // headless: false, // The browser is visible
+            // slowMo: 250, // slow down by 250ms        
+            // ignoreHTTPSErrors: true
+        });
 
-                // set debug 
-                // page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+        const page = await browser.newPage();
 
-                // build svg content
-                page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
-                    {
-                        // waitUntil: 'networkidle0',
-                        // timeout: 15000
-                    }
-                )
-                    .then(resp => page.screenshot({ type: 'jpeg' }))
-                    .then(buffer => "data:image/jpeg;base64," + buffer.toString("base64"))
-                    .then(buffer => callback(null, buffer))
-                    .then(buffer => browser.close());
-            });
-    });
+        await page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
+            {
+                // waitUntil: 'networkidle0',
+                // timeout: 15000
+            }
+        );
+
+        // to ensure crisp screenshots we need to set the device factor to 2
+        page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
+
+        // jpeg is somewhat faster than png
+        const screenshot = await page.screenshot({ type: 'jpeg' });
+
+        var buffer = "data:image/jpeg;base64," + screenshot.toString("base64");
+
+        await browser.close();
+
+        return callback(null, buffer);
+    })();
 }
