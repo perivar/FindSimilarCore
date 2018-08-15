@@ -107,24 +107,13 @@ module.exports = async function (callback, options, data) {
     // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
     // callback(null, imgSrc);
     // return;        
-
-
-    // puppeteerOptions: {
-    //     // headless: false, // The browser is visible
-    //     // slowMo: 250, // slow down by 250ms        
-    //     // ignoreHTTPSErrors: true
-    // }
-
-    // to ensure crisp screenshots we need to set the device factor to 2
-    // page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
+    
 
     // either use module.exports = async function
     // or wrap in anonymous async method 
     // (async () => {
 
     // Use pool in your code to acquire/release resources
-    // acquire connection - Promise is resolved
-    // once a resource becomes available
     const page = await browserPagePool.acquire();
 
     await page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
@@ -134,14 +123,17 @@ module.exports = async function (callback, options, data) {
         }
     );
 
-    const start = Date.now();
+    // to ensure crisp screenshots we need to set the device factor to 2
+    await page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
+
+    // const start = Date.now();
 
     // jpeg is somewhat faster than png
     const screenshot = await page.screenshot({ type: 'jpeg' });
     var buffer = "data:image/jpeg;base64," + screenshot.toString("base64");
     await browserPagePool.release(page);
 
-    console.log((Date.now() - start) + 'ms')
+    // console.log((Date.now() - start) + 'ms')
 
     return callback(null, buffer);
 
