@@ -107,7 +107,7 @@ module.exports = async function (callback, options, data) {
     // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
     // callback(null, imgSrc);
     // return;        
-    
+
 
     // either use module.exports = async function
     // or wrap in anonymous async method 

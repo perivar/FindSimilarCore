@@ -2,13 +2,20 @@ const genericPool = require('generic-pool');
 const puppeteer = require('puppeteer');
 
 // puppeteer.launch will return a promise to resolve with a browser instance
-const browserPromise = async () => await puppeteer.launch(
-    {
-        // headless: false, // The browser is visible
-        // slowMo: 250, // slow down by 250ms        
-        // ignoreHTTPSErrors: true
-    }
-);
+// this can also be written as:
+// const browserPromise = async () => await puppeteer.launch();
+const browserPromise = async function () {
+
+    const browser = await puppeteer.launch(
+        {
+            // headless: false, // The browser is visible
+            // slowMo: 250, // slow down by 250ms        
+            // ignoreHTTPSErrors: true
+        }
+    );
+
+    return browser
+}
 
 const factory = {
     create: async function () {
