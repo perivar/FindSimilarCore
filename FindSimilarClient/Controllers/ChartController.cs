@@ -6,13 +6,18 @@ namespace FindSimilarClient.Controllers
 {
     public class ChartController : Controller
     {
+        public ChartController([FromServices] INodeServices nodeServices)
+        {
+            StartPool(nodeServices).GetAwaiter().GetResult();
+        }
+
         public async Task<IActionResult> Chart([FromServices] INodeServices nodeServices)
         {
             var data = new int[] { 3, 6, 2, 7, 5, 2, 0, 3, 8, 9, 2, 5, 9, 3, 6, 3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 9, 2, 7 };
 
             var options = new { width = 1000, height = 400 };
 
-            string markup = await nodeServices.InvokeAsync<string>("Node/d3Line.js", options, data);
+            string markup = await nodeServices.InvokeExportAsync<string>("Node/d3Line.js", "generateChart", options, data);
 
             ViewData["ChartImage"] = markup;
 
@@ -26,6 +31,18 @@ namespace FindSimilarClient.Controllers
 </html>";
 
             return Content(html, "text/html"); // if we want "plain" html 
+        }
+
+        public async Task<IActionResult> StartPool([FromServices] INodeServices nodeServices)
+        {
+            string result = await nodeServices.InvokeExportAsync<string>("Node/d3Line.js", "startPool");
+            return Content(result, "text/html"); // if we want "plain" html 
+        }
+
+        public async Task<IActionResult> StopPool([FromServices] INodeServices nodeServices)
+        {
+            string result = await nodeServices.InvokeExportAsync<string>("Node/d3Line.js", "stopPool");
+            return Content(result, "text/html"); // if we want "plain" html 
         }
     }
 }
