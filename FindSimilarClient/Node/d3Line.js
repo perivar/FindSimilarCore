@@ -1,9 +1,9 @@
 // Include all modules we need
 const { JSDOM } = require("jsdom");
 const d3 = require("d3");
-const puppeteer = require('puppeteer');
+const browserPagePool = require('./browserPagePool.js');
 
-module.exports = function (callback, options, data) {
+module.exports = async function (callback, options, data) {
 
     // Create disconnected HTML DOM and attach it to D3
     // note: multi-line html can be enclosed in `
@@ -108,33 +108,44 @@ module.exports = function (callback, options, data) {
     // callback(null, imgSrc);
     // return;        
 
-    (async () => {
 
-        const browser = await puppeteer.launch({
-            // headless: false, // The browser is visible
-            // slowMo: 250, // slow down by 250ms        
-            // ignoreHTTPSErrors: true
-        });
+    // puppeteerOptions: {
+    //     // headless: false, // The browser is visible
+    //     // slowMo: 250, // slow down by 250ms        
+    //     // ignoreHTTPSErrors: true
+    // }
 
-        const page = await browser.newPage();
+    // to ensure crisp screenshots we need to set the device factor to 2
+    // page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
 
-        await page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
-            {
-                // waitUntil: 'networkidle0',
-                // timeout: 15000
-            }
-        );
+    // either use module.exports = async function
+    // or wrap in anonymous async method 
+    // (async () => {
 
-        // to ensure crisp screenshots we need to set the device factor to 2
-        page.setViewport({ width: width, height: height, deviceScaleFactor: 2 });
+    // Use pool in your code to acquire/release resources
+    // acquire connection - Promise is resolved
+    // once a resource becomes available
+    const page = await browserPagePool.acquire();
 
-        // jpeg is somewhat faster than png
-        const screenshot = await page.screenshot({ type: 'jpeg' });
+    await page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
+        {
+            // waitUntil: 'networkidle0',
+            // timeout: 15000
+        }
+    );
 
-        var buffer = "data:image/jpeg;base64," + screenshot.toString("base64");
+    const start = Date.now();
 
-        await browser.close();
+    // jpeg is somewhat faster than png
+    const screenshot = await page.screenshot({ type: 'jpeg' });
+    var buffer = "data:image/jpeg;base64," + screenshot.toString("base64");
+    await browserPagePool.release(page);
 
-        return callback(null, buffer);
-    })();
+    console.log((Date.now() - start) + 'ms')
+
+    return callback(null, buffer);
+
+    // wrap in anonymous async method 
+    // })();
+
 }
