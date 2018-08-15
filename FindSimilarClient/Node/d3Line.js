@@ -1,8 +1,6 @@
 // Include all modules we need
-const svg2png = require("svg2png");
 const { JSDOM } = require("jsdom");
 const d3 = require("d3");
-const { convert } = require("convert-svg-to-png");
 const puppeteer = require('puppeteer');
 
 module.exports = function (callback, options, data) {
@@ -97,20 +95,6 @@ module.exports = function (callback, options, data) {
         .style("stroke", "steelblue")
         .style("stroke-width", "1.5");
 
-    // get the svg text
-    // var svgText = dom.window.document.body.outerHTML; // the html, including styles, including the body tags
-    var svgText = dom.window.document.body.innerHTML; // the html, including styles, excluding the body tags
-    // var svgText = dom.window.d3.select("#chart").html();
-    // callback(null, svgText);
-
-
-    // converting SVG to PNG using the headless browser PhantomJS (using svg2png)
-    // return base64 encoded PNG data-uri
-    // svg2png(Buffer.from(svgText), { width: width, height: height })
-    //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
-    //     .then(buffer => callback(null, buffer));
-
-
     // converting SVG to PNG using Chromium (using puppeteer)
     // return base64 encoded PNG
     // the page.goto method requires a propertly formatted svg with version and xml namespace 
@@ -118,6 +102,11 @@ module.exports = function (callback, options, data) {
         .attr("version", 1.1)
         .attr("xmlns", "http://www.w3.org/2000/svg")
         .node().parentNode.innerHTML;
+
+    // // return as base64 encoded SVG data-uri
+    // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
+    // callback(null, imgSrc);
+    // return;        
 
     puppeteer.launch({
         // headless: false, // The browser is visible
@@ -146,39 +135,4 @@ module.exports = function (callback, options, data) {
                     .then(buffer => browser.close());
             });
     });
-
-
-    // converting SVG to PNG using headless Chromium (using convert-svg-to-png)
-    // return base64 encoded PNG
-    // Note! Cannot get this to work properly with double scale (for crisp fonts)
-    // convert(Buffer.from(svgText),
-    //     {
-    //         width: width,
-    //         height: height,
-    //         puppeteer:
-    //         {
-    //             headless: false,
-    //             slowMo: 250, // slow down by 250ms 
-    //             ignoreHTTPSErrors: true,
-    //             args: ['--force-device-scale-factor=2', `--window-size=${width},${height}`],
-    //             // defaultViewport: {
-    //             //     width: width,
-    //             //     height: height,
-    //             //     deviceScaleFactor: 2
-    //             // }
-    //         }
-    //     })
-    //     .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
-    //     .then(buffer => callback(null, buffer));
-
-
-    // return as SVG
-    // var html = dom.window.d3.select("#chart svg")
-    //     .attr("version", 1.1)
-    //     .attr("xmlns", "http://www.w3.org/2000/svg")
-    //     .node().parentNode.innerHTML;
-
-    // // return as base64 encoded SVG data-uri
-    // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
-    // callback(null, imgSrc);
 }
