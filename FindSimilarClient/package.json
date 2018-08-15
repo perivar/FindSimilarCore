@@ -21,7 +21,8 @@
     "popper.js": "^1.14.4",
     "jsdom": "^11.12.0",
     "d3": "^5.5.0",
-    "puppeteer": "^1.7.0"
+    "puppeteer": "^1.7.0",
+    "puppeteer-cluster": "^0.9.1"
   },
   "devDependencies": {}
 }

@@ -14,6 +14,12 @@
     ],
     "configurations": [
         {
+            "name": "Launch Node App.js",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/FindSimilarClient/Node/app.js"
+        },
+        {
             "name": "Node.js Attach",
             "type": "node",
             "request": "attach",
@@ -24,7 +30,7 @@
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:9999",
-            "webRoot": "${workspaceFolder}/FindSimilarClientwwwroot",
+            "webRoot": "${workspaceFolder}/FindSimilarClient/wwwroot",
             "breakOnLoad": true,
             "sourceMaps": true,
             "sourceMapPathOverrides": {

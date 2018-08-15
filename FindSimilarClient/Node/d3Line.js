@@ -125,12 +125,12 @@ module.exports = function (callback, options, data) {
                 // build svg content
                 page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
                     {
-                        waitUntil: 'networkidle0',
-                        timeout: 15000
+                        // waitUntil: 'networkidle0',
+                        // timeout: 15000
                     }
                 )
-                    .then(resp => page.screenshot({ type: 'png' }))
-                    .then(buffer => "data:image/png;base64," + buffer.toString("base64"))
+                    .then(resp => page.screenshot({ type: 'jpeg' }))
+                    .then(buffer => "data:image/jpeg;base64," + buffer.toString("base64"))
                     .then(buffer => callback(null, buffer))
                     .then(buffer => browser.close());
             });
