@@ -13,18 +13,17 @@ using SoundFingerprinting.Configuration;
 using SoundFingerprinting.DAO.Data;
 using SoundFingerprinting.InMemory;
 using SoundFingerprinting.Query;
-using CommonUtils;
-using CommonUtils.Audio;
 using SoundFingerprinting.Strides;
-using FindSimilarServices.Audio;
 using SoundFingerprinting.FFT;
 using SoundFingerprinting.LSH;
 using SoundFingerprinting.MinHash;
 using SoundFingerprinting.Wavelets;
 using SoundFingerprinting.Utils;
 using SoundFingerprinting.Math;
+using FindSimilarServices.Audio;
+using CommonUtils;
+using CommonUtils.Audio;
 using Serilog;
-using CommonUtils.FFT;
 
 namespace FindSimilarServices
 {
@@ -132,95 +131,93 @@ namespace FindSimilarServices
 
         public void FingerprintDirectory(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)
         {
-            var stopWatch = new DebugTimer();
-            stopWatch.Start();
-
-            // use List<string> instead of IEnumerable<string> to force iteration
-            // and avoid iterating twice due to the count() and the foreach
-
-            List<string> filesAll =
-                Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
-                .Where(f => extensions.Contains(Path.GetExtension(f).ToLower())).ToList();
-
-            int filesAllTotalCount = filesAll.Count();
-            Log.Information("Found {0} files in scan directory.", filesAllTotalCount);
-
-            Log.Information("Please wait while we are reading the tracks from the database ...");
-            // Get all already processed files stored in the database and store in memory
-            // It seems to work well with huge volumes of files (200k)
-            List<string> filesAlreadyProcessed = null;
-            if (modelService is FindSimilarLiteDBService)
+            using (new DebugTimer("FingerprintDirectory()"))
             {
-                filesAlreadyProcessed = ((FindSimilarLiteDBService)modelService).ReadAllTrackFilePaths().ToList();
-            }
-            else
-            {
-                filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.Title).ToList();
-            }
+                // use List<string> instead of IEnumerable<string> to force iteration
+                // and avoid iterating twice due to the count() and the foreach
 
+                List<string> filesAll =
+                    Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories)
+                    .Where(f => extensions.Contains(Path.GetExtension(f).ToLower())).ToList();
 
-            int filesAllCounter = filesAlreadyProcessed.Count();
-            Log.Information("Database contains {0} already processed files.", filesAllCounter);
+                int filesAllTotalCount = filesAll.Count();
+                Log.Information("Found {0} files in scan directory.", filesAllTotalCount);
 
-            Log.Information("Please wait while we are finding tracks that has not already been added to the database ...");
-            // find the files that has not already been added to the database
-            List<string> filesRemaining = filesAll.Except(filesAlreadyProcessed).ToList();
-            int filesRemainingTotalCount = filesRemaining.Count();
-            Log.Information("Found {0} files remaining in scan directory to be processed.", filesRemainingTotalCount);
-
-            var options = new ParallelOptions();
-#if DEBUG
-            // Trick for debugging parallel code as single threaded
-            options.MaxDegreeOfParallelism = 1;
-            Log.Debug("Running in single-threaded mode!");
-#endif
-            int filesRemainingCounter = 0;
-            Parallel.ForEach(filesRemaining, options, file =>
-            {
-                var fileInfo = new FileInfo(file);
-
-                double duration = 0;
-                lock (_lockObj)
+                Log.Information("Please wait while we are reading the tracks from the database ...");
+                // Get all already processed files stored in the database and store in memory
+                // It seems to work well with huge volumes of files (200k)
+                List<string> filesAlreadyProcessed = null;
+                if (modelService is FindSimilarLiteDBService)
                 {
-                    // Try to check duration
-                    try
-                    {
-                        duration = audioService.GetLengthInSeconds(fileInfo.FullName);
-                    }
-                    catch (System.Exception e)
-                    {
-                        // Log
-                        Log.Warning(e.Message);
-                    }
-                }
-
-                // check if we should skip files longer than x seconds
-                if ((skipDurationAboveSeconds > 0 && duration > 0 && duration < skipDurationAboveSeconds)
-                    || skipDurationAboveSeconds <= 0
-                    || duration < 0)
-                {
-                    // store the full file path in the title field
-                    var track = new TrackData(null, null, fileInfo.FullName, null, 0, duration);
-                    if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track, verbosity))
-                    {
-                        Log.Fatal("Failed! Could not generate audio fingerprint for: {0}", file);
-                    }
-                    else
-                    {
-                        // Threadsafe increment
-                        // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
-                        var filesCounterNow = Interlocked.Increment(ref filesRemainingCounter);
-                        var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
-                        Log.Information("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesRemainingCounter, filesRemainingTotalCount, filesAllCounter, filesAllTotalCount, Thread.CurrentThread.ManagedThreadId);
-                    }
+                    filesAlreadyProcessed = ((FindSimilarLiteDBService)modelService).ReadAllTrackFilePaths().ToList();
                 }
                 else
                 {
-                    Log.Warning("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
+                    filesAlreadyProcessed = modelService.ReadAllTracks().Select(i => i.Title).ToList();
                 }
-            });
 
-            Log.Information("Time used: {0}", stopWatch.Stop());
+
+                int filesAllCounter = filesAlreadyProcessed.Count();
+                Log.Information("Database contains {0} already processed files.", filesAllCounter);
+
+                Log.Information("Please wait while we are finding tracks that has not already been added to the database ...");
+                // find the files that has not already been added to the database
+                List<string> filesRemaining = filesAll.Except(filesAlreadyProcessed).ToList();
+                int filesRemainingTotalCount = filesRemaining.Count();
+                Log.Information("Found {0} files remaining in scan directory to be processed.", filesRemainingTotalCount);
+
+                var options = new ParallelOptions();
+#if DEBUG
+                // Trick for debugging parallel code as single threaded
+                options.MaxDegreeOfParallelism = 1;
+                Log.Debug("Running in single-threaded mode!");
+#endif
+                int filesRemainingCounter = 0;
+                Parallel.ForEach(filesRemaining, options, file =>
+                {
+                    var fileInfo = new FileInfo(file);
+
+                    double duration = 0;
+                    lock (_lockObj)
+                    {
+                        // Try to check duration
+                        try
+                        {
+                            duration = audioService.GetLengthInSeconds(fileInfo.FullName);
+                        }
+                        catch (System.Exception e)
+                        {
+                            // Log
+                            Log.Warning(e.Message);
+                        }
+                    }
+
+                    // check if we should skip files longer than x seconds
+                    if ((skipDurationAboveSeconds > 0 && duration > 0 && duration < skipDurationAboveSeconds)
+                            || skipDurationAboveSeconds <= 0
+                            || duration < 0)
+                    {
+                        // store the full file path in the title field
+                        var track = new TrackData(null, null, fileInfo.FullName, null, 0, duration);
+                        if (!StoreAudioFileFingerprintsInStorageForLaterRetrieval(file, track, verbosity))
+                        {
+                            Log.Fatal("Failed! Could not generate audio fingerprint for: {0}", file);
+                        }
+                        else
+                        {
+                            // Threadsafe increment
+                            // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
+                            var filesCounterNow = Interlocked.Increment(ref filesRemainingCounter);
+                            var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
+                            Log.Information("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesRemainingCounter, filesRemainingTotalCount, filesAllCounter, filesAllTotalCount, Thread.CurrentThread.ManagedThreadId);
+                        }
+                    }
+                    else
+                    {
+                        Log.Warning("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
+                    }
+                });
+            }
         }
 
         public bool StoreAudioFileFingerprintsInStorageForLaterRetrieval(string pathToAudioFile, TrackData track, Verbosity verbosity)

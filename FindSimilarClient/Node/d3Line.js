@@ -8,6 +8,13 @@ module.exports = {
     // create d3line chart method
     generateChart: async function (callback, options, data) {
 
+        var index = 0;
+        var cities = d3.nest()
+            .key(function (d) {
+                return index++;
+            })
+            .entries(data);
+
         // Create disconnected HTML DOM and attach it to D3
         // note: multi-line html can be enclosed in `
         var dom = new JSDOM(`<html><body><div id="chart"></div></body></html>`);
@@ -27,26 +34,47 @@ module.exports = {
             h = height - margin.top - margin.bottom;
 
         // X scale will fit all values from data[] within pixels 0-w
-        var x = d3.scaleLinear().domain([0, data.length]).range([0, w]);
+        var xScale = d3.scaleLinear().range([0, w]);
 
-        // Y scale will fit values within pixels h-0 (Note the inverted domain for the y-scale: bigger is up!)
+        // Y scale will fit values within pixels h-0 
+        // (Note the inverted domain for the y-scale: bigger is up!)
+        var yScale = d3.scaleLinear().range([h, 0]);
+
+        // set color scheme
+        var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        // Compute the x scale domain
+        // xScale.domain([0, data.length]);
+        // xScale.domain(d3.extent(data, function (d, i) { return i; }));
+        xScale.domain([0, 100]);
+
+        // Compute the y scale domain
         // automatically determining max range can work something like this
-        var y = d3.scaleLinear().domain([0, d3.max(data)]).range([h, 0]);
+        // yScale.domain([0, d3.max(data)]);
+        // yScale.domain([
+        //     d3.min(cities, function (c) { return d3.min(c.values, function (d, i) { return d[i]; }); }),
+        //     d3.max(cities, function (c) { return d3.max(c.values, function (d, i) { return d[i]; }); })
+        // ]);
+        yScale.domain([0, 1]);
+
+        // this maps our different lines to colors
+        colorScale.domain(cities.map(function (c) { return c.key; }));
 
         // create a line function that can convert data[] into x and y points
         var line = d3.line()
+            .curve(d3.curveBasis)
             // assign the X function to plot our line as we wish
             .x(function (d, i) {
                 // verbose logging to show what's actually being done
-                // console.log('Plotting X value for data point: ' + d + ' using index: ' + i + ' to be at: ' + x(i) + ' using our xScale.');
+                console.log('Plotting X value for data point: ' + d + ' using index: ' + i + ' to be at: ' + xScale(i) + ' using our xScale.');
                 // return the X coordinate where we want to plot this datapoint
-                return x(i);
+                return xScale(i);
             })
             .y(function (d) {
                 // verbose logging to show what's actually being done
-                // console.log('Plotting Y value for data point: ' + d + ' to be at: ' + y(d) + " using our yScale.");
+                console.log('Plotting Y value for data point: ' + d + ' to be at: ' + yScale(d) + " using our yScale.");
                 // return the Y coordinate where we want to plot this datapoint
-                return y(d);
+                return yScale(d);
             })
 
         // Add an SVG element with the desired dimensions and margin.
@@ -58,7 +86,7 @@ module.exports = {
             .attr("transform", "translate(" + margin.right + "," + margin.top + ")");
 
         // create bottom xAxis
-        var xAxis = d3.axisBottom(x).tickSize(-h);
+        var xAxis = d3.axisBottom(xScale).tickSize(-h);
         // Add the x-axis.
         var xg = graph.append("svg:g")
             .attr("class", "x axis")
@@ -73,7 +101,7 @@ module.exports = {
             .style("display", "none");
 
         // create left yAxis
-        var yAxisLeft = d3.axisLeft(y).ticks(4);
+        var yAxisLeft = d3.axisLeft(yScale).ticks(4);
         // Add the y-axis to the left
         var yg = graph.append("svg:g")
             .attr("class", "y axis")
@@ -92,11 +120,26 @@ module.exports = {
 
         // Add the line by appending an svg:path element with the data line we created above
         // do this AFTER the axes above so that the line is above the tick-lines
-        graph.append("svg:path")
-            .attr("d", line(data))
+
+        // set city
+        var city = graph.selectAll(".city")
+            .data(cities)
+            .enter().append("g")
+            .attr("class", "city");
+
+        // add the lines
+        city.append("svg:path")
+            .attr("class", "line")
+            .attr("d", function (d) { return line(d.values); })
             .style("fill", "none")
-            .style("stroke", "steelblue")
+            .style("stroke", function (d) { return colorScale(d.key); })
             .style("stroke-width", "1.5");
+
+        // graph.append("svg:path")
+        //     .attr("d", line(data))
+        //     .style("fill", "none")
+        //     .style("stroke", "steelblue")
+        //     .style("stroke-width", "1.5");
 
         // converting SVG to PNG using Chromium (using puppeteer)
         // return base64 encoded PNG
@@ -106,10 +149,10 @@ module.exports = {
             .attr("xmlns", "http://www.w3.org/2000/svg")
             .node().parentNode.innerHTML;
 
-        // // return as base64 encoded SVG data-uri
-        // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
-        // callback(null, imgSrc);
-        // return;        
+        // return as base64 encoded SVG data-uri
+        var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
+        callback(null, imgSrc);
+        return;
 
 
         // either use module.exports = async function

@@ -31,81 +31,75 @@
 
         public List<SpectralImage> CreateLogSpectrogram(AudioSamples audioSamples, SpectrogramConfig configuration)
         {
-            var stopWatch = new DebugTimer();
-            stopWatch.Start();
-
-            int wdftSize = configuration.WdftSize;
-            int width = (audioSamples.Samples.Length - wdftSize) / configuration.Overlap;
-            if (width < 1)
+            using (new DebugTimer("CreateLogSpectrogram()"))
             {
-                return new List<SpectralImage>();
-            }
-
-            float[] frames = new float[width * configuration.LogBins];
-            ushort[] logFrequenciesIndexes = logUtility.GenerateLogFrequenciesRanges(audioSamples.SampleRate, configuration);
-            float[] window = configuration.Window.GetWindow(wdftSize);
-            float[] samples = audioSamples.Samples;
-
-            // PIN: reverted the following FFT to use lomontFFT with managed code (not the unsafe changed made by the original author due to the issues on my computers)
-
-            // NOTE! When using Parallell.For the result becomes different from time to time
-            // when running in Release mode. 
-            // Therefore make sure to use for loop instead
-            for (int index = 0; index < width; index++)
-            // Parallel.For(0, width, index =>
-            {
-                var fftArray = CopyAndWindow(samples, index * configuration.Overlap, window);
-
-                lomontFFT.RealFFT(fftArray, true);
-
-                // after the lomont realfft the fft input array will contain the FFT values
-                // r0, r(n/2), r1, i1, r2, i2 ...
-                // since the extract log bins method only uses lowBound index above 2 we can ignore the fact
-                // that the first and second values are "special":  r0, r(n/2)
-                // see https://github.com/perivar/FindSimilar/blob/6b658b1c54d1504136e25e933f39b7c303da5d9e/Mirage/Fft.cs
-                ExtractLogBins(fftArray, logFrequenciesIndexes, configuration.LogBins, wdftSize, frames, index);
-            }
-            // );
-
-            if (configuration.Verbosity == Verbosity.Verbose)
-            {
-                var imageService = new FindSimilarImageService();
-                using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins, width, configuration.LogBins))
+                int wdftSize = configuration.WdftSize;
+                int width = (audioSamples.Samples.Length - wdftSize) / configuration.Overlap;
+                if (width < 1)
                 {
-                    var fileName = Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram.png"));
-                    if (fileName != null)
+                    return new List<SpectralImage>();
+                }
+
+                float[] frames = new float[width * configuration.LogBins];
+                ushort[] logFrequenciesIndexes = logUtility.GenerateLogFrequenciesRanges(audioSamples.SampleRate, configuration);
+                float[] window = configuration.Window.GetWindow(wdftSize);
+                float[] samples = audioSamples.Samples;
+
+                // PIN: reverted the following FFT to use lomontFFT with managed code (not the unsafe changed made by the original author due to the issues on my computers)
+
+                // NOTE! When using Parallell.For the result becomes different from time to time
+                // when running in Release mode. 
+                // Therefore make sure to use for loop instead
+                for (int index = 0; index < width; index++)
+                // Parallel.For(0, width, index =>
+                {
+                    var fftArray = CopyAndWindow(samples, index * configuration.Overlap, window);
+
+                    lomontFFT.RealFFT(fftArray, true);
+
+                    // after the lomont realfft the fft input array will contain the FFT values
+                    // r0, r(n/2), r1, i1, r2, i2 ...
+                    // since the extract log bins method only uses lowBound index above 2 we can ignore the fact
+                    // that the first and second values are "special":  r0, r(n/2)
+                    // see https://github.com/perivar/FindSimilar/blob/6b658b1c54d1504136e25e933f39b7c303da5d9e/Mirage/Fft.cs
+                    ExtractLogBins(fftArray, logFrequenciesIndexes, configuration.LogBins, wdftSize, frames, index);
+                }
+                // );
+
+                if (configuration.Verbosity == Verbosity.Verbose)
+                {
+                    var imageService = new FindSimilarImageService();
+                    using (Image image = imageService.GetSpectrogramImage(frames, width, configuration.LogBins, width, configuration.LogBins))
                     {
-                        image.Save(fileName, ImageFormat.Png);
+                        var fileName = Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectrogram.png"));
+                        if (fileName != null)
+                        {
+                            image.Save(fileName, ImageFormat.Png);
+                        }
+                    }
+
+                    WriteOutputUtils.WriteCSV(frames, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_frames.csv")));
+                }
+
+                var spectralImages = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
+
+                if (configuration.Verbosity == Verbosity.Verbose)
+                {
+                    if (spectralImages.Count > 0)
+                    {
+                        var spectralImageList = new List<float[]>();
+                        foreach (var spectralImage in spectralImages)
+                        {
+                            spectralImageList.Add(spectralImage.Image);
+                        }
+                        var spectralImageArray = spectralImageList.ToArray();
+                        WriteOutputUtils.WriteCSV(spectralImageArray, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectral_images.csv")), ";");
                     }
                 }
 
-                WriteOutputUtils.WriteCSV(frames, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_frames.csv")));
+                ScaleFullSpectrum(spectralImages, configuration);
+                return spectralImages;
             }
-
-            var spectralImages = CutLogarithmizedSpectrum(frames, audioSamples.SampleRate, configuration);
-
-            if (configuration.Verbosity == Verbosity.Verbose)
-            {
-                if (spectralImages.Count > 0)
-                {
-                    var spectralImageList = new List<float[]>();
-                    foreach (var spectralImage in spectralImages)
-                    {
-                        spectralImageList.Add(spectralImage.Image);
-                    }
-                    var spectralImageArray = spectralImageList.ToArray();
-                    WriteOutputUtils.WriteCSV(spectralImageArray, Path.Combine(SoundFingerprinter.DEBUG_DIRECTORY_PATH, (Path.GetFileNameWithoutExtension(audioSamples.Origin) + "_spectral_images.csv")), ";");
-                }
-            }
-
-            ScaleFullSpectrum(spectralImages, configuration);
-
-            if (configuration.Verbosity == Verbosity.Verbose)
-            {
-                Console.WriteLine("CreateLogSpectrogram - Time used: {0}", stopWatch.Stop());
-            }
-
-            return spectralImages;
         }
 
         private void ScaleFullSpectrum(IEnumerable<SpectralImage> spectralImages, SpectrogramConfig configuration)

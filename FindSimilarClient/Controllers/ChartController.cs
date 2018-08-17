@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using CommonUtils.MathLib.FeatureExtraction;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.NodeServices;
 
@@ -6,14 +7,17 @@ namespace FindSimilarClient.Controllers
 {
     public class ChartController : Controller
     {
+        private readonly MFCC mfcc;
         public ChartController([FromServices] INodeServices nodeServices)
         {
             StartPool(nodeServices).GetAwaiter().GetResult();
+            mfcc = new MFCC(2048, 44100, 120, 20);
         }
 
         public async Task<IActionResult> Chart([FromServices] INodeServices nodeServices)
         {
-            var data = new int[] { 3, 6, 2, 7, 5, 2, 0, 3, 8, 9, 2, 5, 9, 3, 6, 3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 9, 2, 7 };
+            // var data = new int[] { 3, 6, 2, 7, 5, 2, 0, 3, 8, 9, 2, 5, 9, 3, 6, 3, 6, 2, 7, 5, 2, 1, 3, 8, 9, 2, 5, 9, 2, 7 };
+            var data = mfcc.filterWeights.MatrixData;
 
             var options = new { width = 1000, height = 400 };
 
