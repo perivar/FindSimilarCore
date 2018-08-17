@@ -11,7 +11,7 @@ namespace FindSimilarClient.Controllers
         public ChartController([FromServices] INodeServices nodeServices)
         {
             StartPool(nodeServices).GetAwaiter().GetResult();
-            mfcc = new MFCC(2048, 44100, 120, 20);
+            mfcc = new MFCC(512, 44100, 36, 20);
         }
 
         public async Task<IActionResult> Chart([FromServices] INodeServices nodeServices)
@@ -34,7 +34,8 @@ namespace FindSimilarClient.Controllers
 </body>
 </html>";
 
-            return Content(html, "text/html"); // if we want "plain" html 
+            // return Content(html, "text/html"); // if we want "plain" html 
+             return Content(markup, "image/svg+xml"); // if we want "plain" html     
         }
 
         public async Task<IActionResult> StartPool([FromServices] INodeServices nodeServices)

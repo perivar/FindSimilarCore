@@ -8,13 +8,6 @@ module.exports = {
     // create d3line chart method
     generateChart: async function (callback, options, data) {
 
-        var index = 0;
-        var cities = d3.nest()
-            .key(function (d) {
-                return index++;
-            })
-            .entries(data);
-
         // Create disconnected HTML DOM and attach it to D3
         // note: multi-line html can be enclosed in `
         var dom = new JSDOM(`<html><body><div id="chart"></div></body></html>`);
@@ -46,33 +39,31 @@ module.exports = {
         // Compute the x scale domain
         // xScale.domain([0, data.length]);
         // xScale.domain(d3.extent(data, function (d, i) { return i; }));
-        xScale.domain([0, 100]);
+        xScale.domain(d3.extent(data[0], function (d, i) { return i; }));
 
         // Compute the y scale domain
-        // automatically determining max range can work something like this
-        // yScale.domain([0, d3.max(data)]);
-        // yScale.domain([
-        //     d3.min(cities, function (c) { return d3.min(c.values, function (d, i) { return d[i]; }); }),
-        //     d3.max(cities, function (c) { return d3.max(c.values, function (d, i) { return d[i]; }); })
-        // ]);
-        yScale.domain([0, 1]);
-
-        // this maps our different lines to colors
-        colorScale.domain(cities.map(function (c) { return c.key; }));
+        yScale.domain([
+            d3.min(data, function (graph) {
+                return d3.min(graph);
+            }),
+            d3.max(data, function (graph) {
+                return d3.max(graph);
+            })
+        ]);
 
         // create a line function that can convert data[] into x and y points
-        var line = d3.line()
-            .curve(d3.curveBasis)
+        var valueLine = d3.line()
+            // .curve(d3.curveBasis)
             // assign the X function to plot our line as we wish
             .x(function (d, i) {
                 // verbose logging to show what's actually being done
-                console.log('Plotting X value for data point: ' + d + ' using index: ' + i + ' to be at: ' + xScale(i) + ' using our xScale.');
+                // console.log('Plotting X value for data point: ' + d + ' using index: ' + i + ' to be at: ' + xScale(i) + ' using our xScale.');
                 // return the X coordinate where we want to plot this datapoint
                 return xScale(i);
             })
-            .y(function (d) {
+            .y(function (d, i) {
                 // verbose logging to show what's actually being done
-                console.log('Plotting Y value for data point: ' + d + ' to be at: ' + yScale(d) + " using our yScale.");
+                // console.log('Plotting Y value for data point: ' + d + ' to be at: ' + yScale(d) + " using our yScale.");
                 // return the Y coordinate where we want to plot this datapoint
                 return yScale(d);
             })
@@ -118,25 +109,23 @@ module.exports = {
             .style("fill", "none")
             .style("stroke", "#000");
 
-        // Add the line by appending an svg:path element with the data line we created above
+        // Add the lines by appending an svg:path element with the data line we created above
         // do this AFTER the axes above so that the line is above the tick-lines
 
-        // set city
-        var city = graph.selectAll(".city")
-            .data(cities)
-            .enter().append("g")
-            .attr("class", "city");
+        // set each graph
+        var lineGraph = graph.selectAll(".graph")
+            .data(data)
+            .enter().append("g");
 
-        // add the lines
-        city.append("svg:path")
-            .attr("class", "line")
-            .attr("d", function (d) { return line(d.values); })
+        // add each of the line graphs
+        lineGraph.append("svg:path")
+            .attr("d", function (d) { return valueLine(d); })
             .style("fill", "none")
-            .style("stroke", function (d) { return colorScale(d.key); })
-            .style("stroke-width", "1.5");
+            .style("stroke", function (d, i) { return colorScale(i); })
+            .style("stroke-width", "1.0");
 
         // graph.append("svg:path")
-        //     .attr("d", line(data))
+        //     .attr("d", valueLine(data))
         //     .style("fill", "none")
         //     .style("stroke", "steelblue")
         //     .style("stroke-width", "1.5");
@@ -150,8 +139,9 @@ module.exports = {
             .node().parentNode.innerHTML;
 
         // return as base64 encoded SVG data-uri
-        var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
-        callback(null, imgSrc);
+        // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
+        // callback(null, imgSrc);
+        callback(null, html);
         return;
 
 

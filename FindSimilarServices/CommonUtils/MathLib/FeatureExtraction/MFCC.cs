@@ -55,7 +55,7 @@ namespace CommonUtils.MathLib.FeatureExtraction
 			dct = new DctMatrix(numberCoefficients, numberFilters).Matrix;
 
 			#if DEBUG
-			dct.WriteAscii("dct-mirage-orig.ascii");
+			// dct.WriteAscii("dct-mirage-orig.ascii");
 			// dct.DrawMatrixGraph("dct-mirage-orig.png");
 			#endif
 		}
