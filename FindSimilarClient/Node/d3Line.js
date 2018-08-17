@@ -14,10 +14,8 @@ module.exports = {
         dom.window.d3 = d3.select(dom.window.document);
 
         // define dimensions of graph
-        // var width = options.width || 1000;
-        // var height = options.height || 400;
-        var width = 960;
-        var height = 500;
+        var width = options.width || 1000;
+        var height = options.height || 400;
 
         var margin = {
             top: 20,
@@ -138,11 +136,14 @@ module.exports = {
             .attr("xmlns", "http://www.w3.org/2000/svg")
             .node().parentNode.innerHTML;
 
+        // return as SVG
+        // callback(null, html);
+        // return;
+
         // return as base64 encoded SVG data-uri
         // var imgSrc = "data:image/svg+xml;base64," + Buffer.from(html).toString('base64');
         // callback(null, imgSrc);
-        callback(null, html);
-        return;
+        // return;
 
 
         // either use module.exports = async function
@@ -154,6 +155,7 @@ module.exports = {
 
         await page.goto(`data:image/svg+xml;base64,${new Buffer(html).toString("base64")}`,
             {
+                // waitUntil not neccesary since we are feeding the page with all the data at once
                 // waitUntil: 'networkidle0',
                 // timeout: 15000
             }
