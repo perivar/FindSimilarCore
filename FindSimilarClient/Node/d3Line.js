@@ -14,14 +14,16 @@ module.exports = {
         dom.window.d3 = d3.select(dom.window.document);
 
         // define dimensions of graph
-        var width = options.width || 1000;
-        var height = options.height || 400;
+        // var width = options.width || 1000;
+        // var height = options.height || 400;
+        var width = 960;
+        var height = 500;
 
         var margin = {
-            top: 80,
-            right: 80,
-            bottom: 80,
-            left: 80
+            top: 20,
+            right: 40,
+            bottom: 20,
+            left: 40
         },
             w = width - margin.left - margin.right,
             h = height - margin.top - margin.bottom;
@@ -38,7 +40,6 @@ module.exports = {
 
         // Compute the x scale domain
         // xScale.domain([0, data.length]);
-        // xScale.domain(d3.extent(data, function (d, i) { return i; }));
         xScale.domain(d3.extent(data[0], function (d, i) { return i; }));
 
         // Compute the y scale domain
@@ -88,16 +89,19 @@ module.exports = {
         xg.selectAll("line")
             .style("stroke", "lightgrey");
 
-        xg.selectAll("path")
-            .style("display", "none");
+        // hide x-axis?
+        // xg.selectAll("path")
+        // .style("display", "none");
+
+        xg.select(".domain")
+            .style("stroke", "lightgrey");
 
         // create left yAxis
-        var yAxisLeft = d3.axisLeft(yScale).ticks(4);
+        var yAxisLeft = d3.axisLeft(yScale);//.ticks(10);
         // Add the y-axis to the left
         var yg = graph.append("svg:g")
             .attr("class", "y axis")
             .style("shape-rendering", "crispEdges")
-            // .attr("transform", "translate(-25,0)")
             .call(yAxisLeft);
 
         yg.selectAll("path")
@@ -112,23 +116,19 @@ module.exports = {
         // Add the lines by appending an svg:path element with the data line we created above
         // do this AFTER the axes above so that the line is above the tick-lines
 
-        // set each graph
-        var lineGraph = graph.selectAll(".graph")
+        // for each graph ...
+        var lineGraph = graph.selectAll(".lineGraph")
             .data(data)
-            .enter().append("g");
+            .enter().append("g")
+            .attr("class", "lineGraph");
 
-        // add each of the line graphs
+        // ... add each of the line graphs
         lineGraph.append("svg:path")
+            .attr("class", "line")
             .attr("d", function (d) { return valueLine(d); })
             .style("fill", "none")
             .style("stroke", function (d, i) { return colorScale(i); })
-            .style("stroke-width", "1.0");
-
-        // graph.append("svg:path")
-        //     .attr("d", valueLine(data))
-        //     .style("fill", "none")
-        //     .style("stroke", "steelblue")
-        //     .style("stroke-width", "1.5");
+            .style("stroke-width", "1.5");
 
         // converting SVG to PNG using Chromium (using puppeteer)
         // return base64 encoded PNG
