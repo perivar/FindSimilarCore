@@ -12,7 +12,7 @@
 <table id="data" class="table table-sm">
     <thead>
         <tr>
-            <th scope="col">#</th>
+            <th scope="col"></th>
             <th scope="col">File</th>
             <th scope="col">Seconds</th>
             <th scope="col">Action</th>
@@ -21,12 +21,22 @@
     <tbody>
 
 @foreach (TrackData track in ViewBag.Tracks) {
+
+        var filePath = track.Title;
+        var fileName = System.IO.Path.GetFileName(filePath);
+        var audioSource = $"/api/streaming/{track.TrackReference.Id}";
+        var encodedFilePath = filePath.Replace(@"\", @"\\"); 
+        var contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
+        var downloadUrl = $"{contentType}:{fileName}:http://localhost:9999/api/download/{track.TrackReference.Id}";
+
         <tr>
             <th scope="row">
-                <i class="far fa-play-circle" id="playPauseIcon"></i>
-                <audio preload="none" src="/api/streaming/@track.TrackReference.Id" title="@track.Title"></audio>
-            </th>            
-            <td><small>@track.Title</small></td>
+                <i class="fas fa-play" id="playPauseIcon"></i>
+                <audio preload="none" src="@audioSource" title="@filePath"></audio>
+            </th>                        
+            <td>
+                <div id="draggable" draggable="true" data-downloadurl="@downloadUrl" ondragstart="event.dataTransfer.setData('text/plain', '@encodedFilePath')"><small>@filePath</small></div>                 
+            </td>
             <td><small>@track.Length.ToString("N")</small></td>
             <td>
                 <div class="dropdown">
@@ -36,12 +46,6 @@
                 <div class="dropdown-menu" aria-labelledby="dropdownRowMenuButton">
                     <a class="dropdown-item" asp-controller="Home" asp-action="FindSimilar" asp-route-id="@track.TrackReference.Id">Find Similar</a>                    
                     <a class="dropdown-item" asp-controller="Home" asp-action="OpenDirectory" asp-route-id="@track.TrackReference.Id">Open Directory</a>                    
-                    @{
-                        <!-- var pathName = System.IO.Path.GetDirectoryName(track.Title); -->
-                        <!-- var uri = new System.Uri(pathName); -->
-                        <!-- var converted = uri.AbsoluteUri; -->
-                    }
-                    <!-- <a class="dropdown-item" onClick="window.open('converted', '_blank')">Open Local File</a>                  -->
                 </div>
                 </div>                
             </td>
@@ -133,7 +137,7 @@ function setPlayPauseIcon()
         var selectedTableRow = $('#data tbody tr:eq('+tableRowIndex+')');
         if(selectedTableRow.length > 0)
         {
-            var audioPlayerIcon = selectedTableRow.find('i');
+            var audioPlayerIcon = selectedTableRow.find('#playPauseIcon');
             SetAudioPlayerIcon(audioPlayerIcon, wavesurfer.isPlaying());
         }        
     }
@@ -192,12 +196,13 @@ function playRow(tableRowIndex)
 
 function SetAudioPlayerIcon(audioPlayerIcon, isPlaying) {
     if (isPlaying) {
-            audioPlayerIcon.removeClass('fa-play-circle');
-            audioPlayerIcon.addClass('fa-pause-circle');
+            audioPlayerIcon.removeClass('fa-play');
+            audioPlayerIcon.addClass('fa-pause');
             audioPlayerIcon.css("color", "red");
     } else {
-            audioPlayerIcon.removeClass('fa-pause-circle');
-            audioPlayerIcon.addClass('fa-play-circle');
+
+            audioPlayerIcon.removeClass('fa-pause');
+            audioPlayerIcon.addClass('fa-play');
             audioPlayerIcon.css("color", "black");
     }
 }
@@ -268,6 +273,26 @@ $('[data-dismiss="modal"]').on('click', function() {
 $(document).keydown(function (e) {
     
     if (!editing) {        
+        if (e.ctrlKey) {
+            // for drag file
+            var that = $(e.target);
+            // make sure it is not IE (attachEvent).
+            if (that[0].addEventListener) {
+                that[0].addEventListener("dragstart", function(e) {
+                    // e.dataTransfer in Firefox uses the DataTransfer constructor
+                    // instead of Clipboard
+                    // make sure it's Chrome and not Safari (both webkit-based).
+                    // setData on DownloadURL returns true on Chrome, and false on Safari
+                    // if (e.dataTransfer && e.dataTransfer.constructor == Clipboard) {
+                        var url = (e.srcElement.dataset && e.srcElement.dataset.downloadurl) || e.srcElement.getAttribute("data-downloadurl");
+                        e.dataTransfer.setData("DownloadURL", url);
+                    // }
+                }, false);
+                return;
+            }                
+            return;
+        }
+
         switch(e.which) 
         {        
             case 38:
@@ -336,7 +361,6 @@ tableRows.click( function(e) {
         highlightRow(clickedRowIndex);
     }
 });
-
 
 </script>
 }

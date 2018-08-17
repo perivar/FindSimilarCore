@@ -30,7 +30,9 @@ namespace FindSimilarClient.Controllers
             if (!string.IsNullOrEmpty(query))
             {
                 tracks = _database.ReadTracksByQuery(query);
-            } else {
+            }
+            else
+            {
                 tracks = _database.ReadAllTracks(0, 50);
             }
             ViewBag.Tracks = tracks;
@@ -67,10 +69,32 @@ namespace FindSimilarClient.Controllers
             var track = _database.ReadTrackByReference(new ModelReference<string>(id));
             if (!string.IsNullOrEmpty(track.Title))
             {
-                var pathName = Path.GetDirectoryName(track.Title);
-                query = pathName;
+                var filePath = Path.GetDirectoryName(track.Title);
+                query = filePath;
             }
             return RedirectToAction("Index", new { query = query });
+        }
+
+        [HttpGet("api/download/{id}")]
+        public async Task<IActionResult> DownloadFile(string id)
+        {
+            var track = _database.ReadTrackByReference(new ModelReference<string>(id));
+            if (!string.IsNullOrEmpty(track.Title))
+            {
+                var filePath = track.Title;
+
+                var memory = new MemoryStream();
+                using (var stream = new FileStream(filePath, FileMode.Open))
+                {
+                    await stream.CopyToAsync(memory);
+                }
+                memory.Position = 0;
+                
+                string contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
+                return File(memory, contentType, Path.GetFileName(filePath));
+            }
+
+            return this.NotFound();
         }
 
         public IActionResult About()
