@@ -166,9 +166,9 @@ module.exports = {
 
         // const start = Date.now();
 
-        // jpeg is somewhat faster than png
-        const screenshot = await page.screenshot({ type: 'jpeg' });
-        var buffer = "data:image/jpeg;base64," + screenshot.toString("base64");
+        // jpeg is somewhat faster than png - but still use png
+        const screenshot = await page.screenshot({ type: 'png' });
+        var buffer = "data:image/png;base64," + screenshot.toString("base64");
         await browserPagePool.release(page);
 
         // console.log((Date.now() - start) + 'ms')
