@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace CommonUtils
 {
@@ -323,6 +324,36 @@ namespace CommonUtils
             bmp.UnlockBits(bmpData);
 
             return bmp;
+        }
+
+        /// <summary>
+        /// Convert a base64 encoded string to bytes
+        /// E.g. data:image/png;base64,iVBORw0KGgoAA..
+        /// </summary>
+        /// <param name="base64String">base64 encoded string</param>
+        /// <returns>byte array</returns>
+        public static byte[] Base64ToByteArray(string base64String)
+        {
+            // remove the data:image/png;base64, part
+            base64String = Regex.Replace(base64String, "^data:image/[a-zA-Z]+;base64,", string.Empty);
+            return Convert.FromBase64String(base64String);
+        }
+
+        /// <summary>
+        // Convert a base64 encoded string to Image
+        /// E.g. data:image/png;base64,iVBORw0KGgoAA        
+        /// </summary>
+        /// <param name="base64String">base64 encoded image</param>
+        /// <returns>an image</returns>
+        public static System.Drawing.Image Base64ToImage(string base64String)
+        {
+            // remove the data:image/png;base64, part
+            base64String = Regex.Replace(base64String, "^data:image/[a-zA-Z]+;base64,", string.Empty);
+            byte[] imageBytes = Convert.FromBase64String(base64String);
+            MemoryStream ms = new MemoryStream(imageBytes, 0, imageBytes.Length);
+
+            ms.Write(imageBytes, 0, imageBytes.Length);
+            return System.Drawing.Image.FromStream(ms, true);
         }
 
         /// <summary>
