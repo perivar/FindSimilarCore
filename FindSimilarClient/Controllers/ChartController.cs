@@ -11,7 +11,7 @@ namespace FindSimilarClient.Controllers
         public ChartController([FromServices] INodeServices nodeServices)
         {
             StartPool(nodeServices).GetAwaiter().GetResult();
-            mfcc = new MFCC(512, 44100, 20, 20);
+            mfcc = new MFCC(2048, 44100, 40, 20);
         }
 
         public async Task<IActionResult> Chart([FromServices] INodeServices nodeServices)
