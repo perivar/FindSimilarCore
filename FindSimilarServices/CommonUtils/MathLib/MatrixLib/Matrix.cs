@@ -60,7 +60,7 @@ namespace CommonUtils.MathLib.MatrixLib
     ///</DL>
     /// @author The MathWorks, Inc. and the National Institute of Standards and Technology.
     /// @version 5 August 1998
-    /// @version 2015 - Enhancements by perivar@nerseth.com
+    /// @version 2018 - Enhancements by perivar@nerseth.com
     public class Matrix
     {
         // ------------------------
@@ -2029,50 +2029,56 @@ namespace CommonUtils.MathLib.MatrixLib
         /// </example>
         public void ReadXML(XDocument xdoc, string matrixName)
         {
-            // TODO: XElement crashes SharpDevelop in Debug mode when you want to see variables in the IDE
-#if !DEBUG
-			XElement dimensions = null;
-			if (matrixName != null) {
-				// look up by attribute name
-				dimensions = (from x in xdoc.Descendants("matrix")
-				              where x.Attribute("name").Value == matrixName
-				              select x).FirstOrDefault();
-			} else {
-				dimensions = xdoc.Element("matrix");
-			}
-			
-			string srows = dimensions.Attribute("rows").Value;
-			string scols = dimensions.Attribute("cols").Value;
-			int rows = int.Parse(srows);
-			int columns = int.Parse(scols);
+            XElement dimensions = null;
+            if (matrixName != null)
+            {
+                // look up by attribute name
+                dimensions = (from x in xdoc.Descendants("matrix")
+                              where x.Attribute("name").Value == matrixName
+                              select x).FirstOrDefault();
+            }
+            else
+            {
+                dimensions = xdoc.Element("matrix");
+            }
 
-			var matrixrows = from row in dimensions.Descendants("matrixrow")
-				select new {
-				Children = row.Descendants("cn")
-			};
-			
-			if (rows != matrixrows.Count() || columns != matrixrows.FirstOrDefault().Children.Count()) {
-				// Dimension errors
-				throw new ArgumentException("Matrix dimensions must agree.");
-			} else {
-				this.rowCount = rows;
-				this.columnCount = columns;
-			}
-			
-			this.matrixData = new double[rows][];
+            string srows = dimensions.Attribute("rows").Value;
+            string scols = dimensions.Attribute("cols").Value;
+            int rows = int.Parse(srows);
+            int columns = int.Parse(scols);
 
-			int i = 0, j = 0;
-			foreach (var matrixrow in matrixrows) {
-				this.matrixData[i] = new double[columns];
-				j = 0;
-				foreach(var cn in matrixrow.Children) {
-					string val = cn.Value;
-					this.matrixData[i][j] = double.Parse(val);
-					j++;
-				}
-				i++;
-			}
-#endif
+            var matrixrows = from row in dimensions.Descendants("matrixrow")
+                             select new
+                             {
+                                 Children = row.Descendants("cn")
+                             };
+
+            if (rows != matrixrows.Count() || columns != matrixrows.FirstOrDefault().Children.Count())
+            {
+                // Dimension errors
+                throw new ArgumentException("Matrix dimensions must agree.");
+            }
+            else
+            {
+                this.rowCount = rows;
+                this.columnCount = columns;
+            }
+
+            this.matrixData = new double[rows][];
+
+            int i = 0, j = 0;
+            foreach (var matrixrow in matrixrows)
+            {
+                this.matrixData[i] = new double[columns];
+                j = 0;
+                foreach (var cn in matrixrow.Children)
+                {
+                    string val = cn.Value;
+                    this.matrixData[i][j] = double.Parse(val);
+                    j++;
+                }
+                i++;
+            }
         }
 
         /// <summary>
