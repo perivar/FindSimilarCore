@@ -1,7 +1,13 @@
-﻿@using SoundFingerprinting.DAO.Data;
+﻿@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor;
+@using SoundFingerprinting.DAO.Data;
 
 @{
     ViewData["Title"] = "Home Page";
+
+    // get the absolute url to this page
+    var request = HttpContextAccessor.HttpContext.Request;
+    //string absoluteurl = string.Concat(request.Scheme, "://", request.Host, request.Path, request.QueryString);
+    string absoluteuri = string.Concat(request.Scheme, "://", request.Host);
 }
 
 @section Head {
@@ -27,7 +33,7 @@
         var audioSource = $"/api/streaming/{track.TrackReference.Id}";
         var encodedFilePath = filePath.Replace(@"\", @"\\"); 
         var contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
-        var downloadUrl = $"{contentType}:{fileName}:http://localhost:9999/api/download/{track.TrackReference.Id}";
+        var downloadUrl = $"{contentType}:{fileName}:{absoluteuri}/api/download/{track.TrackReference.Id}";
 
         <tr>
             <th scope="row">

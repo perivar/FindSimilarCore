@@ -50,6 +50,8 @@ namespace FindSimilarClient
                 }
             });
 
+            services.AddHttpContextAccessor();
+
             services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
             services.AddSingleton<ISoundFingerprinter>(new SoundFingerprinter(Configuration["FingerprintDatabase"]));
         }
