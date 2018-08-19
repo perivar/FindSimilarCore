@@ -24,6 +24,8 @@ using FindSimilarServices.Audio;
 using CommonUtils;
 using CommonUtils.Audio;
 using Serilog;
+using FindSimilarServices.Fingerprinting.SQLiteDb;
+using Microsoft.EntityFrameworkCore;
 
 namespace FindSimilarServices
 {
@@ -93,11 +95,27 @@ namespace FindSimilarServices
 
             if (!string.IsNullOrEmpty(loadFromPath) && File.Exists(loadFromPath))
             {
+                var dbContextFactory = new DesignTimeDbContextFactory();
+                var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
+                using (SQLiteDbContext context = dbContextFactory.CreateDbContext(args))
+                {
+                    // create or update
+                    context.Database.Migrate();
+                }
+
                 // this.modelService = new InMemoryModelService(loadFromPath);
                 this.modelService = new FindSimilarLiteDBService(loadFromPath);
             }
             else
             {
+                var dbContextFactory = new DesignTimeDbContextFactory();
+                var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
+                using (SQLiteDbContext context = dbContextFactory.CreateDbContext(args))
+                {
+                    // create or update
+                    context.Database.Migrate();
+                }
+
                 // this.modelService = new InMemoryModelService();
                 this.modelService = new FindSimilarLiteDBService(loadFromPath);
             }
@@ -194,8 +212,8 @@ namespace FindSimilarServices
 
                     // check if we should skip files longer than x seconds
                     if ((skipDurationAboveSeconds > 0 && duration > 0 && duration < skipDurationAboveSeconds)
-                            || skipDurationAboveSeconds <= 0
-                            || duration < 0)
+                        || skipDurationAboveSeconds <= 0
+                        || duration < 0)
                     {
                         // store the full file path in the title field
                         var track = new TrackData(null, null, fileInfo.FullName, null, 0, duration);

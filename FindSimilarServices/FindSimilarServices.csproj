@@ -15,5 +15,8 @@
     <PackageReference Include="LiteDB" Version="4.1.4"/>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.1.1"/>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.1.1"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.1.1"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.1.1"/>
   </ItemGroup>
 </Project>
