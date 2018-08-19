@@ -10,15 +10,16 @@ using SoundFingerprinting.DAO.Data;
 using SoundFingerprinting.DAO;
 using System.IO;
 using FindSimilarServices;
+using SoundFingerprinting;
 
 namespace FindSimilarClient.Controllers
 {
     public class HomeController : Controller
     {
-        private IFindSimilarDatabase _database;
+        private IModelService _database;
         private ISoundFingerprinter _fingerprinter;
 
-        public HomeController(IFindSimilarDatabase database, ISoundFingerprinter fingerprinter)
+        public HomeController(IModelService database, ISoundFingerprinter fingerprinter)
         {
             _database = database;
             _fingerprinter = fingerprinter;
@@ -29,11 +30,12 @@ namespace FindSimilarClient.Controllers
             IList<TrackData> tracks = new List<TrackData>();
             if (!string.IsNullOrEmpty(query))
             {
-                tracks = _database.ReadTracksByQuery(query);
+                // tracks = _database.ReadTracksByQuery(query);
             }
             else
             {
-                tracks = _database.ReadAllTracks(0, 50);
+                // tracks = _database.ReadAllTracks(0, 50);
+                tracks = _database.ReadAllTracks().Take(50).ToList();
             }
             ViewBag.Tracks = tracks;
 
@@ -89,7 +91,7 @@ namespace FindSimilarClient.Controllers
                     await stream.CopyToAsync(memory);
                 }
                 memory.Position = 0;
-                
+
                 string contentType = MimeMapping.MimeUtility.GetMimeMapping(filePath);
                 return File(memory, contentType, Path.GetFileName(filePath));
             }

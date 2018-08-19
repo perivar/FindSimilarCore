@@ -20,8 +20,8 @@ namespace FindSimilarClient.Controllers
     [Route("api/[controller]")]
     public class StreamingController : Controller
     {
-        private IFindSimilarDatabase _database;
-        public StreamingController(IFindSimilarDatabase database)
+        private IModelService _database;
+        public StreamingController(IModelService database)
         {
             _database = database;
         }

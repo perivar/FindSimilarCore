@@ -20,7 +20,7 @@ namespace FindSimilarServices.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long>("HashBin");
+                    b.Property<int>("HashBin");
 
                     b.Property<int>("HashTable");
 

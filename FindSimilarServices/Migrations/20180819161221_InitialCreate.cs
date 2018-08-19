@@ -53,7 +53,7 @@ namespace FindSimilarServices.Migrations
                     Id = table.Column<int>(nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     HashTable = table.Column<int>(nullable: false),
-                    HashBin = table.Column<long>(nullable: false),
+                    HashBin = table.Column<int>(nullable: false),
                     TrackId = table.Column<int>(nullable: false),
                     SubFingerprintId = table.Column<int>(nullable: false)
                 },

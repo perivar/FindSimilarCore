@@ -13,6 +13,7 @@ using FindSimilarServices.Audio;
 using FindSimilarServices.Fingerprinting;
 using SoundFingerprinting;
 using FindSimilarServices;
+using FindSimilarServices.Fingerprinting.SQLiteDb;
 
 namespace FindSimilarClient
 {
@@ -52,7 +53,12 @@ namespace FindSimilarClient
 
             services.AddHttpContextAccessor();
 
-            services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
+            var dbContextFactory = new DesignTimeDbContextFactory();
+            var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={Configuration["FingerprintDatabase"]}" };
+            SQLiteDbContext dbContext = dbContextFactory.CreateDbContext(args);
+            services.AddSingleton<IModelService>(dbContext);
+
+            // services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
             services.AddSingleton<ISoundFingerprinter>(new SoundFingerprinter(Configuration["FingerprintDatabase"]));
         }
 
