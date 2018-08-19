@@ -14,14 +14,15 @@ using CSCore.Codecs.WAV;
 using SoundFingerprinting;
 using SoundFingerprinting.DAO;
 using FindSimilarServices.Fingerprinting;
+using FindSimilarServices.Fingerprinting.SQLiteDb;
 
 namespace FindSimilarClient.Controllers
 {
     [Route("api/[controller]")]
     public class StreamingController : Controller
     {
-        private IModelService _database;
-        public StreamingController(IModelService database)
+        private readonly SQLiteDbContext _database;
+        public StreamingController(SQLiteDbContext database)
         {
             _database = database;
         }

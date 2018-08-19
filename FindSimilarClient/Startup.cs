@@ -14,6 +14,7 @@ using FindSimilarServices.Fingerprinting;
 using SoundFingerprinting;
 using FindSimilarServices;
 using FindSimilarServices.Fingerprinting.SQLiteDb;
+using Microsoft.EntityFrameworkCore;
 
 namespace FindSimilarClient
 {
@@ -53,10 +54,9 @@ namespace FindSimilarClient
 
             services.AddHttpContextAccessor();
 
-            var dbContextFactory = new DesignTimeDbContextFactory();
-            var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={Configuration["FingerprintDatabase"]}" };
-            SQLiteDbContext dbContext = dbContextFactory.CreateDbContext(args);
-            services.AddSingleton<IModelService>(dbContext);
+            // add the entity framework core database context 
+            var connection = $"Data Source={Configuration["FingerprintDatabase"]}";
+            services.AddDbContext<SQLiteDbContext>(options => options.UseSqlite(connection));
 
             // services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
             services.AddSingleton<ISoundFingerprinter>(new SoundFingerprinter(Configuration["FingerprintDatabase"]));

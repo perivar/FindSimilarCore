@@ -11,15 +11,16 @@ using SoundFingerprinting.DAO;
 using System.IO;
 using FindSimilarServices;
 using SoundFingerprinting;
+using FindSimilarServices.Fingerprinting.SQLiteDb;
 
 namespace FindSimilarClient.Controllers
 {
     public class HomeController : Controller
     {
-        private IModelService _database;
+        private readonly SQLiteDbContext _database;
         private ISoundFingerprinter _fingerprinter;
 
-        public HomeController(IModelService database, ISoundFingerprinter fingerprinter)
+        public HomeController(SQLiteDbContext database, ISoundFingerprinter fingerprinter)
         {
             _database = database;
             _fingerprinter = fingerprinter;
