@@ -8,14 +8,25 @@ using SoundFingerprinting.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace FindSimilarServices.Fingerprinting.SQLiteDb
 {
     public class SQLiteDbContext : DbContext, IModelService
     {
-        public SQLiteDbContext(DbContextOptions<SQLiteDbContext> options)
+        private readonly ILoggerFactory _loggerFactory;
+
+        public SQLiteDbContext(DbContextOptions<SQLiteDbContext> options, ILoggerFactory loggerFactory)
             : base(options)
-        { }
+        {
+            _loggerFactory = loggerFactory;
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder
+                .UseLoggerFactory(_loggerFactory);
+        }
 
         public DbSet<Track> Track { get; set; }
         public DbSet<SubFingerprint> SubFingerprint { get; set; }
@@ -74,10 +85,11 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
         {
             // var query = GetQueryForHashBins(hashBins);
             String statementValueTags = String.Join(",", hashBins);
-            String query = $"SELECT Id, HashTable, HashBin, TrackId, SubFingerprintId FROM HASH WHERE (HashBin IN ({statementValueTags})";
+            String query = $"SELECT Id, HashTable, HashBin, TrackId, SubFingerprintId FROM Hash WHERE (HashBin IN ({statementValueTags}))";
 
-            var hashes = this.Hash
-                .FromSql(query)
+            var result = this.Hash.Where(i => hashBins.Contains(i.HashBin));
+
+            var hashes = result
                 .GroupBy(g => g.SubFingerprintId)
                 .Select(s => new
                 {
@@ -87,7 +99,7 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                 })
                 .Where(e => e.MatchedCount >= config.ThresholdVotes)
                 .OrderByDescending(o => o.MatchedCount)
-                .Select(s => new ModelReference<int>(s.Key))
+                // .Select(s => new ModelReference<int>(s.Key))
                 .ToList();
 
             if (!hashes.Any())
@@ -96,7 +108,8 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
             }
 
             // get the SubFingerprintData for each of the hits
-            return ReadSubFingerprintDataByReference(hashes);
+            // return ReadSubFingerprintDataByReference(hashes);
+            return null;
         }
 
         public List<SubFingerprintData> ReadSubFingerprintDataByReference(IEnumerable<IModelReference> ids)

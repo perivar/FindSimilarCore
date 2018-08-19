@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace FindSimilarServices.Fingerprinting.SQLiteDb
@@ -33,7 +34,15 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                         new DbContextOptionsBuilder<SQLiteDbContext>()
                             .UseSqlite(_connectionString);
 
-            return new SQLiteDbContext(optionsBuilder.Options);
+            ILoggerFactory loggerFactory = new LoggerFactory();
+            var log = new Serilog.LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .CreateLogger();
+
+            loggerFactory.AddSerilog(log);
+
+            return new SQLiteDbContext(optionsBuilder.Options, loggerFactory);
         }
 
         private void LoadConnectionString(string[] args)
