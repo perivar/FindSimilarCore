@@ -33,7 +33,6 @@ namespace FindSimilarServices.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     TrackId = table.Column<int>(nullable: false),
                     SequenceNumber = table.Column<int>(nullable: false),
-                    SequencesCount = table.Column<int>(nullable: false),
                     SequenceAt = table.Column<double>(nullable: false)
                 },
                 constraints: table =>

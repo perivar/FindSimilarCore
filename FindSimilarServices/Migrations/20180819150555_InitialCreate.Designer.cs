@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FindSimilarServices.Migrations
 {
     [DbContext(typeof(SQLiteDbContext))]
-    [Migration("20180819131822_InitialCreate")]
+    [Migration("20180819150555_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -47,8 +47,6 @@ namespace FindSimilarServices.Migrations
                     b.Property<double>("SequenceAt");
 
                     b.Property<int>("SequenceNumber");
-
-                    b.Property<int>("SequencesCount");
 
                     b.Property<int>("TrackId");
 

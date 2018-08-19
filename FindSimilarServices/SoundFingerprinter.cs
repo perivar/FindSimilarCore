@@ -97,27 +97,27 @@ namespace FindSimilarServices
             {
                 var dbContextFactory = new DesignTimeDbContextFactory();
                 var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
-                using (SQLiteDbContext context = dbContextFactory.CreateDbContext(args))
-                {
-                    // create or update
-                    context.Database.Migrate();
-                }
+                SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
+
+                // create or update
+                context.Database.Migrate();
 
                 // this.modelService = new InMemoryModelService(loadFromPath);
-                this.modelService = new FindSimilarLiteDBService(loadFromPath);
+                // this.modelService = new FindSimilarLiteDBService(loadFromPath);
+                this.modelService = context;
             }
             else
             {
                 var dbContextFactory = new DesignTimeDbContextFactory();
                 var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
-                using (SQLiteDbContext context = dbContextFactory.CreateDbContext(args))
-                {
-                    // create or update
-                    context.Database.Migrate();
-                }
+                SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
+
+                // create or update
+                context.Database.Migrate();
 
                 // this.modelService = new InMemoryModelService();
-                this.modelService = new FindSimilarLiteDBService(loadFromPath);
+                // this.modelService = new FindSimilarLiteDBService(loadFromPath);
+                this.modelService = context;
             }
 
             this.audioService = new FindSimilarAudioService();

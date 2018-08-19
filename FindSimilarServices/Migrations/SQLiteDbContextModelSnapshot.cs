@@ -46,8 +46,6 @@ namespace FindSimilarServices.Migrations
 
                     b.Property<int>("SequenceNumber");
 
-                    b.Property<int>("SequencesCount");
-
                     b.Property<int>("TrackId");
 
                     b.HasKey("Id");

@@ -6,8 +6,8 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb.Models
         public int HashTable { get; set; } // the index
         public long HashBin { get; set; } // the actual number
         public int TrackId { get; set; }
-        public virtual Track Track { get; set; } // navigation property 
+        public Track Track { get; set; } // navigation property 
         public int SubFingerprintId { get; set; }
-        public virtual SubFingerprint SubFingerprint { get; set; } // navigation property 
+        public SubFingerprint SubFingerprint { get; set; } // navigation property 
     }
 }
