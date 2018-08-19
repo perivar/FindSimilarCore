@@ -87,9 +87,7 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
             String statementValueTags = String.Join(",", hashBins);
             String query = $"SELECT Id, HashTable, HashBin, TrackId, SubFingerprintId FROM Hash WHERE (HashBin IN ({statementValueTags}))";
 
-            var result = this.Hash.Where(i => hashBins.Contains(i.HashBin));
-
-            var hashes = result
+            var hashes = this.Hash.Where(i => hashBins.Contains(i.HashBin))
                 .GroupBy(g => g.SubFingerprintId)
                 .Select(s => new
                 {
@@ -99,7 +97,7 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                 })
                 .Where(e => e.MatchedCount >= config.ThresholdVotes)
                 .OrderByDescending(o => o.MatchedCount)
-                // .Select(s => new ModelReference<int>(s.Key))
+                .Select(s => new ModelReference<int>(s.Key))
                 .ToList();
 
             if (!hashes.Any())
