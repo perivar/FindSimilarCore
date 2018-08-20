@@ -23,13 +23,22 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
 
         public SQLiteDbContext CreateDbContext(string[] args)
         {
-            ILoggerFactory loggerFactory = new LoggerFactory();
-            var log = new Serilog.LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Console()
-                .CreateLogger();
+            return CreateDbContext(args, null);
+        }
 
+        public SQLiteDbContext CreateDbContext(string[] args, Serilog.ILogger log)
+        {
+            // set logging
+            if (log == null)
+            {
+                log = new Serilog.LoggerConfiguration()
+                    .MinimumLevel.Debug()
+                    .WriteTo.Console()
+                    .CreateLogger();
+            }
+            ILoggerFactory loggerFactory = new LoggerFactory();
             loggerFactory.AddSerilog(log);
+
 
             if (string.IsNullOrEmpty(_connectionString))
             {
@@ -76,7 +85,7 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                         .AddInMemoryCollection(inMemoryCollection);
 
             IConfigurationRoot configuration = configurationBuilder.Build();
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _connectionString = configuration.GetConnectionString(CONNECTION_STRING_KEY);
         }
     }
 }
