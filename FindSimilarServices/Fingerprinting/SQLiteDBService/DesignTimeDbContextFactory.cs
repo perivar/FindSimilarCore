@@ -37,7 +37,7 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                     .CreateLogger();
             }
             ILoggerFactory loggerFactory = new LoggerFactory();
-            loggerFactory.AddSerilog(log);
+            // loggerFactory.AddSerilog(log); // add this line to output Entity Framework log statements
 
 
             if (string.IsNullOrEmpty(_connectionString))
