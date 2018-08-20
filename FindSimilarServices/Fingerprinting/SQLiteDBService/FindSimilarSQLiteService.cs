@@ -90,18 +90,19 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDBService
         public IList<SubFingerprintData> ReadSubFingerprints(int[] hashBins, QueryConfiguration config)
         {
             var listOfIds = hashBins.ToList();
-            var hashes = _context.Hash.Where(i => listOfIds.Contains(i.HashBin))
+            var hashes = _context.Hash.AsNoTracking()
+                .Where(i => listOfIds.Contains(i.HashBin))
                 .GroupBy(g => g.SubFingerprintId)
                 .Select(s => new
                 {
                     Key = s.Key,
                     MatchedCount = s.Count(),
-                    Hashes = s.OrderBy(f => f.HashTable)
+                    // Hashes = s.OrderBy(f => f.HashTable)
                 })
                 .Where(e => e.MatchedCount >= config.ThresholdVotes)
                 .OrderByDescending(o => o.MatchedCount)
-                .Select(s => new ModelReference<int>(s.Key));
-            // .ToList();
+                .Select(s => new ModelReference<int>(s.Key))
+                .ToList();
 
             if (!hashes.Any())
             {
@@ -115,11 +116,14 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDBService
         public List<SubFingerprintData> ReadSubFingerprintDataByReference(IEnumerable<IModelReference> ids)
         {
             var listOfIds = ids.Select(i => i.Id);
-            var results = _context.SubFingerprint.Where(i => listOfIds.Contains(i.Id));
+            var results = _context.SubFingerprint
+                            .Where(i => listOfIds.Contains(i.Id))
+                            .Include(h => h.Hashes);
+            // .Include(t => t.Track); // don't need to include the track since it will be stripped away in SubFingerprintData anyway
 
-            if (results.Count() == 0)
+            if (!results.Any())
             {
-                return new List<SubFingerprintData>();
+                return Enumerable.Empty<SubFingerprintData>().ToList();
             }
 
             return results.Select(CopyToSubFingerprintData).ToList();
@@ -150,7 +154,16 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDBService
 
         public List<TrackData> ReadTracksByReferences(IEnumerable<IModelReference> ids)
         {
-            throw new System.NotImplementedException();
+            var listOfIds = ids.Select(i => i.Id);
+            var results = _context.Track
+                            .Where(i => listOfIds.Contains(i.Id));
+
+            if (!results.Any())
+            {
+                return Enumerable.Empty<TrackData>().ToList();
+            }
+
+            return results.Select(CopyToTrackData).ToList();
         }
 
         public static Track CopyToTrack(TrackData trackData)

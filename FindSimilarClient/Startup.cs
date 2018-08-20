@@ -57,17 +57,13 @@ namespace FindSimilarClient
 
             // add the entity framework core database context 
             var connection = $"Data Source={Configuration["FingerprintDatabase"]}";
-            services.AddDbContext<SQLiteDbContext>(options => options.UseSqlite(connection), ServiceLifetime.Scoped);
-            services.AddScoped<IFindSimilarDatabase, FindSimilarSQLiteService>();
+            services.AddDbContext<SQLiteDbContext>(options => options.UseSqlite(connection), ServiceLifetime.Transient);
 
-            // Build an intermediate service provider
-            // var sp = services.BuildServiceProvider();
-            // Resolve the services from the service provider
-            // var dbContext = sp.GetService<SQLiteDbContext>();
+            // add both the interfaces to FindSimilarSQLiteService
+            services.AddScoped<IModelService, FindSimilarSQLiteService>();
+            services.AddScoped<IFindSimilarDatabase>(x => x.GetService<IModelService>() as IFindSimilarDatabase);
 
-            // services.AddSingleton<IFindSimilarDatabase>(new FindSimilarLiteDBService(Configuration["FingerprintDatabase"]));
-            
-            services.AddSingleton<ISoundFingerprinter>(new SoundFingerprinter(Configuration["FingerprintDatabase"]));
+            services.AddScoped<ISoundFingerprinter, SoundFingerprinter>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

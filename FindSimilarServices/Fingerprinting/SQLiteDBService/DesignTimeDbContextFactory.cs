@@ -23,6 +23,14 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
 
         public SQLiteDbContext CreateDbContext(string[] args)
         {
+            ILoggerFactory loggerFactory = new LoggerFactory();
+            var log = new Serilog.LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .CreateLogger();
+
+            loggerFactory.AddSerilog(log);
+
             if (string.IsNullOrEmpty(_connectionString))
             {
                 LoadConnectionString(args);
@@ -34,14 +42,6 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                         new DbContextOptionsBuilder<SQLiteDbContext>()
                             .UseSqlite(_connectionString);
 
-            ILoggerFactory loggerFactory = new LoggerFactory();
-            var log = new Serilog.LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Console()
-                .CreateLogger();
-
-            loggerFactory.AddSerilog(log);
-
             return new SQLiteDbContext(optionsBuilder.Options, loggerFactory);
         }
 
@@ -49,12 +49,11 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
         {
             Dictionary<string, string> inMemoryCollection = new Dictionary<string, string>();
 
-            string message = "";
             if (args.Any())
             {
                 // Connection strings has keys like "ConnectionStrings:DefaultConnection" 
                 // and values like "Data Source=C:\\Users\\pnerseth\\My Projects\\fingerprint.db"
-                message = $"Searching for '{CONNECTION_STRING_KEY}' within passed arguments: {string.Join(", ", args)}";
+                Log.Information($"Searching for '{CONNECTION_STRING_KEY}' within passed arguments: {string.Join(", ", args)}");
                 var match = args.FirstOrDefault(s => s.Contains($"ConnectionStrings:{CONNECTION_STRING_KEY}"));
                 if (match != null)
                 {
@@ -68,10 +67,8 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
             }
             else
             {
-                message = $"Searching for '{CONNECTION_STRING_KEY}' in {Directory.GetCurrentDirectory()} => appsettings.json";
+                Log.Information($"Searching for '{CONNECTION_STRING_KEY}' in {Directory.GetCurrentDirectory()} => appsettings.json");
             }
-            Log.Information(message);
-            Console.WriteLine(message);
 
             var configurationBuilder = new ConfigurationBuilder()
                         .SetBasePath(Directory.GetCurrentDirectory())

@@ -68,96 +68,37 @@ namespace FindSimilarServices
         private static string[] extensions = { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg", ".mp1", ".m1a", ".mp2", ".m2a", ".mp3", ".mpg", ".mpeg", ".mpeg3" };
         private readonly object _lockObj = new object();
 
-        private IModelService modelService;
-        private IAudioService audioService;
-        private ISpectrumService spectrumService;
-        private IFingerprintService fingerprintService;
-        private IFingerprintCommandBuilder fingerprintCommandBuilder;
+        // services used by the fingerprint methods
+        private readonly IModelService modelService;
+        private readonly IAudioService audioService;
+        private readonly ISpectrumService spectrumService;
+        private readonly IFingerprintService fingerprintService;
+        private readonly IFingerprintCommandBuilder fingerprintCommandBuilder;
 
-        public IModelService ModelService
+        public SoundFingerprinter(IModelService modelService) : this(modelService, null, null)
         {
-            get
+        }
+
+        public SoundFingerprinter(string loadFromPath, string debugDirectoryPath) : this(null, loadFromPath, debugDirectoryPath)
+        {
+        }
+
+        public SoundFingerprinter(IModelService modelService, string loadFromPath, string debugDirectoryPath)
+        {
+            SetDebugPath(debugDirectoryPath);
+
+            // if the modelService was passed, use it
+            if (modelService != null)
             {
-                return modelService;
-            }
-            set
-            {
-                modelService = value;
-            }
-        }
-
-        // instansiate without a database
-        public SoundFingerprinter()
-        {
-            InitDebugPath();
-            InitBaseServices();
-        }
-
-        public SoundFingerprinter(string loadFromPath) : this(loadFromPath, null)
-        {
-        }
-
-        public SoundFingerprinter(string loadFromPath, string debugDirectoryPath)
-        {
-            InitDebugPath(debugDirectoryPath);
-            InitBaseServices();
-            InitDatabase(loadFromPath);
-        }
-
-        public SoundFingerprinter(IModelService modelService) : this(modelService, null)
-        {
-        }
-
-        public SoundFingerprinter(IModelService modelService, string debugDirectoryPath)
-        {
-            InitDebugPath(debugDirectoryPath);
-            InitBaseServices();
-            this.modelService = modelService;
-        }
-
-        private void InitDebugPath(string debugDirectoryPath = null)
-        {
-            if (!string.IsNullOrEmpty(debugDirectoryPath))
-            {
-                DEBUG_DIRECTORY_PATH = debugDirectoryPath;
-            }
-
-            // create the debug directory if it doesn't exist
-            if (!Directory.Exists(DEBUG_DIRECTORY_PATH)) Directory.CreateDirectory(DEBUG_DIRECTORY_PATH);
-        }
-
-        private void InitDatabase(string loadFromPath)
-        {
-            if (!string.IsNullOrEmpty(loadFromPath) && File.Exists(loadFromPath))
-            {
-                var dbContextFactory = new DesignTimeDbContextFactory();
-                var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
-                SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
-
-                // create or update
-                context.Database.Migrate();
-
-                // this.modelService = new InMemoryModelService(loadFromPath);
-                // this.modelService = new FindSimilarLiteDBService(loadFromPath);
-                this.modelService = new FindSimilarSQLiteService(context);
+                this.modelService = modelService;
             }
             else
             {
-                var dbContextFactory = new DesignTimeDbContextFactory();
-                var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
-                SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
-
-                // create or update
-                context.Database.Migrate();
-
-                // this.modelService = new InMemoryModelService();
-                // this.modelService = new FindSimilarLiteDBService(loadFromPath);
-                this.modelService = new FindSimilarSQLiteService(context);
+                //  ... otherwise use the loadFromPath
+                this.modelService = GetDatabaseService(loadFromPath);
             }
-        }
 
-        private void InitBaseServices()
-        {
+            // and set the rest of the services
             this.audioService = new FindSimilarAudioService();
 
             var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
@@ -175,6 +116,47 @@ namespace FindSimilarServices
             );
 
             this.fingerprintCommandBuilder = new FingerprintCommandBuilder(fingerprintService);
+        }
+
+        private void SetDebugPath(string debugDirectoryPath = null)
+        {
+            if (!string.IsNullOrEmpty(debugDirectoryPath))
+            {
+                DEBUG_DIRECTORY_PATH = debugDirectoryPath;
+            }
+
+            // create the debug directory if it doesn't exist
+            if (!Directory.Exists(DEBUG_DIRECTORY_PATH)) Directory.CreateDirectory(DEBUG_DIRECTORY_PATH);
+        }
+
+        private IModelService GetDatabaseService(string loadFromPath)
+        {
+            if (!string.IsNullOrEmpty(loadFromPath))
+            {
+                if (File.Exists(loadFromPath))
+                {
+                    var dbContextFactory = new DesignTimeDbContextFactory();
+                    var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
+                    SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
+
+                    // update
+                    context.Database.Migrate();
+
+                    return new FindSimilarSQLiteService(context);
+                }
+                else
+                {
+                    var dbContextFactory = new DesignTimeDbContextFactory();
+                    var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
+                    SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
+
+                    // create
+                    context.Database.Migrate();
+
+                    return new FindSimilarSQLiteService(context);
+                }
+            }
+            return null;
         }
 
         public void Snapshot(string saveToPath)

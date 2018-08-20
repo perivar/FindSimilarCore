@@ -13,6 +13,7 @@ using FindSimilarServices;
 using SoundFingerprinting;
 using FindSimilarServices.Fingerprinting.SQLiteDb;
 using FindSimilarServices.Fingerprinting.SQLiteDBService;
+using SoundFingerprinting.Configuration;
 
 namespace FindSimilarClient.Controllers
 {
@@ -24,7 +25,6 @@ namespace FindSimilarClient.Controllers
         {
             _database = database;
             _fingerprinter = fingerprinter;
-            (_fingerprinter as SoundFingerprinter).ModelService = database as FindSimilarSQLiteService;
         }
 
         public IActionResult Index(string query)
@@ -52,12 +52,18 @@ namespace FindSimilarClient.Controllers
                 var filePath = track.Title;
                 var results = _fingerprinter.GetBestMatchesForSong(Path.GetFullPath(filePath), -1, -1, Verbosity.Normal);
 
+                // var hashBins = new int[] { 689769481, 470224145, 923731640, 487197771, 187184670, 402924900 };
+                // var subResults = (_database as IModelService).ReadSubFingerprints(hashBins, new ShortSamplesQueryConfiguration());
+                // var results = (_database as IModelService).ReadTracksByReferences(subResults.Select(s => s.TrackReference).AsEnumerable());
+
                 foreach (var result in results)
                 {
-                    // the track title holds the full filename                     
+                    // the track title holds the full filename
                     // FileInfo fileInfo = new FileInfo(result.Track.Title);
                     // Console.WriteLine("{0}, confidence {1}, coverage {2}, est. coverage {3}", fileInfo.FullName, result.Confidence, result.Coverage, result.EstimatedCoverage);
                     tracks.Add(result.Track);
+
+                    // tracks.Add(result);
                 }
             }
 
