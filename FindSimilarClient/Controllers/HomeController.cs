@@ -12,18 +12,19 @@ using System.IO;
 using FindSimilarServices;
 using SoundFingerprinting;
 using FindSimilarServices.Fingerprinting.SQLiteDb;
+using FindSimilarServices.Fingerprinting.SQLiteDBService;
 
 namespace FindSimilarClient.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly SQLiteDbContext _database;
+        private readonly IFindSimilarDatabase _database;
         private ISoundFingerprinter _fingerprinter;
-
-        public HomeController(SQLiteDbContext database, ISoundFingerprinter fingerprinter)
+        public HomeController(IFindSimilarDatabase database, ISoundFingerprinter fingerprinter)
         {
             _database = database;
             _fingerprinter = fingerprinter;
+            (_fingerprinter as SoundFingerprinter).ModelService = database as FindSimilarSQLiteService;
         }
 
         public IActionResult Index(string query)
@@ -31,12 +32,11 @@ namespace FindSimilarClient.Controllers
             IList<TrackData> tracks = new List<TrackData>();
             if (!string.IsNullOrEmpty(query))
             {
-                // tracks = _database.ReadTracksByQuery(query);
+                tracks = _database.ReadTracksByQuery(query);
             }
             else
             {
-                // tracks = _database.ReadAllTracks(0, 50);
-                tracks = _database.ReadAllTracks().Take(50).ToList();
+                tracks = _database.ReadAllTracks(0, 50);
             }
             ViewBag.Tracks = tracks;
 

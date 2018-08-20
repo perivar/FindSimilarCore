@@ -26,6 +26,8 @@ using CommonUtils.Audio;
 using Serilog;
 using FindSimilarServices.Fingerprinting.SQLiteDb;
 using Microsoft.EntityFrameworkCore;
+using FindSimilarServices.Fingerprinting;
+using FindSimilarServices.Fingerprinting.SQLiteDBService;
 
 namespace FindSimilarServices
 {
@@ -64,26 +66,56 @@ namespace FindSimilarServices
 
         // Supported audio files
         private static string[] extensions = { ".wav", ".aif", ".aiff", ".fla", ".flac", ".ogg", ".mp1", ".m1a", ".mp2", ".m2a", ".mp3", ".mpg", ".mpeg", ".mpeg3" };
-
         private readonly object _lockObj = new object();
 
         private IModelService modelService;
         private IAudioService audioService;
-
         private ISpectrumService spectrumService;
-
         private IFingerprintService fingerprintService;
-
         private IFingerprintCommandBuilder fingerprintCommandBuilder;
 
-        public SoundFingerprinter() : this(null, null)
+        public IModelService ModelService
         {
+            get
+            {
+                return modelService;
+            }
+            set
+            {
+                modelService = value;
+            }
         }
+
+        // instansiate without a database
+        public SoundFingerprinter()
+        {
+            InitDebugPath();
+            InitBaseServices();
+        }
+
         public SoundFingerprinter(string loadFromPath) : this(loadFromPath, null)
         {
         }
 
         public SoundFingerprinter(string loadFromPath, string debugDirectoryPath)
+        {
+            InitDebugPath(debugDirectoryPath);
+            InitBaseServices();
+            InitDatabase(loadFromPath);
+        }
+
+        public SoundFingerprinter(IModelService modelService) : this(modelService, null)
+        {
+        }
+
+        public SoundFingerprinter(IModelService modelService, string debugDirectoryPath)
+        {
+            InitDebugPath(debugDirectoryPath);
+            InitBaseServices();
+            this.modelService = modelService;
+        }
+
+        private void InitDebugPath(string debugDirectoryPath = null)
         {
             if (!string.IsNullOrEmpty(debugDirectoryPath))
             {
@@ -92,7 +124,10 @@ namespace FindSimilarServices
 
             // create the debug directory if it doesn't exist
             if (!Directory.Exists(DEBUG_DIRECTORY_PATH)) Directory.CreateDirectory(DEBUG_DIRECTORY_PATH);
+        }
 
+        private void InitDatabase(string loadFromPath)
+        {
             if (!string.IsNullOrEmpty(loadFromPath) && File.Exists(loadFromPath))
             {
                 var dbContextFactory = new DesignTimeDbContextFactory();
@@ -104,7 +139,7 @@ namespace FindSimilarServices
 
                 // this.modelService = new InMemoryModelService(loadFromPath);
                 // this.modelService = new FindSimilarLiteDBService(loadFromPath);
-                this.modelService = context;
+                this.modelService = new FindSimilarSQLiteService(context);
             }
             else
             {
@@ -117,17 +152,20 @@ namespace FindSimilarServices
 
                 // this.modelService = new InMemoryModelService();
                 // this.modelService = new FindSimilarLiteDBService(loadFromPath);
-                this.modelService = context;
+                this.modelService = new FindSimilarSQLiteService(context);
             }
+        }
 
+        private void InitBaseServices()
+        {
             this.audioService = new FindSimilarAudioService();
 
             var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
+
             this.spectrumService = new FindSimilarSpectrumService(
                 fingerprintConfig.SpectrogramConfig,
                 new LogUtility()
             );
-            // this.spectrumService = new SpectrumService(new LomontFFT(), new LogUtility());
 
             this.fingerprintService = new FindSimilarFingerprintService(
                 spectrumService,

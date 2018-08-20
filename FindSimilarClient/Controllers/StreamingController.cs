@@ -21,8 +21,8 @@ namespace FindSimilarClient.Controllers
     [Route("api/[controller]")]
     public class StreamingController : Controller
     {
-        private readonly SQLiteDbContext _database;
-        public StreamingController(SQLiteDbContext database)
+        private readonly IFindSimilarDatabase _database;
+        public StreamingController(IFindSimilarDatabase database)
         {
             _database = database;
         }
