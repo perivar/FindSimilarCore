@@ -244,7 +244,6 @@ namespace FindSimilar
             {
                 var fingerprinter = new SoundFingerprinter(dbPath, debugDirectoryPath);
                 fingerprinter.FingerprintDirectory(Path.GetFullPath(directoryPath), skipDurationAboveSeconds, verbosity);
-                fingerprinter.Snapshot(dbPath);
             }
             else
             {

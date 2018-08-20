@@ -11,7 +11,6 @@ using SoundFingerprinting.Audio;
 using SoundFingerprinting.Builder;
 using SoundFingerprinting.Configuration;
 using SoundFingerprinting.DAO.Data;
-using SoundFingerprinting.InMemory;
 using SoundFingerprinting.Query;
 using SoundFingerprinting.Strides;
 using SoundFingerprinting.FFT;
@@ -157,14 +156,6 @@ namespace FindSimilarServices
                 }
             }
             return null;
-        }
-
-        public void Snapshot(string saveToPath)
-        {
-            if (modelService is InMemoryModelService)
-            {
-                ((InMemoryModelService)modelService).Snapshot(saveToPath);
-            }
         }
 
         public void FingerprintDirectory(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)
