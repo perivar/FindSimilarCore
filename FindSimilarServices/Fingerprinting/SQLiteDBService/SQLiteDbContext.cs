@@ -23,6 +23,12 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                 .UseLoggerFactory(_loggerFactory);
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Hash>()
+                .HasIndex(x => x.HashBin);
+        }
+
         public DbSet<Track> Track { get; set; }
         public DbSet<SubFingerprint> SubFingerprint { get; set; }
         public DbSet<Hash> Hash { get; set; }
