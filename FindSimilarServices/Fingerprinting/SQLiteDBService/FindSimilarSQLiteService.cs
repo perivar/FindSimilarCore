@@ -119,9 +119,10 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDBService
 
                 // this query does not get compiled to pure SQL  
                 // but still seem faster than the compiled version above
-                var subFingerprints = _context.Hash
+                var subFingerprints = _context.Hash                             
                              .Where(i => hashBins.Contains(i.HashBin))
                              .GroupBy(g => g.SubFingerprintId)
+                             .AsNoTracking()
                              .Select(s => new
                              {
                                  SubFingerprintId = s.Key,
