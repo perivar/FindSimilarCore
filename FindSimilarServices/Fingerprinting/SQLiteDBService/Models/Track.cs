@@ -9,6 +9,5 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb.Models
         public string Album { get; set; }
         public int ReleaseYear { get; set; }
         public double TrackLengthSec { get; set; }
-        public string FilePath { get; set; }
     }
 }

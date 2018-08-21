@@ -17,8 +17,7 @@ namespace FindSimilarServices.Migrations
                     ISRC = table.Column<string>(nullable: true),
                     Album = table.Column<string>(nullable: true),
                     ReleaseYear = table.Column<int>(nullable: false),
-                    TrackLengthSec = table.Column<double>(nullable: false),
-                    FilePath = table.Column<string>(nullable: true)
+                    TrackLengthSec = table.Column<double>(nullable: false)
                 },
                 constraints: table =>
                 {

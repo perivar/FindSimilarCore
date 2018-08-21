@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FindSimilarServices.Migrations
 {
     [DbContext(typeof(SQLiteDbContext))]
-    [Migration("20180820180612_InitialCreate")]
+    [Migration("20180821193743_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -65,8 +65,6 @@ namespace FindSimilarServices.Migrations
                     b.Property<string>("Album");
 
                     b.Property<string>("Artist");
-
-                    b.Property<string>("FilePath");
 
                     b.Property<string>("ISRC");
 

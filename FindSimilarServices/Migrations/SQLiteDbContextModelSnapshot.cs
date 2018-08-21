@@ -64,8 +64,6 @@ namespace FindSimilarServices.Migrations
 
                     b.Property<string>("Artist");
 
-                    b.Property<string>("FilePath");
-
                     b.Property<string>("ISRC");
 
                     b.Property<int>("ReleaseYear");

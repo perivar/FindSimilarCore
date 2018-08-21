@@ -57,7 +57,7 @@ namespace FindSimilarClient
 
             // add the entity framework core database context 
             var connection = $"Data Source={Configuration["FingerprintDatabase"]}";
-            services.AddDbContext<SQLiteDbContext>(options => options.UseSqlite(connection), ServiceLifetime.Transient);
+            services.AddDbContext<SQLiteDbContext>(options => options.UseSqlite(connection)); // default added as Scoped
 
             // add both the interfaces to FindSimilarSQLiteService
             services.AddScoped<IModelService, FindSimilarSQLiteService>();
