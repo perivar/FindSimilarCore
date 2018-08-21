@@ -31,7 +31,7 @@
             this.similarityUtility = similarityUtility;
             this.queryMath = queryMath;
         }
-    
+
         public QueryResult Query(List<HashedFingerprint> queryFingerprints, QueryConfiguration configuration, IModelService modelService)
         {
             GroupedQueryResults groupedQueryResults;
@@ -51,7 +51,7 @@
 
             var resultEntries = queryMath.GetBestCandidates(groupedQueryResults, configuration.MaxTracksToReturn, modelService, configuration);
             int totalTracksAnalyzed = groupedQueryResults.TracksCount;
-            int totalSubFingerprintsAnalyzed = groupedQueryResults.SubFingerprintsCount; 
+            int totalSubFingerprintsAnalyzed = groupedQueryResults.SubFingerprintsCount;
             return QueryResult.NonEmptyResult(resultEntries, totalTracksAnalyzed, totalSubFingerprintsAnalyzed);
         }
 
@@ -60,15 +60,17 @@
             var hashedFingerprints = queryFingerprints.ToList();
             var groupedResults = new GroupedQueryResults(hashedFingerprints);
             int hashesPerTable = configuration.FingerprintConfiguration.HashingConfig.NumberOfMinHashesPerTable;
-            Parallel.ForEach(hashedFingerprints, queryFingerprint => 
-            { 
+            foreach (var queryFingerprint in hashedFingerprints)
+            // Parallel.ForEach(hashedFingerprints, queryFingerprint => 
+            {
                 var subFingerprints = modelService.ReadSubFingerprints(queryFingerprint.HashBins, configuration);
                 foreach (var subFingerprint in subFingerprints)
                 {
                     int hammingSimilarity = similarityUtility.CalculateHammingSimilarity(queryFingerprint.HashBins, subFingerprint.Hashes, hashesPerTable);
                     groupedResults.Add(queryFingerprint, subFingerprint, hammingSimilarity);
                 }
-            });
+            }
+            // );
 
             return groupedResults;
         }
@@ -79,7 +81,8 @@
             var allCandidates = modelService.ReadSubFingerprints(hashedFingerprints.Select(querySubfingerprint => querySubfingerprint.HashBins), configuration);
             var groupedResults = new GroupedQueryResults(hashedFingerprints);
             int hashesPerTable = configuration.FingerprintConfiguration.HashingConfig.NumberOfMinHashesPerTable;
-            Parallel.ForEach(hashedFingerprints, queryFingerprint => 
+            // Parallel.ForEach(hashedFingerprints, queryFingerprint =>
+            foreach (var queryFingerprint in hashedFingerprints)
             {
                 var subFingerprints = allCandidates.Where(candidate => queryMath.IsCandidatePassingThresholdVotes(queryFingerprint, candidate, configuration.ThresholdVotes));
                 foreach (var subFingerprint in subFingerprints)
@@ -87,7 +90,8 @@
                     int hammingSimilarity = similarityUtility.CalculateHammingSimilarity(queryFingerprint.HashBins, subFingerprint.Hashes, hashesPerTable);
                     groupedResults.Add(queryFingerprint, subFingerprint, hammingSimilarity);
                 }
-            });
+            }
+            // );
 
             return groupedResults;
         }

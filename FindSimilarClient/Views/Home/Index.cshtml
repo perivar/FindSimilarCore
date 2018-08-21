@@ -318,8 +318,12 @@ $(document).keydown(function (e) {
                 break;
             case 32:
                 // spacebar
-                e.preventDefault();
-                wavesurfer.playPause();
+                if($(e.target).is('input,textarea')) {
+                    // do nothing
+                } else {
+                    e.preventDefault();
+                    wavesurfer.playPause();
+                }
                 break;
             case 113:
                 // F2
