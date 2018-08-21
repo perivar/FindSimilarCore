@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Events;
 
 namespace FindSimilarServices.Fingerprinting.SQLiteDb
 {
@@ -23,20 +24,27 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
 
         public SQLiteDbContext CreateDbContext(string[] args)
         {
-            return CreateDbContext(args, null);
+            return CreateDbContext(args, Log.Logger);
         }
 
         public SQLiteDbContext CreateDbContext(string[] args, Serilog.ILogger log)
         {
             // set logging
             ILoggerFactory loggerFactory = new LoggerFactory();
+
+            // this is only null when called from 'dotnet ef migrations ...'
             if (log == null)
             {
                 log = new Serilog.LoggerConfiguration()
                     .MinimumLevel.Debug()
                     .WriteTo.Console()
                     .CreateLogger();
+            }
 
+            // since Entity Framework outputs so much information at even Information level
+            // only ouput to serilog if log level is debug or lower
+            if (log.IsEnabled(LogEventLevel.Debug) || log.IsEnabled(LogEventLevel.Verbose))
+            {
                 // add this line to output Entity Framework log statements
                 loggerFactory.AddSerilog(log);
             }

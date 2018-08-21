@@ -136,7 +136,7 @@ namespace FindSimilarServices
                 {
                     var dbContextFactory = new DesignTimeDbContextFactory();
                     var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
-                    SQLiteDbContext context = dbContextFactory.CreateDbContext(args, Log.Logger);
+                    SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
 
                     // update
                     context.Database.Migrate();
@@ -147,7 +147,7 @@ namespace FindSimilarServices
                 {
                     var dbContextFactory = new DesignTimeDbContextFactory();
                     var args = new string[] { $"ConnectionStrings:DefaultConnection=Data Source={loadFromPath}" };
-                    SQLiteDbContext context = dbContextFactory.CreateDbContext(args, Log.Logger);
+                    SQLiteDbContext context = dbContextFactory.CreateDbContext(args);
 
                     // create
                     context.Database.Migrate();
