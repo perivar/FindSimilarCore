@@ -89,48 +89,63 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDBService
 
         public IList<SubFingerprintData> ReadSubFingerprints(int[] hashBins, QueryConfiguration config)
         {
-            /*
-            var listOfIds = hashBins.ToList();
-            var hashes = _context.Hash.AsNoTracking()
-                .Where(i => listOfIds.Contains(i.HashBin))
-                .GroupBy(g => g.SubFingerprintId)
-                .Select(s => new
-                {
-                    Key = s.Key,
-                    MatchedCount = s.Count(),
-                    // Hashes = s.OrderBy(f => f.HashTable)
-                })
-                .Where(e => e.MatchedCount >= config.ThresholdVotes)
-                .OrderByDescending(o => o.MatchedCount)
-                .Select(s => new ModelReference<int>(s.Key));
-            */
+            using (new DebugTimer("ReadSubFingerprints()"))
+            {
+                /*
+                                // this whole query gets compiled to SQL and 
+                                // returns the ids as ModelReferences
+                                var hashes = _context.Hash
+                                    .Where(i => hashBins.Contains(i.HashBin))
+                                    .GroupBy(g => g.SubFingerprintId)
+                                    .Select(s => new
+                                    {
+                                        SubFingerprintId = s.Key,
+                                        MatchedCount = s.Count(),
+                                        Hashes = s.OrderBy(f => f.HashTable)
+                                    })
+                                    .Where(e => e.MatchedCount >= config.ThresholdVotes)
+                                    .OrderByDescending(o => o.MatchedCount)
+                                    .Select(s => new ModelReference<int>(s.SubFingerprintId))
+                                    .ToList();
 
-            var subFingerprints = _context.Hash
-                .Where(i => hashBins.Contains(i.HashBin))
-                .GroupBy(g => g.SubFingerprintId)
-                .Select(s => new
-                {
-                    SubFingerprintId = s.Key,
-                    MatchedCount = s.Count(),
-                    Hashes = s.OrderBy(f => f.HashTable)
-                })
-                .Where(e => e.MatchedCount >= config.ThresholdVotes)
-                .OrderByDescending(o => o.MatchedCount)
-                .Join(_context.SubFingerprint,
-                    x => x.SubFingerprintId,
-                    x => x.Id,
-                (a, b) => new
-                SubFingerprintData
-                {
-                    SubFingerprintReference = new ModelReference<int>(b.Id),
-                    TrackReference = new ModelReference<int>(b.TrackId),
-                    SequenceNumber = (uint)b.SequenceNumber,
-                    SequenceAt = (float)b.SequenceAt,
-                    Hashes = FromHashListToHashes(b.Hashes)
-                })
-                .ToList();
+                                if (!hashes.Any())
+                                {
+                                    return Enumerable.Empty<SubFingerprintData>().ToList();
+                                }
 
-            return subFingerprints;
+                                // get the SubFingerprintData for each of the hits
+                                return ReadSubFingerprintDataByReference(hashes);
+                */
+
+                // this query does not get compiled to pure SQL  
+                // but still seem faster than the compiled version above
+                var subFingerprints = _context.Hash
+                             .Where(i => hashBins.Contains(i.HashBin))
+                             .GroupBy(g => g.SubFingerprintId)
+                             .Select(s => new
+                             {
+                                 SubFingerprintId = s.Key,
+                                 MatchedCount = s.Count(),
+                                 Hashes = s.OrderBy(f => f.HashTable)
+                             })
+                             .Where(e => e.MatchedCount >= config.ThresholdVotes)
+                             .OrderByDescending(o => o.MatchedCount)
+                             .Join(_context.SubFingerprint,
+                                 x => x.SubFingerprintId,
+                                 x => x.Id,
+                             (a, b) => new
+                             SubFingerprintData
+                             {
+                                 SubFingerprintReference = new ModelReference<int>(b.Id),
+                                 TrackReference = new ModelReference<int>(b.TrackId),
+                                 SequenceNumber = (uint)b.SequenceNumber,
+                                 SequenceAt = (float)b.SequenceAt,
+                                 Hashes = FromHashListToHashes(b.Hashes)
+                             })
+                             .ToList();
+
+                return subFingerprints;
+            }
         }
 
         public List<SubFingerprintData> ReadSubFingerprintDataByReference(IEnumerable<IModelReference> ids)

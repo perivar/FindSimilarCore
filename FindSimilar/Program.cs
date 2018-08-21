@@ -109,9 +109,11 @@ namespace FindSimilar
             {
                 case Verbosity.Verbose:
                     logConfig.MinimumLevel.Verbose();
+                    logConfig.MinimumLevel.Override("Microsoft", LogEventLevel.Information); // Don't ouput more  
                     break;
                 case Verbosity.Debug:
                     logConfig.MinimumLevel.Debug();
+                    logConfig.MinimumLevel.Override("Microsoft", LogEventLevel.Information); // Don't ouput more  
                     break;
                 case Verbosity.Normal:
                     logConfig.MinimumLevel.Information();

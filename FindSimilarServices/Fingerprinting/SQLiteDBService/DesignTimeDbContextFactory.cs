@@ -42,7 +42,7 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
             }
 
             // since Entity Framework outputs so much information at even Information level
-            // only ouput to serilog if log level is debug or lower
+            // only output to serilog if log level is debug or lower
             if (log.IsEnabled(LogEventLevel.Debug) || log.IsEnabled(LogEventLevel.Verbose))
             {
                 // add this line to output Entity Framework log statements
