@@ -29,16 +29,17 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
         public SQLiteDbContext CreateDbContext(string[] args, Serilog.ILogger log)
         {
             // set logging
+            ILoggerFactory loggerFactory = new LoggerFactory();
             if (log == null)
             {
                 log = new Serilog.LoggerConfiguration()
                     .MinimumLevel.Debug()
                     .WriteTo.Console()
                     .CreateLogger();
-            }
-            ILoggerFactory loggerFactory = new LoggerFactory();
-            // loggerFactory.AddSerilog(log); // add this line to output Entity Framework log statements
 
+                // add this line to output Entity Framework log statements
+                loggerFactory.AddSerilog(log);
+            }
 
             if (string.IsNullOrEmpty(_connectionString))
             {

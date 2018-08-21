@@ -231,9 +231,9 @@ namespace FindSimilar
             {
                 return app.Execute(args);
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
-                Console.WriteLine("Command not recognized {0}.", args);
+                Console.WriteLine("Error using command {0}. [{1}].", args, e.Message);
                 return 1;
             }
         }
