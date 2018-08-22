@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -59,6 +60,10 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
             DbContextOptionsBuilder<SQLiteDbContext> optionsBuilder =
                         new DbContextOptionsBuilder<SQLiteDbContext>()
                             .UseSqlite(_connectionString);
+
+            // Disable client evalution in development environment
+            optionsBuilder.ConfigureWarnings(warnings => warnings
+            .Throw(RelationalEventId.QueryClientEvaluationWarning));
 
             return new SQLiteDbContext(optionsBuilder.Options, loggerFactory);
         }
