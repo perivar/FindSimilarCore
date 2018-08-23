@@ -315,7 +315,7 @@ namespace FindSimilarClient
                 response.ContentType = contentType;
 
                 response.Headers.Add(HeaderNames.ContentRange, $"bytes {full.Start}-{full.End}/{full.Total}");
-                response.Headers.Add(HeaderNames.ContentLength, full.Length.ToString());
+                // response.Headers.Add(HeaderNames.ContentLength, full.Length.ToString());
 
                 await Range.CopyStream(input, output, byteLength, full.Start, full.Length, headerBytes);
             }
@@ -330,7 +330,7 @@ namespace FindSimilarClient
                 response.StatusCode = (int)HttpStatusCode.PartialContent; // 206
 
                 response.Headers.Add(HeaderNames.ContentRange, $"bytes {r.Start}-{r.End}/{r.Total}");
-                response.Headers.Add(HeaderNames.ContentLength, r.Length.ToString());
+                // response.Headers.Add(HeaderNames.ContentLength, r.Length.ToString());
 
                 await Range.CopyStream(input, output, byteLength, r.Start, r.Length, headerBytes);
             }
