@@ -9,29 +9,57 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
 {
     public class SQLiteDbContext : DbContext
     {
-        private readonly ILoggerFactory _loggerFactory;
-
-        public SQLiteDbContext(DbContextOptions<SQLiteDbContext> options, ILoggerFactory loggerFactory)
+        public SQLiteDbContext(DbContextOptions<SQLiteDbContext> options)
             : base(options)
         {
-            _loggerFactory = loggerFactory;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder
-                .UseLoggerFactory(_loggerFactory);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Hash>()
-                .HasIndex(x => x.HashBin);
+            modelBuilder.Entity<SubFingerprint>()
+                .HasIndex(x => new
+                {
+                    x.TrackId,
+                    x.HashTable0,
+                    x.HashTable1,
+                    x.HashTable2,
+                    x.HashTable3,
+                    x.HashTable4,
+                    x.HashTable5,
+                    x.HashTable6,
+                    x.HashTable7,
+                    x.HashTable8,
+                    x.HashTable9,
+                    x.HashTable10,
+                    x.HashTable11,
+                    x.HashTable12,
+                    x.HashTable13,
+                    x.HashTable14,
+                    x.HashTable15,
+                    x.HashTable16,
+                    x.HashTable17,
+                    x.HashTable18,
+                    x.HashTable19,
+                    x.HashTable20,
+                    x.HashTable21,
+                    x.HashTable22,
+                    x.HashTable23,
+                    x.HashTable24
+                });
+
+            modelBuilder.Entity<Track>()
+                .HasIndex(x => new
+                {
+                    x.Title
+                });
         }
 
         public DbSet<Track> Track { get; set; }
         public DbSet<SubFingerprint> SubFingerprint { get; set; }
-        public DbSet<Hash> Hash { get; set; }
 
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using FindSimilarServices.Fingerprinting;
 
 namespace FindSimilarServices.Fingerprinting.SQLiteDb
 {
@@ -42,13 +43,19 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
                     .CreateLogger();
             }
 
+            DbContextOptionsBuilder<SQLiteDbContext> options =
+                        new DbContextOptionsBuilder<SQLiteDbContext>();
+
+            // Disable client evalution in development environment
+            options.UseSerilog(loggerFactory, throwOnQueryWarnings: true);
+
             // since Entity Framework outputs so much information at even Information level
             // only output to serilog if log level is debug or lower
-            if (log.IsEnabled(LogEventLevel.Debug) || log.IsEnabled(LogEventLevel.Verbose))
-            {
-                // add this line to output Entity Framework log statements
-                loggerFactory.AddSerilog(log);
-            }
+            // if (log.IsEnabled(LogEventLevel.Debug) || log.IsEnabled(LogEventLevel.Verbose))
+            // {
+            // add this line to output Entity Framework log statements
+            // loggerFactory.AddSerilog(log);
+            // }
 
             if (string.IsNullOrEmpty(_connectionString))
             {
@@ -57,15 +64,9 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
 
             Log.Information($"Using connection string {_connectionString}");
 
-            DbContextOptionsBuilder<SQLiteDbContext> optionsBuilder =
-                        new DbContextOptionsBuilder<SQLiteDbContext>()
-                            .UseSqlite(_connectionString);
+            options.UseSqlite(_connectionString); // default added as Scoped
 
-            // Disable client evalution in development environment
-            optionsBuilder.ConfigureWarnings(warnings => warnings
-            .Throw(RelationalEventId.QueryClientEvaluationWarning));
-
-            return new SQLiteDbContext(optionsBuilder.Options, loggerFactory);
+            return new SQLiteDbContext(options.Options);
         }
 
         private void LoadConnectionString(string[] args)

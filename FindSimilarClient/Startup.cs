@@ -9,13 +9,15 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using FindSimilarServices.Audio;
 using FindSimilarServices.Fingerprinting;
 using SoundFingerprinting;
 using FindSimilarServices;
 using FindSimilarServices.Fingerprinting.SQLiteDb;
-using Microsoft.EntityFrameworkCore;
 using FindSimilarServices.Fingerprinting.SQLiteDBService;
+using Serilog;
+using Microsoft.Extensions.Logging;
 
 namespace FindSimilarClient
 {
@@ -57,7 +59,14 @@ namespace FindSimilarClient
 
             // add the entity framework core database context 
             var connection = $"Data Source={Configuration["FingerprintDatabase"]}";
-            services.AddDbContext<SQLiteDbContext>(options => options.UseSqlite(connection)); // default added as Scoped
+            services.AddDbContextPool<SQLiteDbContext>(options =>
+            {
+                var provider = services.BuildServiceProvider();
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+
+                options.UseSerilog(loggerFactory, throwOnQueryWarnings: !Environment.IsProduction());
+                options.UseSqlite(connection); // default added as Scoped
+            });
 
             // add both the interfaces to FindSimilarSQLiteService
             services.AddScoped<IModelService, FindSimilarSQLiteService>();
