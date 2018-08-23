@@ -14,7 +14,7 @@ namespace FindSimilarServices.Fingerprinting
             {
                 warnings.Log(RelationalEventId.TransactionError);
 
-                if (!throwOnQueryWarnings)
+                if (throwOnQueryWarnings)
                 {
                     warnings.Throw(RelationalEventId.QueryClientEvaluationWarning);
                     warnings.Throw(RelationalEventId.QueryPossibleExceptionWithAggregateOperator);

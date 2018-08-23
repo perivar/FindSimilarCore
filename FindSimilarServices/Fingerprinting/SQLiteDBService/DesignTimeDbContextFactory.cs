@@ -46,16 +46,16 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDb
             DbContextOptionsBuilder<SQLiteDbContext> options =
                         new DbContextOptionsBuilder<SQLiteDbContext>();
 
-            // Disable client evalution in development environment
-            options.UseSerilog(loggerFactory, throwOnQueryWarnings: true);
-
             // since Entity Framework outputs so much information at even Information level
             // only output to serilog if log level is debug or lower
-            // if (log.IsEnabled(LogEventLevel.Debug) || log.IsEnabled(LogEventLevel.Verbose))
-            // {
-            // add this line to output Entity Framework log statements
-            // loggerFactory.AddSerilog(log);
-            // }
+            if (log.IsEnabled(LogEventLevel.Debug) || log.IsEnabled(LogEventLevel.Verbose))
+            {
+                // Disable client evalution in development environment
+                options.UseSerilog(loggerFactory, throwOnQueryWarnings: true);
+
+                // add this line to output Entity Framework log statements
+                loggerFactory.AddSerilog(log);
+            }
 
             if (string.IsNullOrEmpty(_connectionString))
             {

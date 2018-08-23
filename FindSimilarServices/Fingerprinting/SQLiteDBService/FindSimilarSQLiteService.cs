@@ -93,66 +93,66 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDBService
             using (new DebugTimer("ReadSubFingerprints()"))
             {
                 var commandText = $@" 
-                        SELECT * FROM 
-                        (          
-                            SELECT * FROM SubFingerprint WHERE HashTable0 = {hashBins[0]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable1 = {hashBins[1]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable2 = {hashBins[2]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable3 = {hashBins[3]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable4 = {hashBins[4]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable5 = {hashBins[5]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable6 = {hashBins[6]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable7 = {hashBins[7]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable8 = {hashBins[8]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable9 = {hashBins[9]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable10 = {hashBins[10]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable11 = {hashBins[11]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable12 = {hashBins[12]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable13 = {hashBins[13]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable14 = {hashBins[14]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable15 = {hashBins[15]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable16 = {hashBins[16]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable17 = {hashBins[17]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable18 = {hashBins[18]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable19 = {hashBins[19]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable20 = {hashBins[20]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable21 = {hashBins[21]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable22 = {hashBins[22]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable23 = {hashBins[23]}
-                            UNION ALL
-                            SELECT * FROM SubFingerprint WHERE HashTable24 = {hashBins[24]}
-                        ) AS Hashes
-                	GROUP BY Hashes.Id
-	                HAVING COUNT(Hashes.Id) >= {config.ThresholdVotes}
+                    SELECT * FROM 
+                    (          
+                        SELECT * FROM SubFingerprint WHERE HashTable0 = {hashBins[0]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable1 = {hashBins[1]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable2 = {hashBins[2]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable3 = {hashBins[3]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable4 = {hashBins[4]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable5 = {hashBins[5]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable6 = {hashBins[6]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable7 = {hashBins[7]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable8 = {hashBins[8]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable9 = {hashBins[9]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable10 = {hashBins[10]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable11 = {hashBins[11]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable12 = {hashBins[12]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable13 = {hashBins[13]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable14 = {hashBins[14]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable15 = {hashBins[15]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable16 = {hashBins[16]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable17 = {hashBins[17]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable18 = {hashBins[18]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable19 = {hashBins[19]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable20 = {hashBins[20]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable21 = {hashBins[21]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable22 = {hashBins[22]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable23 = {hashBins[23]}
+                        UNION ALL
+                        SELECT * FROM SubFingerprint WHERE HashTable24 = {hashBins[24]}
+                    ) AS SubFingerprints
+                GROUP BY SubFingerprints.Id
+                HAVING COUNT(SubFingerprints.Id) >= {config.ThresholdVotes}
+                ORDER BY COUNT(SubFingerprints.Id) DESC
                 ";
 
                 var results = _context.SubFingerprint.FromSql(commandText)
                     .Select(CopyToSubFingerprintData)
                     .ToList();
-
                 return results;
             }
         }
