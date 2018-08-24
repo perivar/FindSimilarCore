@@ -27,13 +27,11 @@ namespace FindSimilarClient.Controllers
             _database = database;
         }
 
-        // GET /api/streaming/10ad2403-34f2-47b6-bd51-819e486a1723
+        // GET /api/streaming/23
         [HttpGet("{id}")]
-        public async Task<FileStreamResult> Get(string id)
+        public FileStreamResult Get(string id)
         {
-            // ids have this form:
-            // "b6b9ba73-293c-46ae-bd7d-2ea23ecb5e1c"
-            // "e12ec602-9ab7-4999-9506-1e996f9d6eb2"
+
             var track = _database.ReadTrackByReference(new ModelReference<string>(id));
 
             if (!string.IsNullOrEmpty(track.Title))
