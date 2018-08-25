@@ -24,7 +24,7 @@ namespace FindSimilarClient.Controllers
             // };
             var data = mfcc.filterWeights.MatrixData;
 
-            var options = new { width = 1000, height = 400 };
+            var options = new { width = 1600, height = 900 };
 
             string markup = await nodeServices.InvokeExportAsync<string>("Node/d3Line.js", "generateChart", options, data);
 
@@ -32,10 +32,10 @@ namespace FindSimilarClient.Controllers
 
             // return View(); // if we want the chart within the website
 
-            string html = @"<!DOCTYPE html>
+            string html = $@"<!DOCTYPE html>
 <html>
 <body>
-    <img src='" + markup + $"' height='{options.height}' width='{options.width}'" + @" />
+    <img src='{markup}' height='{options.height}' width='{options.width}' />
 </body>
 </html>";
 
