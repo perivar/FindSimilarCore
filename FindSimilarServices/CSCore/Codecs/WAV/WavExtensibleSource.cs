@@ -46,7 +46,7 @@ namespace CSCore.Codecs.WAV
         private Stream _stream;
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="FourCCToInt" /> class.
+        ///     Initializes a new instance of the <see cref="WavExtensibleSource" /> class.
         /// </summary>
         /// <param name="stream"><see cref="Stream" /> which contains raw waveform-audio data.</param>
         /// <param name="waveFormat">The format of the waveform-audio data within the <paramref name="stream" />.</param>
@@ -181,7 +181,7 @@ namespace CSCore.Codecs.WAV
         }
 
         /// <summary>
-        ///     Reads a sequence of bytes from the <see cref="FourCCToInt" /> and advances the position within the stream by the
+        ///     Reads a sequence of bytes from the <see cref="WavExtensibleSource" /> and advances the position within the stream by the
         ///     number of bytes read.
         /// </summary>
         /// <param name="buffer">
@@ -245,7 +245,7 @@ namespace CSCore.Codecs.WAV
         }
 
         /// <summary>
-        ///     Gets the length of the <see cref="FourCCToInt" /> in bytes.
+        ///     Gets the length of the <see cref="WavExtensibleSource" /> in bytes.
         /// </summary>
         public long Length
         {

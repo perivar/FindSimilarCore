@@ -120,15 +120,15 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
                 "-s",
                 "30",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar.log",
                 "-e",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar_error.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar_error.log",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db"
+                "C:\\Users\\perner\\My Projects\\fingerprint.db"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -145,19 +145,19 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
                 "-v",
                 "5",
                 "-s",
                 "30",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar.log",
                 "-e",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar_error.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar_error.log",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "C:\\Users\\perner\\My Projects\\fingerprint.db",
                 "--debug",
-                "C:\\Users\\pnerseth\\My Projects\\tmp-images"
+                "C:\\Users\\perner\\My Projects\\tmp-images"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -174,15 +174,15 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects",
                 // "-s",
                 // "30",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar.log",
                 "-e",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar_error.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar_error.log",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db"
+                "C:\\Users\\perner\\My Projects\\fingerprint.db"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -199,19 +199,19 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects",
                 "-v",
                 "5",
                 "-s",
                 "30",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar.log",
                 "-e",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar_error.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar_error.log",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "C:\\Users\\perner\\My Projects\\fingerprint.db",
                 "--debug",
-                "C:\\Users\\pnerseth\\My Projects\\tmp-images"
+                "C:\\Users\\perner\\My Projects\\tmp-images"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -282,11 +282,11 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "match",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
                 "-t",
                 "4",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "C:\\Users\\perner\\My Projects\\fingerprint.db",
                 "-n",
                 "100"
             ],
@@ -305,11 +305,11 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "match",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
                 "-t",
                 "4",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "C:\\Users\\perner\\My Projects\\fingerprint.db",
                 "-n",
                 "100",
                 "-v",
@@ -330,11 +330,11 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "match",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",
                 "-t",
                 "4",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "C:\\Users\\perner\\My Projects\\fingerprint.db",
                 "-n",
                 "100"
             ],
@@ -353,21 +353,21 @@
             "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
             "args": [
                 "match",
-                "C:\\Users\\pnerseth\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",
                 "-t",
                 "4",
                 "-d",
-                "C:\\Users\\pnerseth\\My Projects\\fingerprint.db",
+                "C:\\Users\\perner\\My Projects\\fingerprint.db",
                 "-n",
                 "100",
                 "-v",
                 "5",
                 "-l",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar.log",
                 "-e",
-                "C:\\Users\\pnerseth\\My Projects\\findsimilar_error.log",
+                "C:\\Users\\perner\\My Projects\\findsimilar_error.log",
                 "--debug",
-                "C:\\Users\\pnerseth\\My Projects\\tmp-images-match"
+                "C:\\Users\\perner\\My Projects\\tmp-images-match"
             ],
             "cwd": "${workspaceFolder}/FindSimilar",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
