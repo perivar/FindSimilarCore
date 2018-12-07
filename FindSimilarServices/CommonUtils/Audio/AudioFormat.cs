@@ -192,8 +192,7 @@ namespace CommonUtils.Audio
 
 
         /// <summary>
-        /// Return the number of valid bits, used for the 
-        /// Used by the Wav Extensible format
+        /// Return the number of valid bits, used by the Wav Extensible format
         /// </summary>
         /// <value></value>
         public virtual int NumberOfValidBits
@@ -271,7 +270,7 @@ namespace CommonUtils.Audio
         /// </summary>
         /// <param name="sampleRate">sample rate</param>
         /// <param name="channels">number of channels</param>
-        public static AudioFormat CreateIeeeFloaAudioFormat(int sampleRate, int channels)
+        public static AudioFormat CreateIeeeFloatAudioFormat(int sampleRate, int channels)
         {
             var aF = new AudioFormat();
             aF.Encoding = AudioEncoding.IeeeFloat;

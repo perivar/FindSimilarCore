@@ -25,7 +25,7 @@ namespace CommonUtils.Audio
         public WdlResamplingSampleSource(ISampleSource source, int newSampleRate)
         {
             channels = source.WaveFormat.Channels;
-            outFormat = AudioFormat.CreateIeeeFloaAudioFormat(newSampleRate, channels);
+            outFormat = AudioFormat.CreateIeeeFloatAudioFormat(newSampleRate, channels);
             outWaveFormat = new WaveFormat(outFormat.SampleRate, outFormat.BitsPerSample, outFormat.Channels, AudioEncoding.IeeeFloat, 0);
 
             this.source = source;
