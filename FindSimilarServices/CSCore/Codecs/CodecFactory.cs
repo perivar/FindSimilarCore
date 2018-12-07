@@ -32,14 +32,9 @@ namespace CSCore.Codecs
             Register("wave", new CodecFactoryEntry(s =>
          {
              IWaveSource res = new WaveFileReader(s);
-             if (res.WaveFormat.WaveFormatTag == AudioEncoding.Extensible)
-             {
-                 res.Dispose();
-                 res = new WavExtensibleSource(s, res.WaveFormat, ((WaveFileReader)res).Chunks);
-             }
-             else if (res.WaveFormat.WaveFormatTag != AudioEncoding.Pcm &&
-                 res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
-                 res.WaveFormat.WaveFormatTag != AudioEncoding.Extensible)
+             if (res.WaveFormat.WaveFormatTag != AudioEncoding.Pcm &&
+                res.WaveFormat.WaveFormatTag != AudioEncoding.IeeeFloat &&
+                res.WaveFormat.WaveFormatTag != AudioEncoding.Extensible)
              {
                  switch ((short)res.WaveFormat.WaveFormatTag)
                  {

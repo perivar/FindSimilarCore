@@ -3,6 +3,7 @@ using System.IO;
 using CommonUtils;
 using CommonUtils.Audio;
 using Serilog;
+using Serilog.Events;
 
 namespace CSCore.Codecs.WAV
 {
@@ -65,7 +66,33 @@ namespace CSCore.Codecs.WAV
             int id = reader.ReadInt32();
             stream.Position -= 4;
 
-            Log.Verbose("Processing chunk: {0}", StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id)) ? FourCC.FromFourCC(id) : string.Format("int {0} is not FourCC", id));
+            if (StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id)))
+            {
+                Log.Verbose("Processing chunk: {0}", FourCC.FromFourCC(id));
+            }
+            else
+            {
+                // try to fix chunks that are not word-aligned but should have been?!
+                Log.Verbose("Processing chunk: {0}", string.Format("{0} is not FourCC", id));
+                long origPos = stream.Position;
+
+                // rewind one byte and try again
+                stream.Position -= 1;
+                int id2ndTry = reader.ReadInt32();
+                stream.Position -= 4;
+
+                if (StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id2ndTry)))
+                {
+                    // we believe it worked
+                    Log.Verbose("Seem to have fixed non word-aligned chunk: {0}", FourCC.FromFourCC(id2ndTry));
+                }
+                else
+                {
+                    // still didn't work
+                    // put position back to where it was.
+                    stream.Position = origPos;
+                }
+            }
 
             // check https://github.com/michaelwu/libsndfile/blob/master/src/wav.c
             // for all possible chunks ids

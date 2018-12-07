@@ -131,10 +131,10 @@ namespace CSCore
         ///     Initializes a new instance of the <see cref="WaveFormat" /> class with PCM as the format type.
         /// </summary>
         /// <param name="sampleRate">Samples per second.</param>
-        /// <param name="bits">Number of bits, used to store one sample.</param>
+        /// <param name="bitsPerSample">Number of bits, used to store one sample.</param>
         /// <param name="channels">Number of channels in the waveform-audio data.</param>
-        public WaveFormat(int sampleRate, int bits, int channels)
-            : this(sampleRate, bits, channels, AudioEncoding.Pcm)
+        public WaveFormat(int sampleRate, int bitsPerSample, int channels)
+            : this(sampleRate, bitsPerSample, channels, AudioEncoding.Pcm)
         {
         }
 
@@ -142,11 +142,11 @@ namespace CSCore
         ///     Initializes a new instance of the <see cref="WaveFormat" /> class.
         /// </summary>
         /// <param name="sampleRate">Samples per second.</param>
-        /// <param name="bits">Number of bits, used to store one sample.</param>
+        /// <param name="bitsPerSample">Number of bits, used to store one sample.</param>
         /// <param name="channels">Number of channels in the waveform-audio data.</param>
         /// <param name="encoding">Format type or encoding of the wave format.</param>
-        public WaveFormat(int sampleRate, int bits, int channels, AudioEncoding encoding)
-            : this(sampleRate, bits, channels, encoding, 0)
+        public WaveFormat(int sampleRate, int bitsPerSample, int channels, AudioEncoding encoding)
+            : this(sampleRate, bitsPerSample, channels, encoding, 0)
         {
         }
 
@@ -154,27 +154,55 @@ namespace CSCore
         ///     Initializes a new instance of the <see cref="WaveFormat" /> class.
         /// </summary>
         /// <param name="sampleRate">Samples per second.</param>
-        /// <param name="bits">Number of bits, used to store one sample.</param>
+        /// <param name="bitsPerSample">Number of bits, used to store one sample.</param>
         /// <param name="channels">Number of channels in the waveform-audio data.</param>
         /// <param name="encoding">Format type or encoding of the wave format.</param>
         /// <param name="extraSize">Size (in bytes) of extra information. This value is mainly used for marshalling.</param>
-        public WaveFormat(int sampleRate, int bits, int channels, AudioEncoding encoding, int extraSize)
+        public WaveFormat(int sampleRate, int bitsPerSample, int channels, AudioEncoding encoding, int extraSize)
         {
             if (sampleRate < 1)
                 throw new ArgumentOutOfRangeException("sampleRate");
-            if (bits < 0)
+            if (bitsPerSample < 0)
                 throw new ArgumentOutOfRangeException("bits");
             if (channels < 1)
                 throw new ArgumentOutOfRangeException("channels", "Number of channels has to be bigger than 0.");
 
             _sampleRate = sampleRate;
-            _bitsPerSample = (short)bits;
+            _bitsPerSample = (short)bitsPerSample;
             _channels = (short)channels;
             _encoding = encoding;
             _extraSize = (short)extraSize;
 
             // ReSharper disable once DoNotCallOverridableMethodsInConstructor
             UpdateProperties();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WaveFormat" /> class.
+        /// </summary>
+        /// <param name="sampleRate">Samples per second.</param>
+        /// <param name="bitsPerSample">Number of bits, used to store one sample.</param>
+        /// <param name="channels">Number of channels in the waveform-audio data.</param>
+        /// <param name="encoding">Format type or encoding of the wave format.</param>
+        /// <param name="bytesPerSecond">Average data transfer rate, in bytes per second.</param>
+        /// <param name="blockAlign">Block alignment, in bytes.</param>
+        /// <param name="extraSize">Size (in bytes) of extra information. This value is mainly used for marshalling.</param>
+        public WaveFormat(int sampleRate, int bitsPerSample, int channels, AudioEncoding encoding, int bytesPerSecond, int blockAlign, int extraSize)
+        {
+            if (sampleRate < 1)
+                throw new ArgumentOutOfRangeException("sampleRate");
+            if (bitsPerSample < 0)
+                throw new ArgumentOutOfRangeException("bits");
+            if (channels < 1)
+                throw new ArgumentOutOfRangeException("channels", "Number of channels has to be bigger than 0.");
+
+            _encoding = encoding;
+            _channels = (short)channels;
+            _sampleRate = sampleRate;
+            _bytesPerSecond = bytesPerSecond;
+            _blockAlign = (short)blockAlign;
+            _bitsPerSample = (short)bitsPerSample;
+            _extraSize = (short)extraSize;
         }
 
         /// <summary>

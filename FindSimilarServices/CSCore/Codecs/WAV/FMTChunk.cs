@@ -38,30 +38,58 @@ namespace CSCore.Codecs.WAV
             if (ChunkID == FmtChunkID) //"fmt "
             {
                 var encoding = (AudioEncoding)reader.ReadInt16();
-                int channels = reader.ReadInt16();
+                short channels = reader.ReadInt16();
                 int sampleRate = reader.ReadInt32();
                 int avgBps = reader.ReadInt32();
-                int blockAlign = reader.ReadInt16();
-                int bitsPerSample = reader.ReadInt16();
+                short blockAlign = reader.ReadInt16();
+                short bitsPerSample = reader.ReadInt16();
 
-                int extraSize = 0;
+                short extraSize = 0;
                 if (ChunkDataSize > 16)
                 {
                     extraSize = reader.ReadInt16();
-                    if (extraSize != ChunkDataSize - 18)
-                        //TODO: Check whether this is the correct way of reading a fmt chunk
-                        extraSize = (int)(ChunkDataSize - 18);
 
-                    for (int i = (int)(ChunkDataSize - 16); i > 0; i--)
+                    if (extraSize == 22)
                     {
-                        // ignore extra size bytes
-                        reader.ReadByte();
+                        // we haave an Extensible wave format
+                        short numberOfValidBits = reader.ReadInt16();
+                        if (numberOfValidBits == 0)
+                        {
+                            numberOfValidBits = bitsPerSample;
+                        }
+
+                        var channelMask = (ChannelMask)reader.ReadUInt32();
+                        if ((uint)channelMask == 0)
+                        {
+                            // no mask given
+                            channelMask = ChannelMasks.GetChannelMask(channels);
+                        }
+
+                        // read GUID, including the data format code 
+                        // The first two bytes of the GUID form the sub-code specifying the data format code, e.g. WAVE_FORMAT_PCM. 
+                        // The remaining 14 bytes contain a fixed string, 
+                        // «\x00\x00\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71».
+                        // var subEncoding = (AudioEncoding)reader.ReadInt16();
+                        var guidData = reader.ReadBytes(16); // guid data
+                        var guid = new Guid(guidData);
+
+                        var waveFormatExtensible = new WaveFormatExtensible(sampleRate, bitsPerSample, channels, guid, channelMask);
+                        waveFormatExtensible.BytesPerSecond = avgBps;
+                        waveFormatExtensible.BlockAlign = blockAlign;
+                        waveFormatExtensible.ValidBitsPerSample = numberOfValidBits;
+                        _waveFormat = waveFormatExtensible;
+                        return;
                     }
-
-                    reader.BaseStream.Position -= 2;
+                    else
+                    {
+                        for (int i = (int)(extraSize); i > 0; i--)
+                        {
+                            // ignore extra size bytes
+                            reader.ReadByte();
+                        }
+                    }
                 }
-
-                _waveFormat = new WaveFormat(sampleRate, (short)bitsPerSample, (short)channels, encoding, extraSize);
+                _waveFormat = new WaveFormat(sampleRate, (short)bitsPerSample, (short)channels, encoding, avgBps, (short)blockAlign, extraSize);
             }
         }
 

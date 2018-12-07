@@ -7,7 +7,7 @@ namespace CSCore
     ///     http://msdn.microsoft.com/en-us/library/windows/desktop/dd757714(v=vs.85).aspx
     /// </summary>
     [Flags]
-    public enum ChannelMask
+    public enum ChannelMask : uint
     {
         /// <summary>
         ///     Front left speaker.
