@@ -72,25 +72,34 @@ namespace CSCore.Codecs.WAV
             }
             else
             {
-                // try to fix chunks that are not word-aligned but should have been?!
-                Log.Verbose("Processing chunk: {0}", string.Format("{0} is not FourCC", id));
-                long origPos = stream.Position;
-
-                // rewind one byte and try again
-                stream.Position -= 1;
-                int id2ndTry = reader.ReadInt32();
-                stream.Position -= 4;
-
-                if (StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id2ndTry)))
+                if (id == 0)
                 {
-                    // we believe it worked
-                    Log.Verbose("Seem to have fixed non word-aligned chunk: {0}", FourCC.FromFourCC(id2ndTry));
+                    // likely corrupt wav file with alot of crap after the chunk
+                    // skip bytes until only 8 bytes are left
+                    // stream.Position = stream.Length - 8;
                 }
                 else
                 {
-                    // still didn't work
-                    // put position back to where it was.
-                    stream.Position = origPos;
+                    // try to fix chunks that are not word-aligned but should have been?!
+                    Log.Verbose("Processing chunk: {0}", string.Format("{0} is not FourCC", id));
+                    long origPos = stream.Position;
+
+                    // rewind one byte and try again
+                    stream.Position -= 1;
+                    int id2ndTry = reader.ReadInt32();
+                    stream.Position -= 4;
+
+                    if (StringUtils.IsAsciiPrintable(FourCC.FromFourCC(id2ndTry)))
+                    {
+                        // we believe it worked
+                        Log.Verbose("Seem to have fixed non word-aligned chunk: {0}", FourCC.FromFourCC(id2ndTry));
+                    }
+                    else
+                    {
+                        // still didn't work
+                        // put position back to where it was.
+                        stream.Position = origPos;
+                    }
                 }
             }
 
