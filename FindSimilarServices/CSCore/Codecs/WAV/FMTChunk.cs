@@ -49,6 +49,12 @@ namespace CSCore.Codecs.WAV
                 {
                     extraSize = reader.ReadInt16();
 
+                    if (extraSize != ChunkDataSize - 18)
+                    {
+                        Debug.WriteLine("Format chunk mismatch");
+                        extraSize = (short)(ChunkDataSize - 18);
+                    }
+
                     if (extraSize == 22)
                     {
                         // we haave an Extensible wave format
@@ -70,11 +76,12 @@ namespace CSCore.Codecs.WAV
                         // The remaining 14 bytes contain a fixed string, 
                         // «\x00\x00\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71».
                         // var subEncoding = (AudioEncoding)reader.ReadInt16();
-                        var guidData = reader.ReadBytes(16); // guid data
+                        // var subEncodingFixed = reader.ReadBytes(14);
+                        var guidData = reader.ReadBytes(16); // complete 16 byte guid data
                         var guid = new Guid(guidData);
 
                         var waveFormatExtensible = new WaveFormatExtensible(sampleRate, bitsPerSample, channels, guid, channelMask);
-                        waveFormatExtensible.BytesPerSecond = avgBps;
+                        waveFormatExtensible.AverageBytesPerSecond = avgBps;
                         waveFormatExtensible.BlockAlign = blockAlign;
                         waveFormatExtensible.ValidBitsPerSample = numberOfValidBits;
                         _waveFormat = waveFormatExtensible;

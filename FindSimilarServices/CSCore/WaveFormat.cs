@@ -15,8 +15,7 @@ namespace CSCore
         private AudioEncoding _encoding;
         private short _channels;
         private int _sampleRate;
-        private int _bytesPerSecond;
-
+        private int _averageBytesPerSecond;
         private short _blockAlign;
         private short _bitsPerSample;
         private short _extraSize;
@@ -53,10 +52,10 @@ namespace CSCore
         ///     average data rate of 176,400 bytes per second (2 channels — 2 bytes per sample per channel — 44,100 samples per
         ///     second).
         /// </summary>
-        public virtual int BytesPerSecond
+        public virtual int AverageBytesPerSecond
         {
-            get { return _bytesPerSecond; }
-            protected internal set { _bytesPerSecond = value; }
+            get { return _averageBytesPerSecond; }
+            protected internal set { _averageBytesPerSecond = value; }
         }
 
         /// <summary>
@@ -199,7 +198,7 @@ namespace CSCore
             _encoding = encoding;
             _channels = (short)channels;
             _sampleRate = sampleRate;
-            _bytesPerSecond = bytesPerSecond;
+            _averageBytesPerSecond = bytesPerSecond;
             _blockAlign = (short)blockAlign;
             _bitsPerSample = (short)bitsPerSample;
             _extraSize = (short)extraSize;
@@ -212,7 +211,7 @@ namespace CSCore
         /// <returns>Duration in bytes.</returns>
         public long MillisecondsToBytes(double milliseconds)
         {
-            var result = (long)((BytesPerSecond / 1000.0) * milliseconds);
+            var result = (long)((AverageBytesPerSecond / 1000.0) * milliseconds);
             result -= result % BlockAlign;
             return result;
         }
@@ -225,7 +224,7 @@ namespace CSCore
         public double BytesToMilliseconds(long bytes)
         {
             bytes -= bytes % BlockAlign;
-            var result = ((bytes / (double)BytesPerSecond) * 1000.0);
+            var result = ((bytes / (double)AverageBytesPerSecond) * 1000.0);
             return result;
         }
 
@@ -238,7 +237,7 @@ namespace CSCore
         {
             return Channels == other.Channels &&
                    SampleRate == other.SampleRate &&
-                   BytesPerSecond == other.BytesPerSecond &&
+                   AverageBytesPerSecond == other.AverageBytesPerSecond &&
                    BlockAlign == other.BlockAlign &&
                    BitsPerSample == other.BitsPerSample &&
                    ExtraSize == other.ExtraSize &&
@@ -280,7 +279,7 @@ namespace CSCore
         internal protected virtual void UpdateProperties()
         {
             BlockAlign = (BitsPerSample / 8) * Channels;
-            BytesPerSecond = BlockAlign * SampleRate;
+            AverageBytesPerSecond = BlockAlign * SampleRate;
         }
 
         [DebuggerStepThrough]
@@ -289,7 +288,7 @@ namespace CSCore
             var builder = new StringBuilder();
             builder.Append("ChannelsAvailable: " + Channels);
             builder.Append("|SampleRate: " + SampleRate);
-            builder.Append("|Bps: " + BytesPerSecond);
+            builder.Append("|Bps: " + AverageBytesPerSecond);
             builder.Append("|BlockAlign: " + BlockAlign);
             builder.Append("|BitsPerSample: " + BitsPerSample);
             builder.Append("|Encoding: " + _encoding);

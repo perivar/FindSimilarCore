@@ -118,7 +118,7 @@ namespace CSCore.Codecs.WAV
                 File.Delete(filename);
 
             int r = 0;
-            var buffer = new byte[source.WaveFormat.BytesPerSecond];
+            var buffer = new byte[source.WaveFormat.AverageBytesPerSecond];
             using (var w = new WaveWriter(filename, source.WaveFormat))
             {
                 int read;
@@ -289,7 +289,7 @@ namespace CSCore.Codecs.WAV
             _writer.Write((short)tag);
             _writer.Write((short)_waveFormat.Channels);
             _writer.Write((int)_waveFormat.SampleRate);
-            _writer.Write((int)_waveFormat.BytesPerSecond);
+            _writer.Write((int)_waveFormat.AverageBytesPerSecond);
             _writer.Write((short)_waveFormat.BlockAlign);
             _writer.Write((short)_waveFormat.BitsPerSample);
         }

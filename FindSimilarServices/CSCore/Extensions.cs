@@ -229,7 +229,7 @@ namespace CSCore
             using (var writer = new WaveWriter(stream, source.WaveFormat))
             {
                 int read;
-                var buffer = new byte[source.WaveFormat.BytesPerSecond];
+                var buffer = new byte[source.WaveFormat.AverageBytesPerSecond];
                 while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
                 {
                     writer.Write(buffer, 0, read);
@@ -259,7 +259,7 @@ namespace CSCore
                 throw new ArgumentException("Stream is not writeable.", "stream");
 
 
-            var buffer = new byte[waveSource.WaveFormat.BytesPerSecond];
+            var buffer = new byte[waveSource.WaveFormat.AverageBytesPerSecond];
             int read;
             while ((read = waveSource.Read(buffer, 0, buffer.Length)) > 0)
             {
