@@ -65,11 +65,19 @@ namespace FindSimilarClient
                 var loggerFactory = provider.GetService<ILoggerFactory>();
 
                 options.UseSerilog(loggerFactory, throwOnQueryWarnings: !Environment.IsProduction());
-                options.UseSqlite(connection); // default added as Scoped
+
+                // use SQLite
+                // options.UseSqlite(connection); // default added as Scoped
             });
 
+            // use SQLite
             // add both the interfaces to FindSimilarSQLiteService
-            services.AddScoped<IModelService, FindSimilarSQLiteService>();
+            // services.AddScoped<IModelService, FindSimilarSQLiteService>();
+            // services.AddScoped<IFindSimilarDatabase>(x => x.GetService<IModelService>() as IFindSimilarDatabase);
+
+            // use LiteDb
+            // add both the interfaces to FindSimilarLiteDBService
+            services.AddScoped<IModelService>(x => new FindSimilarLiteDBService(connection));
             services.AddScoped<IFindSimilarDatabase>(x => x.GetService<IModelService>() as IFindSimilarDatabase);
 
             services.AddScoped<ISoundFingerprinter, SoundFingerprinter>();

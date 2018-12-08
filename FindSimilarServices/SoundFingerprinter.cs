@@ -27,6 +27,7 @@ using FindSimilarServices.Fingerprinting.SQLiteDb;
 using Microsoft.EntityFrameworkCore;
 using FindSimilarServices.Fingerprinting;
 using FindSimilarServices.Fingerprinting.SQLiteDBService;
+using Serilog.Events;
 
 namespace FindSimilarServices
 {
@@ -82,6 +83,10 @@ namespace FindSimilarServices
         {
         }
 
+        public SoundFingerprinter(IModelService modelService, string debugDirectoryPath) : this(modelService, null, debugDirectoryPath)
+        {
+        }
+
         public SoundFingerprinter(IModelService modelService, string loadFromPath, string debugDirectoryPath)
         {
             SetDebugPath(debugDirectoryPath);
@@ -94,7 +99,7 @@ namespace FindSimilarServices
             else
             {
                 //  ... otherwise use the loadFromPath
-                this.modelService = GetDatabaseService(loadFromPath);
+                this.modelService = GetSQLiteDatabaseService(loadFromPath);
             }
 
             // and set the rest of the services
@@ -128,7 +133,7 @@ namespace FindSimilarServices
             if (!Directory.Exists(DEBUG_DIRECTORY_PATH)) Directory.CreateDirectory(DEBUG_DIRECTORY_PATH);
         }
 
-        private IModelService GetDatabaseService(string loadFromPath)
+        private IModelService GetSQLiteDatabaseService(string loadFromPath)
         {
             if (!string.IsNullOrEmpty(loadFromPath))
             {
@@ -160,7 +165,7 @@ namespace FindSimilarServices
 
         public void FingerprintDirectory(string directoryPath, double skipDurationAboveSeconds, Verbosity verbosity)
         {
-            using (new DebugTimer("FingerprintDirectory()"))
+            using (new DebugTimer("Fingerprinting Done", LogEventLevel.Information))
             {
                 // use List<string> instead of IEnumerable<string> to force iteration
                 // and avoid iterating twice due to the count() and the foreach
@@ -205,20 +210,14 @@ namespace FindSimilarServices
                 Parallel.ForEach(filesRemaining, options, file =>
                 {
                     var fileInfo = new FileInfo(file);
-
                     double duration = 0;
-                    lock (_lockObj)
+                    try
                     {
-                        // Try to check duration
-                        try
-                        {
-                            duration = audioService.GetLengthInSeconds(fileInfo.FullName);
-                        }
-                        catch (System.Exception e)
-                        {
-                            // Log
-                            Log.Warning(e.Message);
-                        }
+                        duration = audioService.GetLengthInSeconds(fileInfo.FullName);
+                    }
+                    catch (System.Exception)
+                    {
+                        Log.Warning("Unable to get duration for: {0}", fileInfo.FullName);
                     }
 
                     // check if we should skip files longer than x seconds
@@ -238,12 +237,12 @@ namespace FindSimilarServices
                             // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
                             var filesCounterNow = Interlocked.Increment(ref filesRemainingCounter);
                             var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
-                            Log.Information("[{1}/{2} - {3}/{4}] Added {0} to database. (Thread: {5})", fileInfo.Name, filesRemainingCounter, filesRemainingTotalCount, filesAllCounter, filesAllTotalCount, Thread.CurrentThread.ManagedThreadId);
+                            Log.Information("[{1}/{2} - {3}/{4}] Added {0}. {6:0.00} seconds (Thread: {5})", fileInfo.Name, filesRemainingCounter, filesRemainingTotalCount, filesAllCounter, filesAllTotalCount, Thread.CurrentThread.ManagedThreadId, duration);
                         }
                     }
                     else
                     {
-                        Log.Warning("Skipping file {0} duration: {1}, skip: {2}!", file, duration, skipDurationAboveSeconds);
+                        Log.Warning("Skipping file {0} duration: {1:0.00} sec, skip: {2}!", file, duration, skipDurationAboveSeconds);
                     }
                 });
             }
@@ -253,71 +252,68 @@ namespace FindSimilarServices
         {
             if (track == null) return false;
 
-            lock (_lockObj)
+            var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
+
+            // set verbosity
+            fingerprintConfig.SpectrogramConfig.Verbosity = verbosity;
+
+            try
             {
-                var fingerprintConfig = new ShortSamplesFingerprintConfiguration();
+                // create hashed fingerprints
+                var hashedFingerprints = fingerprintCommandBuilder
+                                            .BuildFingerprintCommand()
+                                            .From(pathToAudioFile)
+                                            .WithFingerprintConfig(fingerprintConfig)
+                                            .UsingServices(audioService)
+                                            .Hash()
+                                            .Result;
 
-                // set verbosity
-                fingerprintConfig.SpectrogramConfig.Verbosity = verbosity;
-
-                try
+                if (hashedFingerprints.Count > 0)
                 {
-                    // create hashed fingerprints
-                    var hashedFingerprints = fingerprintCommandBuilder
-                                                .BuildFingerprintCommand()
-                                                .From(pathToAudioFile)
-                                                .WithFingerprintConfig(fingerprintConfig)
-                                                .UsingServices(audioService)
-                                                .Hash()
-                                                .Result;
-
-                    if (hashedFingerprints.Count > 0)
+                    lock (_lockObj)
                     {
                         // store track metadata in the datasource
                         var trackReference = modelService.InsertTrack(track);
 
                         // store hashes in the database for later retrieval
                         modelService.InsertHashDataForTrack(hashedFingerprints, trackReference);
-                        return true;
                     }
-                    else
-                    {
-                        return false;
-                    }
+                    return true;
                 }
-                catch (System.Exception e)
+                else
                 {
-                    // Log
-                    Log.Information(e.Message);
                     return false;
                 }
+            }
+            catch (System.Exception e)
+            {
+                // Log
+                Log.Information(e.Message);
+                return false;
             }
         }
 
         public IEnumerable<ResultEntry> GetBestMatchesForSong(string queryAudioFile, int thresholdVotes, int maxTracksToReturn, Verbosity verbosity)
         {
-            lock (_lockObj)
-            {
-                var queryConfig = new ShortSamplesQueryConfiguration();
+            var queryConfig = new ShortSamplesQueryConfiguration();
 
-                // set verbosity
-                queryConfig.FingerprintConfiguration.SpectrogramConfig.Verbosity = verbosity;
+            // set verbosity
+            queryConfig.FingerprintConfiguration.SpectrogramConfig.Verbosity = verbosity;
 
-                // override threshold and max if they were passed
-                if (thresholdVotes > 0) queryConfig.ThresholdVotes = thresholdVotes;
-                if (maxTracksToReturn > 0) queryConfig.MaxTracksToReturn = maxTracksToReturn;
+            // override threshold and max if they were passed
+            if (thresholdVotes > 0) queryConfig.ThresholdVotes = thresholdVotes;
+            if (maxTracksToReturn > 0) queryConfig.MaxTracksToReturn = maxTracksToReturn;
 
-                // query the underlying database for similar audio sub-fingerprints
-                var queryResult = new QueryCommandBuilder(fingerprintCommandBuilder, QueryFingerprintService.Instance)
-                                                     .BuildQueryCommand()
-                                                     .From(queryAudioFile)
-                                                     .WithQueryConfig(queryConfig)
-                                                     .UsingServices(modelService, audioService)
-                                                     .Query()
-                                                     .Result;
+            // query the underlying database for similar audio sub-fingerprints
+            var queryResult = new QueryCommandBuilder(fingerprintCommandBuilder, QueryFingerprintService.Instance)
+                                                 .BuildQueryCommand()
+                                                 .From(queryAudioFile)
+                                                 .WithQueryConfig(queryConfig)
+                                                 .UsingServices(modelService, audioService)
+                                                 .Query()
+                                                 .Result;
 
-                return queryResult.ResultEntries;
-            }
+            return queryResult.ResultEntries;
         }
     }
 }

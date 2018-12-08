@@ -11,6 +11,7 @@ using System.Diagnostics;
 using FindSimilarServices.Audio;
 using CommonUtils.Audio;
 using Serilog.Events;
+using SoundFingerprinting;
 
 namespace FindSimilar
 {
@@ -244,7 +245,13 @@ namespace FindSimilar
         {
             if (Directory.Exists(directoryPath))
             {
-                var fingerprinter = new SoundFingerprinter(dbPath, debugDirectoryPath);
+                // use LiteDb
+                var model = new FindSimilarLiteDBService(dbPath);
+                var fingerprinter = new SoundFingerprinter(model, debugDirectoryPath);
+
+                // use SQLite
+                // var fingerprinter = new SoundFingerprinter(dbPath, debugDirectoryPath);
+
                 fingerprinter.FingerprintDirectory(Path.GetFullPath(directoryPath), skipDurationAboveSeconds, verbosity);
             }
             else

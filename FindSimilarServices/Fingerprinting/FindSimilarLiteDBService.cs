@@ -131,10 +131,15 @@ namespace SoundFingerprinting
 
         }
 
-        public FindSimilarLiteDBService(string databasePath)
+        public FindSimilarLiteDBService(string connectionString)
         {
-            if (!string.IsNullOrEmpty(databasePath))
+            if (!string.IsNullOrEmpty(connectionString))
             {
+                var databasePath = "";
+                if (connectionString.Contains("Data Source="))
+                {
+                    databasePath = connectionString.Replace("Data Source=", "");
+                }
                 try
                 {
                     db = new LiteDatabase(databasePath);
