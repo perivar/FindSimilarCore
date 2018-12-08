@@ -82,10 +82,10 @@ namespace CSCore.Codecs.WAV
                     }
                     else
                     {
-                        for (int i = (int)(extraSize); i > 0; i--)
+                        // ignore extra size bytes
+                        if (extraSize > 0)
                         {
-                            // ignore extra size bytes
-                            reader.ReadByte();
+                            reader.BaseStream.Position += extraSize;
                         }
                     }
                 }

@@ -325,10 +325,10 @@ namespace CommonUtils.Audio
             builder.AppendFormat("{0} byte/sec, {1} block align, {2} bits/samp, {3} data bytes", _averageBytesPerSecond, _blockAlign, _bitsPerSample, _dataChunkSize);
             builder.AppendLine();
             builder.AppendFormat("{0} Extsize", _extraSize);
-            builder.AppendFormat(", {0} Samps/block", _samplesPerBlock);
-            builder.AppendFormat(", {0} bytes/block", _bytesPerBlock);
+            if (_samplesPerBlock > 0) builder.AppendFormat(", {0} Samps/block", _samplesPerBlock);
+            if (_bytesPerBlock > 0) builder.AppendFormat(", {0} bytes/block", _bytesPerBlock);
             if (_coefficients > 0) builder.AppendFormat(", {0} Num Coefs", _coefficients);
-            builder.AppendFormat(", {0} Samps/chan", _samplesPerChannel);
+            if (_samplesPerChannel > 0) builder.AppendFormat(", {0} Samps/chan", _samplesPerChannel);
             builder.AppendLine();
             return builder;
         }

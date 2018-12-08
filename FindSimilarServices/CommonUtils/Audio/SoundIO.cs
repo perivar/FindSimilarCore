@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace CommonUtils.Audio
 {
@@ -133,6 +134,24 @@ namespace CommonUtils.Audio
             }
         }
 
+        public static void Read24Bit(BinaryFile waveFile, float[][] sound, int sampleCount, int channels)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static void Write24Bit(BinaryFile waveFile, float[][] sound, int sampleCount, int channels)
+        {
+            for (int i = 0; i < sampleCount; i++)
+            {
+                for (int ic = 0; ic < channels; ic++)
+                {
+                    float sample = sound[ic][i];
+                    byte[] buffer = BitConverter.GetBytes((int)(0x7fffff * sample));
+                    waveFile.Write(new[] { buffer[0], buffer[1], buffer[2] });
+                }
+            }
+        }
+
         public static void Read32Bit(BinaryFile waveFile, float[][] sound, int sampleCount, int channels)
         {
             for (int i = 0; i < sampleCount; i++)
@@ -182,7 +201,12 @@ namespace CommonUtils.Audio
             {
                 for (int ic = 0; ic < channels; ic++)
                 {
-                    waveFile.Write(sound[ic][i]);
+                    float sample = sound[ic][i];
+
+                    if (sample < -1 || sample > 1)
+                        sample = Math.Max(-1, Math.Min(1, sample));
+
+                    waveFile.Write(sample);
                 }
             }
         }
@@ -305,11 +329,11 @@ namespace CommonUtils.Audio
             {
                 Read8Bit(waveFile, sound, sampleCount, channels);
             }
-            if (bitsPerSample == 16)
+            else if (bitsPerSample == 16)
             {
                 Read16Bit(waveFile, sound, sampleCount, channels);
             }
-            if (bitsPerSample == 32)
+            else if (bitsPerSample == 32)
             {
                 if (audioFormat == WAVE_FORMAT_PCM)
                 {
@@ -324,6 +348,59 @@ namespace CommonUtils.Audio
 
             waveFile.Close();
             return sound;
+        }
+
+        public static void WriteWaveFile(string path, byte[] soundData, bool isFloatingPoint, int channelCount, int sampleRate, int bitDepth)
+        {
+            var bf = new BinaryFile(path, BinaryFile.ByteOrder.LittleEndian, true);
+
+            int totalSampleCount = soundData.Length;
+
+            // RIFF header.
+            // Chunk ID.
+            bf.Write(Encoding.ASCII.GetBytes("RIFF"));
+
+            // Chunk size.
+            bf.Write(BitConverter.GetBytes(totalSampleCount + 36));
+
+            // Format.
+            bf.Write(Encoding.ASCII.GetBytes("WAVE"));
+
+            // Sub-chunk 1.
+            // Sub-chunk 1 ID.
+            bf.Write(Encoding.ASCII.GetBytes("fmt "));
+
+            // Sub-chunk 1 size.
+            bf.Write(BitConverter.GetBytes(16));
+
+            // Audio format (floating point (3) or PCM (1)). Any other format indicates compression.
+            bf.Write(BitConverter.GetBytes((ushort)(isFloatingPoint ? 3 : 1)));
+
+            // Channels.
+            bf.Write(BitConverter.GetBytes((ushort)channelCount));
+
+            // Sample rate.
+            bf.Write(BitConverter.GetBytes(sampleRate));
+
+            // Average bytes per second
+            bf.Write(BitConverter.GetBytes(sampleRate * channelCount * (bitDepth / 8)));
+
+            // Block align.
+            bf.Write(BitConverter.GetBytes((ushort)(channelCount * (bitDepth / 8))));
+
+            // Bits per sample.
+            bf.Write(BitConverter.GetBytes((ushort)bitDepth));
+
+            // Sub-chunk 2.
+            // Sub-chunk 2 ID.
+            bf.Write(Encoding.ASCII.GetBytes("data"));
+
+            // Sub-chunk 2 size.
+            bf.Write(BitConverter.GetBytes(totalSampleCount));
+
+
+            bf.Write(soundData);
+            bf.Close();
         }
 
         public static void WriteWaveFile(string path, float[][] sound, int channels, int sampleRate, int bitsPerSample = 32)
@@ -425,11 +502,21 @@ namespace CommonUtils.Audio
             }
 
             if (bitsPerSample == 8)
+            {
                 Write8Bit(waveFile, sound, numSamples, numChannels);
-            if (bitsPerSample == 16)
+            }
+            else if (bitsPerSample == 16)
+            {
                 Write16Bit(waveFile, sound, numSamples, numChannels);
-            if (bitsPerSample == 32)
+            }
+            else if (bitsPerSample == 24)
+            {
+                Write24Bit(waveFile, sound, numSamples, numChannels);
+            }
+            else if (bitsPerSample == 32)
+            {
                 Write32BitFloat(waveFile, sound, numSamples, numChannels);
+            }
 
             waveFile.Close();
         }
