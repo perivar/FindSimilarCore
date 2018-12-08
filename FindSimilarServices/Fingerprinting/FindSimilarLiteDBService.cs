@@ -135,7 +135,8 @@ namespace SoundFingerprinting
         {
             if (!string.IsNullOrEmpty(connectionString))
             {
-                var databasePath = "";
+                var databasePath = connectionString;
+                // check if this is a connection string or the actual databasePath
                 if (connectionString.Contains("Data Source="))
                 {
                     databasePath = connectionString.Replace("Data Source=", "");
@@ -153,7 +154,7 @@ namespace SoundFingerprinting
                 }
                 catch (System.Exception e)
                 {
-                    Log.Warning("Issues with LiteDatabase:", e);
+                    Log.Fatal("Issues with LiteDatabase: '{0}' [{1}]", connectionString, e);
                 }
             }
         }
