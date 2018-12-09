@@ -22,6 +22,12 @@ namespace CSCore.Codecs.WAV
         {
         }
 
+        public DataChunk(long dataStartPosition, long chunkDataSize)
+        : base(dataStartPosition, chunkDataSize)
+        {
+            DataStartPosition = dataStartPosition;
+        }
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="DataChunk" /> class.
         /// </summary>

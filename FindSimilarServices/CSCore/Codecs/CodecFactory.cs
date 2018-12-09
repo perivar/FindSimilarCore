@@ -68,7 +68,7 @@ namespace CSCore.Codecs
                  }
              }
              return res;
-         }, "wav", "wave" //, "aiff", "aif" // some aiff files have the wrong extension, so try riff container for them as well 
+         }, "wav", "wave", "aiff", "aif" //, "aiff", "aif" // some aiff files have the wrong extension, so try riff container for them as well 
              ));
             Register("flac", new CodecFactoryEntry(s => new FlacFile(s),
                 "flac", "fla"));
@@ -176,70 +176,7 @@ namespace CSCore.Codecs
             if (source != null)
                 return source;
 
-            return Default(filename);
-        }
-
-        /// <summary>
-        ///     Returns a fully initialized <see cref="IWaveSource" /> instance which is able to decode the audio source behind the
-        ///     specified <paramref name="uri" />.
-        ///     If the specified audio source can not be decoded, this method throws an <see cref="NotSupportedException" />.
-        /// </summary>
-        /// <param name="uri">Uri which points to an audio source.</param>
-        /// <returns>Fully initialized <see cref="IWaveSource" /> instance which is able to decode the specified audio source.</returns>
-        /// <exception cref="NotSupportedException">The codec of the specified audio source is not supported.</exception>
-        public IWaveSource GetCodec(Uri uri)
-        {
-            if (uri == null)
-                throw new ArgumentNullException("uri");
-
-            try
-            {
-                var filename = TryFindFilename(uri);
-                if (!String.IsNullOrEmpty(filename))
-                    return GetCodec(filename);
-
-                return OpenWebStream(uri.ToString());
-            }
-            catch (IOException)
-            {
-                throw;
-            }
-            catch (Exception e)
-            {
-                throw new NotSupportedException("Codec not supported.", e);
-            }
-        }
-
-        internal IWaveSource GetCodec(Stream stream, object key)
-        {
-            return _codecs[key].GetCodecAction(stream);
-        }
-
-        private IWaveSource OpenWebStream(string url)
-        {
-            try
-            {
-                return Default(url);
-            }
-            catch (Exception)
-            {
-                try
-                {
-
-                }
-                catch (Exception)
-                {
-                    Log.Verbose("No mp3 webstream.");
-                }
-                throw; //better throw the exception of the MediaFoundationDecoder. We just try to use the Mp3WebStream class since a few mp3 streams are not supported by the mediafoundation.
-            }
-        }
-
-        private static IWaveSource Default(string url)
-        {
-            /*             return new MediaFoundationDecoder(url);
-             */
-            return null;
+            throw new ArgumentException("No codecs found that could process the source.");
         }
 
         /// <summary>
@@ -270,47 +207,6 @@ namespace CSCore.Codecs
             stringBuilder.Append(String.Concat(GetSupportedFileExtensions().Select(x => "*." + x + ";").ToArray()));
             stringBuilder.Remove(stringBuilder.Length - 1, 1);
             return stringBuilder.ToString();
-        }
-
-        private string TryFindFilename(Uri uri)
-        {
-            if (File.Exists(uri.LocalPath))
-                return uri.LocalPath;
-
-            FileInfo fileInfo;
-            try
-            {
-                fileInfo = new FileInfo(uri.LocalPath);
-                if (fileInfo.Exists)
-                    return fileInfo.FullName;
-            }
-            catch (Exception)
-            {
-                Log.Verbose(String.Format("{0} not found.", uri.LocalPath));
-            }
-
-            try
-            {
-                fileInfo = new FileInfo(uri.OriginalString);
-                if (fileInfo.Exists)
-                    return fileInfo.FullName;
-            }
-            catch (Exception)
-            {
-                Log.Verbose(String.Format("{0} not found.", uri.OriginalString));
-            }
-
-            /*             var path = Win32.NativeMethods.PathCreateFromUrl(uri.OriginalString);
-                        if (path == null || !File.Exists(path))
-                        {
-                            path = Win32.NativeMethods.PathCreateFromUrl(uri.AbsoluteUri);
-                        }
-                        if (path != null && File.Exists(path))
-                        {
-                            return path;
-                        }
-             */
-            return null;
         }
 
         private class DisposeFileStreamSource : WaveAggregatorBase

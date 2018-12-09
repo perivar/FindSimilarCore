@@ -262,6 +262,13 @@ namespace NLayer
                             _readBufLen = _decoder.DecodeFrame(frame, _readBuf, 0) * sizeof(float);
                             _readBufOfs = 0;
                         }
+                        catch (System.IndexOutOfRangeException)
+                        {
+                            // bad frame...  try again...
+                            _decoder.Reset();
+                            _readBufOfs = _readBufLen = 0;
+                            continue;
+                        }
                         catch (System.IO.InvalidDataException)
                         {
                             // bad frame...  try again...

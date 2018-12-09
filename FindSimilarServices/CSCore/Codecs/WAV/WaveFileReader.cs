@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using CommonUtils;
 using CommonUtils.Audio;
 using Serilog;
@@ -50,7 +51,9 @@ namespace CSCore.Codecs.WAV
             _stream = stream;
 
             var reader = new BinaryReader(stream);
-            if (new String(reader.ReadChars(4)) == "RIFF")
+
+            var firstChunkId = new String(reader.ReadChars(4));
+            if (firstChunkId == "RIFF")
             {
                 // read RIFF data size
                 var chunkSize = reader.ReadInt32();
@@ -59,14 +62,80 @@ namespace CSCore.Codecs.WAV
                 var field = new string(reader.ReadChars(4));
 
                 Log.Verbose("Processing RIFF. Data size: {0}, field: {1}", chunkSize, field);
+
+                _chunks = ReadChunks(stream);
             }
 
-            _chunks = ReadChunks(stream);
+            // Support more wav file formats
+            // https://ccrma.stanford.edu/software/snd/snd/headers.c
+            else if (firstChunkId == "IMPS")
+            {
+                /* ------------------------------------ Impulse Tracker -------------------------------------
+                 * data from its2raw.c by Ben Collver
+                 * 0:  IMPS
+                 * 4:  filename (12 bytes)
+                 * 17: global vol
+                 * 18: flags (1: 16-bit or 8(0), 2: stereo or mono(0)
+                 * 19: default vol
+                 * 20: sample name (26 bytes)
+                 * 46: convert
+                 * 47: default pan
+                 * 48: length (samps)
+                 * 52: loop start
+                 * 56: loop end
+                 * 60: srate
+                 * 64: sustain loop start
+                 * 68: sustain loop end
+                 * 72: data location
+                 * 76: vib speed
+                 * 77: vib depth
+                 * 78: vib wave
+                 * 79: vib rate
+                 */
+                string fileName = Encoding.ASCII.GetString(reader.ReadBytes(12));
+                reader.ReadByte(); // skip bytes
+                byte globalVol = reader.ReadByte();
+                byte flags = reader.ReadByte();
+                int channels = 0;
+                int bitsPerSample = 0;
+                if ((flags & 4) == 0) channels = 2; else channels = 1;
+                if ((flags & 2) == 0) bitsPerSample = 16; else bitsPerSample = 8;
+
+                byte defaultVol = reader.ReadByte();
+                string sampleName = Encoding.ASCII.GetString(reader.ReadBytes(26)).TrimEnd('\0');
+                byte convert = reader.ReadByte();
+                byte defaultPan = reader.ReadByte();
+                int lengthInSamps = reader.ReadInt32();
+                int loopStart = reader.ReadInt32();
+                int loopEnd = reader.ReadInt32();
+                int sampleRate = reader.ReadInt32();
+                int sustainLoopStart = reader.ReadInt32();
+                int sustainLoopEnd = reader.ReadInt32();
+                int dataLocation = reader.ReadInt32();
+                byte vibSpeed = reader.ReadByte();
+                byte vibDepth = reader.ReadByte();
+                byte vibWave = reader.ReadByte();
+                byte vibRate = reader.ReadByte();
+
+                _waveFormat = new WaveFormat(sampleRate, (short)bitsPerSample, (short)channels, AudioEncoding.Pcm);
+
+                _chunks = new List<WaveFileChunk>(2);
+                var tmp = new DataChunk(dataLocation, lengthInSamps * channels);
+                _chunks.Add(tmp);
+            }
+
+            else
+            {
+                // unrecognized wave file
+                _chunks = new List<WaveFileChunk>(2);
+                Log.Warning("Unknown wave format. First chunk Id: {0}", firstChunkId);
+            }
+
             Log.Verbose(GetWaveFileChunkInformation(Chunks));
 
             _dataChunk = (DataChunk)_chunks.FirstOrDefault(x => x is DataChunk);
             if (_dataChunk == null)
-                throw new ArgumentException("The specified stream does not contain any data chunks.", "stream");
+                throw new ArgumentException("The specified stream does not contain any data chunks.");
 
             Position = 0;
         }

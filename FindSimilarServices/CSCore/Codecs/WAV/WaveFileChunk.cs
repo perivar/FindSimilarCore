@@ -36,6 +36,12 @@ namespace CSCore.Codecs.WAV
             StartPosition = reader.BaseStream.Position;
         }
 
+        public WaveFileChunk(long startPosition, long chunkDataSize)
+        {
+            StartPosition = startPosition;
+            ChunkDataSize = chunkDataSize;
+        }
+
         /// <summary>
         ///     Gets the unique ID of the Chunk. Each type of chunk has its own id.
         /// </summary>

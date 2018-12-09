@@ -154,7 +154,7 @@ namespace FindSimilarServices.Audio
             }
             catch (System.Exception e)
             {
-                throw new ArgumentException(string.Format("ReadSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message), e);
+                throw new ArgumentException(string.Format("ReadSamplesFromFile failed for {0}: {1}", pathToSourceFile, e.Message));
             }
 
             return new AudioSamples(samples, pathToSourceFile, sampleRate);
