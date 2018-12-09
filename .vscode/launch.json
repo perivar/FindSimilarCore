@@ -42,7 +42,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build-webclient",
-            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.1/win-x64/FindSimilarClient.dll",
+            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.2/win-x64/FindSimilarClient.dll",
             "args": [],
             "cwd": "${workspaceFolder}/FindSimilarClient",
             "stopAtEntry": false,
@@ -63,7 +63,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build-webclient",
-            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.1/win-x64/FindSimilarClient.dll",
+            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.2/win-x64/FindSimilarClient.dll",
             "args": [],
             "cwd": "${workspaceFolder}/FindSimilarClient",
             "stopAtEntry": false,
@@ -89,7 +89,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build-webclient",
-            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.1/win-x64/FindSimilarClient.dll",
+            "program": "${workspaceFolder}/FindSimilarClient/bin/Debug/netcoreapp2.2/win-x64/FindSimilarClient.dll",
             "args": [],
             "cwd": "${workspaceFolder}/FindSimilarClient",
             "stopAtEntry": false,
@@ -117,7 +117,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
@@ -142,7 +142,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR",
@@ -171,7 +171,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects",
@@ -196,7 +196,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects",
@@ -220,12 +220,39 @@
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
+            "name": "FindSimilar (SCAN BAD WAVs) DEBUG",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
+            "args": [
+                "scan",
+                "C:\\Users\\perner\\Amazon Drive\\Documents\\My Projects\\difficult wav files",
+                "-v",
+                "5",
+                "-l",
+                "C:\\Users\\perner\\My Projects\\findsimilar.log",
+                "-e",
+                "C:\\Users\\perner\\My Projects\\findsimilar_error.log",
+                "-d",
+                "C:\\Users\\perner\\My Projects\\fingerprint.db",
+                "--debug",
+                "C:\\Users\\perner\\My Projects\\tmp-images"
+            ],
+            "cwd": "${workspaceFolder}/FindSimilar",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
             "name": "DAW FindSimilar (FULL SCAN)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
                 "H:\\SAMPLES\\ACID LOOPS & SAMPLES",
@@ -250,7 +277,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "scan",
                 "H:\\SAMPLES\\ACID LOOPS & SAMPLES",
@@ -279,7 +306,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "match",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
@@ -302,7 +329,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "match",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\!PERIVAR\\House Baerum\\Tom 1.wav",
@@ -327,7 +354,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "match",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",
@@ -350,7 +377,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.1/win-x64/FindSimilar.dll",
+            "program": "${workspaceFolder}/FindSimilar/bin/Debug/netcoreapp2.2/win-x64/FindSimilar.dll",
             "args": [
                 "match",
                 "C:\\Users\\perner\\Amazon Drive\\Documents\\Audio\\FL Projects\\2Pac - Changes Remake (by BacardiProductions)\\Perc (20).wav",

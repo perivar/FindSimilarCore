@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using Serilog;
 
 namespace CSCore.Codecs.WAV
 {
@@ -51,7 +53,7 @@ namespace CSCore.Codecs.WAV
 
                     if (extraSize != ChunkDataSize - 18)
                     {
-                        Debug.WriteLine("Format chunk mismatch");
+                        Log.Verbose("Format chunk extra size mismatch. Reported: {0}, but really {1} bytes.", extraSize, (short)(ChunkDataSize - 18));
                         extraSize = (short)(ChunkDataSize - 18);
                     }
 
@@ -78,7 +80,14 @@ namespace CSCore.Codecs.WAV
                         // var subEncoding = (AudioEncoding)reader.ReadInt16();
                         // var subEncodingFixed = reader.ReadBytes(14);
                         var guidData = reader.ReadBytes(16); // complete 16 byte guid data
-                        var guid = new Guid(guidData);
+
+                        // if all bytes are zero - force AudioSubTypes.Pcm
+                        bool hasAllZeroes = guidData.All(singleByte => singleByte == 0);
+                        var guid = AudioSubTypes.Pcm;
+                        if (!hasAllZeroes)
+                        {
+                            guid = new Guid(guidData);
+                        }
 
                         var waveFormatExtensible = new WaveFormatExtensible(sampleRate, bitsPerSample, channels, guid, channelMask);
                         waveFormatExtensible.AverageBytesPerSecond = avgBps;

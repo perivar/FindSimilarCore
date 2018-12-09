@@ -111,6 +111,12 @@ namespace CSCore.Codecs.WAV
                 return new DataChunk(reader);
             if (id == ListChunk.ListChunkID)
                 return new ListChunk(reader);
+
+            // TODO: add bext metadata tag support?
+            // The European Broadcast Union (EBU) has standardized on an extension to the WAVE format that they call Broadcast WAVE format (BWF).  
+            // It is aimed at carrying PCM or MPEG audio data. In its simplest form, it adds a <bext> chunk with additional metadata.  
+            // https://tech.ebu.ch/docs/tech/tech3285.pdf
+
             return new WaveFileChunk(reader);
         }
 

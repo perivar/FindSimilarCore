@@ -106,7 +106,7 @@ ans =
         //    -0.82366           0           0
         //
         #endregion
-        public static void Test1(bool _2D = true)
+        private static void Test1(bool _2D = true)
         {
             var vals = new double[][] {
                 new double[] { 1.0, 2.0, 3.0 },
@@ -222,7 +222,7 @@ ans =
          162         162         161         161         163         158         158         158
 		 */
         #endregion
-        public static void Test2(bool _2D = true, bool random = false)
+        private static void Test2(bool _2D = true, bool random = false)
         {
             double[][] vals;
             if (random)
