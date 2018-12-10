@@ -98,8 +98,10 @@ namespace CSCore.Codecs.WAV
                 byte flags = reader.ReadByte();
                 int channels = 0;
                 int bitsPerSample = 0;
-                if ((flags & 4) == 0) channels = 2; else channels = 1;
-                if ((flags & 2) == 0) bitsPerSample = 16; else bitsPerSample = 8;
+
+                // check if flags contain: (value & checkBit) == checkBit
+                if ((flags & 4) == 4) channels = 2; else channels = 1;
+                if ((flags & 2) == 2) bitsPerSample = 16; else bitsPerSample = 8;
 
                 byte defaultVol = reader.ReadByte();
                 string sampleName = Encoding.ASCII.GetString(reader.ReadBytes(26)).TrimEnd('\0');
