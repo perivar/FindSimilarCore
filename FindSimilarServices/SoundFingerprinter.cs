@@ -237,7 +237,7 @@ namespace FindSimilarServices
                             // https://pragmaticpattern.wordpress.com/2013/07/03/c-parallel-programming-increment-variable-safely-across-multiple-threads/
                             var filesCounterNow = Interlocked.Increment(ref filesRemainingCounter);
                             var filesAllCounterNow = Interlocked.Increment(ref filesAllCounter);
-                            Log.Information("[{1}/{2} - {3}/{4}] Added {0}. {6:0.00} seconds (Thread: {5})", fileInfo.Name, filesRemainingCounter, filesRemainingTotalCount, filesAllCounter, filesAllTotalCount, Thread.CurrentThread.ManagedThreadId, duration);
+                            Log.Information("[{1}/{2} - {3}/{4}] Added '{0}' with {6:0.00} seconds duration (Thread: {5})", fileInfo.Name, filesRemainingCounter, filesRemainingTotalCount, filesAllCounter, filesAllTotalCount, Thread.CurrentThread.ManagedThreadId, duration);
                         }
                     }
                     else

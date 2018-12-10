@@ -68,14 +68,13 @@ namespace CSCore.Codecs
                  }
              }
              return res;
-         }, "wav", "wave", "aiff", "aif" //, "aiff", "aif" // some aiff files have the wrong extension, so try riff container for them as well 
+         }, "wav", "wave"
              ));
             Register("flac", new CodecFactoryEntry(s => new FlacFile(s),
                 "flac", "fla"));
             Register("aiff", new CodecFactoryEntry(s => new AiffReader(s),
                 "aiff", "aif", "aifc"));
 
-            // ADDED BY PER IVAR
             Register("ogg-vorbis", new CodecFactoryEntry(s => new OggSharpSource(s), "ogg"));
             Register("mpeg", new CodecFactoryEntry(s => new NLayerSource(s).ToWaveSource(),
             "mp1", "m1a", "mp2", "m2a", "mp3", "mpg", "mpeg", "mpeg3"));
@@ -141,6 +140,43 @@ namespace CSCore.Codecs
                 Stream stream = File.OpenRead(filename);
                 try
                 {
+                    // test for some predefined headers
+                    // to support audio files that have the wrong exension
+                    // i.e. aiff files that are really wav files etc.
+                    using (var reader = new BinaryReader(stream, Encoding.ASCII, true))
+                    {
+                        var fileChunkId = new String(reader.ReadChars(4));
+                        var lowerCaseExtension = extension.ToLowerInvariant();
+
+                        // wav files have RIFF
+                        if (fileChunkId.Equals("RIFF") && !lowerCaseExtension.Contains("wav"))
+                        {
+                            extension = "wav";
+                        }
+                        // aif files have FORM
+                        if (fileChunkId.Equals("FORM") && !lowerCaseExtension.Contains("aif"))
+                        {
+                            extension = "aif";
+                        }
+                        // ogg files have OggS
+                        if (fileChunkId.Equals("OggS") && !lowerCaseExtension.Contains("ogg"))
+                        {
+                            extension = "ogg";
+                        }
+                        // mp3 files have ID3 and end of text character (\u0003)
+                        if (fileChunkId.Equals("ID3\u0003") && !lowerCaseExtension.Contains("mp3"))
+                        {
+                            extension = "mp3";
+                        }
+                        // flac files have fLaC
+                        if (fileChunkId.Equals("fLaC") && !lowerCaseExtension.Contains("fla"))
+                        {
+                            extension = "flac";
+                        }
+
+                        stream.Position -= 4;
+                    }
+
                     foreach (var codecEntry in _codecs)
                     {
                         try
