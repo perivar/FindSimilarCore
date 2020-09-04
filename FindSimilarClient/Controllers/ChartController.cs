@@ -15,6 +15,8 @@ namespace FindSimilarClient.Controllers
             mfcc = new MFCC(2048, 44100, 40, 20);
         }
 
+        [HttpGet]
+        [Route("/chart")]
         public async Task<IActionResult> Chart([FromServices] INodeServices nodeServices)
         {
             // var data = new double[][] {

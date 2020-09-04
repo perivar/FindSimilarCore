@@ -380,7 +380,9 @@ namespace SoundFingerprinting
             var col = db.GetCollection<SubFingerprintDTO>("fingerprints");
 
             // ensure that the hasbins can be searched for by value
-            col.EnsureIndex(x => x.HashBins, "$.HashBins[*]");
+            // had to disable: 04.09.2020 - check https://github.com/mbdavid/LiteDB/wiki/Indexes#expressions
+            //col.EnsureIndex(x => x.HashBins, "$.HashBins[*]");
+            col.EnsureIndex(x => x.HashBins);
 
             // don't care about the actual index of the hasbin, only if it exists
             var query = GetQueryForHashBinsIgnoreIndex(hashBins, false);
@@ -427,9 +429,9 @@ namespace SoundFingerprinting
 
         // build a query for the document hash array that ensures 
         // a unique match (all hashbins exist)
-        private LiteDB.Query GetQueryForHashBinsUnique(int[] hashBins)
+        private LiteDB.BsonExpression GetQueryForHashBinsUnique(int[] hashBins)
         {
-            var queries = new List<LiteDB.Query>();
+            var queries = new List<LiteDB.BsonExpression>();
             for (int hashtable = 0; hashtable < hashBins.Length; hashtable++)
             {
                 var hashBinAreEqual = LiteDB.Query.EQ("HashBins", hashBins[hashtable]);
@@ -441,11 +443,11 @@ namespace SoundFingerprinting
 
         // build a query for the separate hashes table that cares about
         // the actual index of the hashbin
-        private LiteDB.Query GetQueryForHashBins(int[] hashBins)
+        private LiteDB.BsonExpression GetQueryForHashBins(int[] hashBins)
         {
             // ensure we care about the actual index of the hashbin
             // See https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
-            var queries = new List<LiteDB.Query>();
+            var queries = new List<LiteDB.BsonExpression>();
             for (int hashtable = 1; hashtable <= hashBins.Length; hashtable++)
             {
                 var hashTableAndHashBinAreEqual = LiteDB.Query.And(
@@ -458,7 +460,7 @@ namespace SoundFingerprinting
 
         // build a query for the separate hashes-table, or the document hash array that ignores
         // the actual index of the hashbin
-        private LiteDB.Query GetQueryForHashBinsIgnoreIndex(int[] hashBins, bool useSeparateTable)
+        private LiteDB.BsonExpression GetQueryForHashBinsIgnoreIndex(int[] hashBins, bool useSeparateTable)
         {
             // don't care about the actual index of the hasbin, only if it exists
             // See https://github.com/perivar/FindSimilar2/blob/master/Soundfingerprinting/DatabaseService.cs\
@@ -481,7 +483,7 @@ namespace SoundFingerprinting
             // check IEnumerable<SubFingerprintData> ReadSubFingerprintDataByHashBucketsWithThreshold(long[] hashBins, int thresholdVotes)
             // https://github.com/AddictedCS/soundfingerprinting.mongodb/blob/release/2.3.x/src/SoundFingerprinting.MongoDb/HashBinDao.cs
 
-            LiteDB.Query query = null;
+            LiteDB.BsonExpression query = null;
             if (ignoreHashTableIndex)
             {
                 query = GetQueryForHashBinsIgnoreIndex(hashBins, true);

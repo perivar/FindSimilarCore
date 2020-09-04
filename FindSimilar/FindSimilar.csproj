@@ -3,13 +3,13 @@
     <ProjectReference Include="..\FindSimilarServices\FindSimilarServices.csproj"/>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.2.5"/>
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0"/>
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1"/>
-    <PackageReference Include="Serilog.Sinks.File" Version="4.0.0"/>
+    <PackageReference Include="Serilog.Sinks.File" Version="4.1.0"/>
   </ItemGroup>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>

@@ -41,8 +41,8 @@ namespace FindSimilarClient
 
         protected async Task WriteStreamAsync(HttpResponse response)
         {
-            var bufferingFeature = response.HttpContext.Features.Get<IHttpBufferingFeature>();
-            bufferingFeature?.DisableResponseBuffering();
+            var bufferingFeature = response.HttpContext.Features.Get<IHttpResponseBodyFeature>();
+            bufferingFeature?.DisableBuffering();
 
             var length = FileStream.Length;
 

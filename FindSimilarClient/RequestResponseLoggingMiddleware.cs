@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using CommonUtils;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace FindSimilarClient
@@ -54,7 +53,7 @@ namespace FindSimilarClient
         private async Task<string> FormatRequest(HttpRequest request)
         {
             // This line allows us to set the reader for the request back at the beginning of its stream.
-            request.EnableRewind();
+            request.EnableBuffering();
 
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("-------HTTP REQUEST INFORMATION-------");

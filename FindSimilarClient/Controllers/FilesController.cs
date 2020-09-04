@@ -13,9 +13,9 @@ namespace FindSimilarClient.Controllers
     [Route("api/[controller]")]
     public class FilesController : Controller
     {
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
-        public FilesController(IHostingEnvironment hostingEnvironment)
+        public FilesController(IWebHostEnvironment hostingEnvironment)
         {
             this._hostingEnvironment = hostingEnvironment;
         }

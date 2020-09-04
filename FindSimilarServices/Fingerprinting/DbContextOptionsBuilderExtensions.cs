@@ -14,6 +14,7 @@ namespace FindSimilarServices.Fingerprinting
             {
                 warnings.Log(RelationalEventId.TransactionError);
 
+                /*
                 if (throwOnQueryWarnings)
                 {
                     warnings.Throw(RelationalEventId.QueryClientEvaluationWarning);
@@ -26,6 +27,7 @@ namespace FindSimilarServices.Fingerprinting
                     warnings.Log(RelationalEventId.QueryPossibleExceptionWithAggregateOperator);
                     warnings.Log(RelationalEventId.QueryPossibleUnintendedUseOfEqualsWarning);
                 }
+                */
             });
 
             return optionsBuilder;

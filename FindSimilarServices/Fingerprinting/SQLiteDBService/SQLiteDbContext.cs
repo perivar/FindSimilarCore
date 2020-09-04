@@ -1,8 +1,5 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using FindSimilarServices.Fingerprinting.SQLiteDb.Models;
 
 namespace FindSimilarServices.Fingerprinting.SQLiteDb

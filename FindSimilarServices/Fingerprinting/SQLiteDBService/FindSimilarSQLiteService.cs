@@ -8,7 +8,6 @@ using FindSimilarServices.Fingerprinting.SQLiteDb;
 using System.Linq;
 using FindSimilarServices.Fingerprinting.SQLiteDb.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.Sqlite;
 
 namespace FindSimilarServices.Fingerprinting.SQLiteDBService
 {
@@ -154,7 +153,7 @@ namespace FindSimilarServices.Fingerprinting.SQLiteDBService
                 WHERE SubFingerprint.Id = Thresholded.SubFingerprintId
                 ";
 
-                var results = _context.SubFingerprint.FromSql(commandText)
+                var results = _context.SubFingerprint.FromSqlRaw(commandText)
                     .Select(CopyToSubFingerprintData)
                     .ToList();
                 return results;

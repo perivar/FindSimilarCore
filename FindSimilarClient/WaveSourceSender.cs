@@ -255,8 +255,8 @@ namespace FindSimilarClient
             // Prepare and Initialize response --------------------------------------------------------
 
             // disable response buffering
-            var bufferingFeature = response.HttpContext.Features.Get<IHttpBufferingFeature>();
-            bufferingFeature?.DisableResponseBuffering();
+            var bufferingFeature = response.HttpContext.Features.Get<IHttpResponseBodyFeature>();
+            bufferingFeature?.DisableBuffering();
 
             // Get content type by file name and Set content disposition.
             string disposition = "inline";

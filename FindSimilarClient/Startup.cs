@@ -4,18 +4,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using FindSimilarServices.Audio;
 using FindSimilarServices.Fingerprinting;
 using SoundFingerprinting;
 using FindSimilarServices;
 using FindSimilarServices.Fingerprinting.SQLiteDb;
-using FindSimilarServices.Fingerprinting.SQLiteDBService;
 using Serilog;
 using Microsoft.Extensions.Logging;
 
@@ -23,15 +22,14 @@ namespace FindSimilarClient
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration, IHostingEnvironment environment)
+        public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             Configuration = configuration;
-            Environment = environment;
+            Env = environment;
         }
 
+        public IWebHostEnvironment Env { get; set; }
         public IConfiguration Configuration { get; }
-
-        public IHostingEnvironment Environment { get; }
 
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -44,11 +42,15 @@ namespace FindSimilarClient
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            var mvcBuilder = services.AddControllersWithViews();
+            if (Env.IsDevelopment())
+            {
+                mvcBuilder.AddRazorRuntimeCompilation();
+            }
 
             services.AddNodeServices(options =>
             {
-                if (Environment.IsDevelopment())
+                if (Env.IsDevelopment())
                 {
                     options.LaunchWithDebugging = true;
                     options.DebuggingPort = 9229;
@@ -64,7 +66,7 @@ namespace FindSimilarClient
                 var provider = services.BuildServiceProvider();
                 var loggerFactory = provider.GetService<ILoggerFactory>();
 
-                options.UseSerilog(loggerFactory, throwOnQueryWarnings: !Environment.IsProduction());
+                options.UseSerilog(loggerFactory, throwOnQueryWarnings: !Env.IsProduction());
 
                 // use SQLite
                 // options.UseSqlite(connection); // default added as Scoped
@@ -77,16 +79,16 @@ namespace FindSimilarClient
 
             // use LiteDb
             // add both the interfaces to FindSimilarLiteDBService
-            services.AddScoped<IModelService>(x => new FindSimilarLiteDBService(connection));
-            services.AddScoped<IFindSimilarDatabase>(x => x.GetService<IModelService>() as IFindSimilarDatabase);
+            services.AddSingleton<IModelService>(x => new FindSimilarLiteDBService(connection));
+            services.AddSingleton<IFindSimilarDatabase>(x => x.GetService<IModelService>() as IFindSimilarDatabase);
 
             services.AddScoped<ISoundFingerprinter, SoundFingerprinter>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (Environment.IsDevelopment())
+            if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 app.UseRequestResponseLogging();
@@ -99,19 +101,22 @@ namespace FindSimilarClient
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+            app.UseRouting();
+
             app.UseCookiePolicy();
 
-            app.UseCors(builder => builder
-                        .AllowAnyOrigin()
-                        .AllowCredentials()
-                        .AllowAnyHeader()
-                        .AllowAnyMethod());
+            // global cors policy
+            app.UseCors(x => x
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .SetIsOriginAllowed(origin => true) // allow any origin
+                .AllowCredentials()); // allow credentials
 
-            app.UseMvc(routes =>
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapRoute(
+                endpoints.MapControllerRoute(
                     name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
             });
         }
     }

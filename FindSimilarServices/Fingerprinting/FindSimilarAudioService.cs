@@ -1,15 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.Linq;
-using CommonUtils;
 using CommonUtils.Audio;
 using CSCore;
 using CSCore.Codecs;
 using SoundFingerprinting.Audio;
-using SoundFingerprinting.SoundTools.DrawingTool;
-using SoundFingerprinting.Wavelets;
 
 namespace FindSimilarServices.Audio
 {
