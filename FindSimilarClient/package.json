@@ -20,7 +20,7 @@
     "jquery-validation-unobtrusive": "^3.2.11",
     "popper.js": "^1.16.1",
     "jsdom": "^16.4.0",
-    "d3": "^6.1.1",
+    "d3": "^7.6.1",
     "puppeteer": "^5.2.1",
     "generic-pool": "^3.7.1"
   },
